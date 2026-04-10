@@ -1,4 +1,4 @@
-// MicroStore Backend - PostgreSQL Version
+// MicroStore Backend - PostgreSQL Version v2
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
