@@ -1,0 +1,8 @@
+[phases.build]
+cmd = "npm install"
+
+[phases.setup]
+cmd = "echo 'Clean build'"
+
+[start]
+cmd = "node index.js"
