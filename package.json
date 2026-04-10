@@ -2,7 +2,7 @@
   "name": "sellityet",
   "version": "1.0.0",
   "description": "MicroStore - White Label Shop Platform",
-  "main": "server-pg.js",
+  "main": "index.js",
   "scripts": {
     "start": "node server-pg.js",
     "migrate": "node scripts/migrate.js",
