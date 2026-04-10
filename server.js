@@ -151,7 +151,7 @@ app.get('/api/shops/:shopId/products', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server - Listen on 0.0.0.0 for Railway
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 MicroStore Server running on port ${PORT}`);
 });
