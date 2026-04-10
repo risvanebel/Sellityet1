@@ -124,6 +124,13 @@ app.post('/api/shops', authMiddleware, (req, res) => {
   );
 });
 
+app.get('/api/shops', (req, res) => {
+  db.all('SELECT * FROM shops WHERE is_active = 1', [], (err, shops) => {
+    if (err) return res.status(400).json({ error: err.message });
+    res.json(shops);
+  });
+});
+
 app.get('/api/shops/:slug', (req, res) => {
   db.get('SELECT * FROM shops WHERE slug = ? AND is_active = 1', [req.params.slug], (err, shop) => {
     if (err || !shop) return res.status(404).json({ error: 'Shop not found' });
