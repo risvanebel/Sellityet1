@@ -6,3 +6,4 @@ startCommand = "node server-pg.js"
 restartPolicyType = "on_failure"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
+# Force rebuild v2
