@@ -1,0 +1,4 @@
+node_modules/
+.env
+microstore.db
+*.log
