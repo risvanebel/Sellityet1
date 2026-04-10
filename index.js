@@ -52,8 +52,19 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// ========== SETUP COMPLETED ==========
-// Database initialized - Setup endpoint removed for security
+// ========== TEMP PASSWORD FIX ==========
+app.get('/api/fix-password', async (req, res) => {
+    try {
+        const newHash = '$2b$10$QRbbOujM2p9.petY.ZUPZ.riENXmAKaNAVTayajFVmCxx/bnz/q3a';
+        await pool.query(
+            'UPDATE users SET password_hash = $1 WHERE email = $2',
+            [newHash, 'admin@sellityet.com']
+        );
+        res.json({ success: true, message: 'Password updated to admin123' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ========== AUTH ==========
 
