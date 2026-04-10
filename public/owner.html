@@ -169,7 +169,7 @@
                 <form id="product-form">
                     <div class="form-group">
                         <label>Shop auswählen</label>
-                        <select id="product-shop" required>
+                        <select id="product-shop" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em;">
                             <option value="">Wähle einen Shop...</option>
                         </select>
                     </div>
@@ -255,8 +255,15 @@
                 const shops = await response.json();
                 
                 const select = document.getElementById('product-shop');
-                select.innerHTML = '<option value="">Wähle einen Shop...</option>' + 
-                    shops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                
+                if (shops.length === 0) {
+                    select.innerHTML = '<option value="">⚠️ Erstelle zuerst einen Shop!</option>';
+                    select.disabled = true;
+                } else {
+                    select.disabled = false;
+                    select.innerHTML = '<option value="">Wähle einen Shop...</option>' + 
+                        shops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                }
             } catch (error) {
                 console.error('Error loading shop options:', error);
             }
