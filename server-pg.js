@@ -52,6 +52,37 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
+// ========== ONE-TIME SETUP ==========
+app.get('/api/setup', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        const sqlPath = path.join(__dirname, 'migrations/001_initial.sql');
+        const sql = fs.readFileSync(sqlPath, 'utf8');
+        
+        await pool.query(sql);
+        
+        // Verify admin user
+        const { rows } = await pool.query(
+            'SELECT email, role FROM users WHERE email = $1',
+            ['admin@sellityet.com']
+        );
+        
+        res.json({ 
+            success: true, 
+            message: 'Database initialized successfully',
+            adminUser: rows[0] || null
+        });
+    } catch (error) {
+        console.error('Setup error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 // ========== AUTH ==========
 
 // Register
