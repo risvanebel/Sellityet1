@@ -15,8 +15,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Database setup
-const db = new sqlite3.Database('./microstore.db');
+// Database setup - In-Memory für Vercel (Test-Modus)
+const db = new sqlite3.Database(':memory:');
 
 // Initialize tables
 db.serialize(() => {
