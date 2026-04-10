@@ -3,270 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MicroStore</title>
+    <title>Sellityet - Entdecke Shops</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
-            color: #764ba2;
-            font-size: 2.5em;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            text-align: center;
-            color: #666;
-            font-size: 1.1em;
-        }
-        
-        .card {
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header {
             background: white;
             border-radius: 20px;
             padding: 30px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
         }
-        
-        .card:hover {
-            transform: translateY(-5px);
+        .header h1 { color: #333; font-size: 2.5em; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 1.2em; }
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
         }
-        
-        .card h2 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-        
-        input, button {
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1em;
-            transition: all 0.3s ease;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .btn {
+            padding: 12px 30px;
+            border-radius: 25px;
             border: none;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 1.1em;
+            font-size: 1em;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-primary { background: #FF6B6B; color: white; }
+        .btn-secondary { background: white; color: #667eea; border: 2px solid #667eea; }
+        .btn-admin { background: #333; color: white; }
         
-        button:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .emoji {
-            font-size: 1.2em;
-        }
-        
-        #message {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
-            display: none;
-        }
-        
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 2px solid #c3e6cb;
-        }
-        
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 2px solid #f5c6cb;
-        }
-        
-        .grid {
+        .shops-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
         }
-        
-        .feature-icon {
+        .shop-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .shop-card:hover { transform: translateY(-5px); }
+        .shop-header {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 3em;
+        }
+        .shop-body { padding: 25px; }
+        .shop-body h3 { color: #333; margin-bottom: 10px; font-size: 1.4em; }
+        .shop-body p { color: #666; line-height: 1.6; }
+        .loading {
             text-align: center;
-            margin-bottom: 15px;
+            color: white;
+            font-size: 1.2em;
+            padding: 50px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🛍️ MicroStore</h1>
-            <p class="subtitle">Deine eigene Shop-Plattform</p>
-        </header>
-        
-        <div id="message"></div>
-        
-        <div class="grid">
-            <div class="card">
-                <div class="feature-icon">🚀</div>
-                <h2>Registrieren</h2>
-                <input type="email" id="email" placeholder="📧 Deine E-Mail">
-                <input type="password" id="password" placeholder="🔒 Passwort">
-                <button onclick="register()">Account erstellen</button>
-            </div>
-            
-            <div class="card">
-                <div class="feature-icon">🏪</div>
-                <h2>Shop erstellen</h2>
-                <input type="text" id="shopName" placeholder="🏷️ Shop Name">
-                <input type="text" id="shopSlug" placeholder="🔗 Shop URL (z.B. mein-shop)">
-                <button onclick="createShop()">Shop anlegen</button>
-            </div>
-            
-            <div class="card">
-                <div class="feature-icon">📦</div>
-                <h2>Produkt hinzufügen</h2>
-                <input type="text" id="productName" placeholder="🏷️ Produktname">
-                <input type="number" id="productPrice" placeholder="💰 Preis (€)" step="0.01">
-                <button onclick="addProduct()">Produkt speichern</button>
+        <div class="header">
+            <h1>🛍️ Sellityet</h1>
+            <p>Entdecke einzigartige Shops und Produkte</p>
+            <div class="nav-buttons">
+                <a href="register.html" class="btn btn-primary">Registrieren</a>
+                <a href="login.html" class="btn btn-secondary">Anmelden</a>
+                <a href="admin.html" class="btn btn-admin">🔐 Admin</a>
             </div>
         </div>
         
-        <div class="card">
-            <h2>🎯 Deine Shops</h2>
-            <div id="shopsList">Lade Shops...</div>
+        <div id="shops-container" class="shops-grid">
+            <div class="loading">Lade Shops...</div>
         </div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
-        let token = localStorage.getItem('token');
-        let currentShopId = null;
-        
-        function showMessage(text, type) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = type;
-            msg.style.display = 'block';
-            setTimeout(() => msg.style.display = 'none', 5000);
-        }
-        
-        async function register() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                const res = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, role: 'seller' })
-                });
-                const data = await res.json();
-                if (data.token) {
-                    token = data.token;
-                    localStorage.setItem('token', token);
-                    showMessage('✅ Account erstellt!', 'success');
-                } else {
-                    showMessage('❌ ' + data.error, 'error');
-                }
-            } catch (err) {
-                showMessage('❌ Fehler: ' + err.message, 'error');
-            }
-        }
-        
-        async function createShop() {
-            const name = document.getElementById('shopName').value;
-            const slug = document.getElementById('shopSlug').value;
-            
-            try {
-                const res = await fetch(`${API_URL}/shops`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ name, slug, description: '', primary_color: '#FF6B6B' })
-                });
-                const data = await res.json();
-                if (data.id) {
-                    showMessage('✅ Shop erstellt!', 'success');
-                    currentShopId = data.id;
-                    loadShops();
-                } else {
-                    showMessage('❌ ' + data.error, 'error');
-                }
-            } catch (err) {
-                showMessage('❌ Fehler: ' + err.message, 'error');
-            }
-        }
-        
-        async function addProduct() {
-            const name = document.getElementById('productName').value;
-            const price = document.getElementById('productPrice').value;
-            
-            if (!currentShopId) {
-                showMessage('❌ Erst einen Shop erstellen!', 'error');
-                return;
-            }
-            
-            try {
-                const res = await fetch(`${API_URL}/shops/${currentShopId}/products`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ name, price, category: 'General' })
-                });
-                const data = await res.json();
-                if (data.id) {
-                    showMessage('✅ Produkt hinzugefügt!', 'success');
-                } else {
-                    showMessage('❌ ' + data.error, 'error');
-                }
-            } catch (err) {
-                showMessage('❌ Fehler: ' + err.message, 'error');
-            }
-        }
+        const API_URL = window.location.origin + '/api';
         
         async function loadShops() {
-            // Demo: Zeigt statische Shops
-            document.getElementById('shopsList').innerHTML = `
-                <p>🛍️ <strong>VapeWorld</strong> - Aktiv</p>
-                <p>🛍️ <strong>TechStore</strong> - Aktiv</p>
-                <p style="color: #999; margin-top: 10px;">Mehr Shops werden hier angezeigt...</p>
-            `;
+            try {
+                const response = await fetch(`${API_URL}/shops`);
+                const shops = await response.json();
+                
+                const container = document.getElementById('shops-container');
+                
+                if (shops.length === 0) {
+                    container.innerHTML = '<div class="loading">Noch keine Shops vorhanden. Werde der Erste!</div>';
+                    return;
+                }
+                
+                container.innerHTML = shops.map(shop => `
+                    <div class="shop-card" onclick="viewShop('${shop.slug}')">
+                        <div class="shop-header" style="background: ${shop.primary_color || '#FF6B6B'};">
+                            🏪
+                        </div>
+                        <div class="shop-body">
+                            <h3>${shop.name}</h3>
+                            <p>${shop.description || 'Keine Beschreibung'}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading shops:', error);
+                document.getElementById('shops-container').innerHTML = 
+                    '<div class="loading">Fehler beim Laden der Shops</div>';
+            }
+        }
+        
+        function viewShop(slug) {
+            window.location.href = `shop.html?shop=${slug}`;
         }
         
         loadShops();

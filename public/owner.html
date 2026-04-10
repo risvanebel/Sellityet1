@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mein Shop - Sellityet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.5em; }
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .tab.active { background: #FF6B6B; color: white; }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .card h2 { margin-bottom: 20px; color: #333; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            background: #FF6B6B;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .btn-success { background: #4CAF50; }
+        .btn-danger { background: #f44336; }
+        
+        .shop-list, .product-list {
+            display: grid;
+            gap: 15px;
+        }
+        .shop-item, .product-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info h3 { color: #333; margin-bottom: 5px; }
+        .item-info p { color: #666; font-size: 0.9em; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        .empty-state .icon { font-size: 4em; margin-bottom: 20px; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🏪 Shop-Manager</h1>
+            <button class="logout-btn" onclick="logout()">Abmelden</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('shops')">Meine Shops</button>
+            <button class="tab" onclick="showTab('products')">Produkte</button>
+        </div>
+        
+        <!-- Shops Tab -->
+        <div id="shops-tab">
+            <div class="card">
+                <h2>➕ Neuen Shop erstellen</h2>
+                <form id="shop-form">
+                    <div class="form-group">
+                        <label>Shop-Name</label>
+                        <input type="text" id="shop-name" required placeholder="z.B. Risbo Vapeshop">
+                    </div>
+                    <div class="form-group">
+                        <label>URL-Slug (eindeutig)</label>
+                        <input type="text" id="shop-slug" required placeholder="z.B. risbo-vape">
+                    </div>
+                    <div class="form-group">
+                        <label>Beschreibung</label>
+                        <textarea id="shop-desc" rows="3" placeholder="Was verkaufst du?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Primäre Farbe</label>
+                        <input type="color" id="shop-color" value="#FF6B6B">
+                    </div>
+                    <button type="submit" class="btn">Shop erstellen</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>📋 Meine Shops</h2>
+                <div id="my-shops" class="shop-list">
+                    <div class="loading">Lade...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Products Tab -->
+        <div id="products-tab" class="hidden">
+            <div class="card">
+                <h2>➕ Produkt hinzufügen</h2>
+                <form id="product-form">
+                    <div class="form-group">
+                        <label>Shop auswählen</label>
+                        <select id="product-shop" required>
+                            <option value="">Wähle einen Shop...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Produkt-Name</label>
+                        <input type="text" id="product-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Beschreibung</label>
+                        <textarea id="product-desc" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Preis (€)</label>
+                        <input type="number" id="product-price" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kategorie</label>
+                        <input type="text" id="product-category" placeholder="z.B. E-Liquid">
+                    </div>
+                    <button type="submit" class="btn btn-success">Produkt hinzufügen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        // Check auth
+        if (!token || user.role !== 'owner') {
+            window.location.href = 'login.html';
+        }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('shops-tab').classList.toggle('hidden', tab !== 'shops');
+            document.getElementById('products-tab').classList.toggle('hidden', tab !== 'products');
+            
+            if (tab === 'products') loadShopOptions();
+        }
+        
+        async function loadMyShops() {
+            try {
+                const response = await fetch(`${API_URL}/owner/shops`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const shops = await response.json();
+                
+                const container = document.getElementById('my-shops');
+                if (shops.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">🏪</div>
+                            <h3>Noch keine Shops</h3>
+                            <p>Erstelle deinen ersten Shop oben!</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = shops.map(shop => `
+                        <div class="shop-item">
+                            <div class="item-info">
+                                <h3>${shop.name}</h3>
+                                <p>/${shop.slug} • ${shop.is_active ? 'Aktiv' : 'Inaktiv'}</p>
+                            </div>
+                            <a href="shop.html?shop=${shop.slug}" target="_blank" class="btn">Ansehen</a>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading shops:', error);
+            }
+        }
+        
+        async function loadShopOptions() {
+            try {
+                const response = await fetch(`${API_URL}/owner/shops`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const shops = await response.json();
+                
+                const select = document.getElementById('product-shop');
+                select.innerHTML = '<option value="">Wähle einen Shop...</option>' + 
+                    shops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading shop options:', error);
+            }
+        }
+        
+        document.getElementById('shop-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('shop-name').value,
+                slug: document.getElementById('shop-slug').value,
+                description: document.getElementById('shop-desc').value,
+                primary_color: document.getElementById('shop-color').value
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/owner/shops`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Shop erstellt!');
+                    document.getElementById('shop-form').reset();
+                    loadMyShops();
+                } else {
+                    const err = await response.json();
+                    alert('Fehler: ' + (err.error || 'Unbekannter Fehler'));
+                }
+            } catch (error) {
+                alert('Netzwerkfehler');
+            }
+        });
+        
+        document.getElementById('product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                shop_id: document.getElementById('product-shop').value,
+                name: document.getElementById('product-name').value,
+                description: document.getElementById('product-desc').value,
+                price: document.getElementById('product-price').value,
+                category: document.getElementById('product-category').value
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/owner/products`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Produkt hinzugefügt!');
+                    document.getElementById('product-form').reset();
+                } else {
+                    const err = await response.json();
+                    alert('Fehler: ' + (err.error || 'Unbekannter Fehler'));
+                }
+            } catch (error) {
+                alert('Netzwerkfehler');
+            }
+        });
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+        
+        loadMyShops();
+    </script>
+</body>
+</html>

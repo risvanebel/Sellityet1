@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Sellityet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .header {
+            background: #16213e;
+            padding: 20px;
+            border-bottom: 3px solid #e94560;
+        }
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.5em; color: #e94560; }
+        .logout-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #16213e;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-card h3 { color: #aaa; font-size: 0.9em; margin-bottom: 10px; }
+        .stat-card .number { font-size: 2.5em; color: #e94560; font-weight: bold; }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: #16213e;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .tab.active { background: #e94560; }
+        
+        .data-table {
+            background: #16213e;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table-header {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            background: #0f3460;
+            padding: 15px;
+            font-weight: bold;
+        }
+        .table-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            padding: 15px;
+            border-bottom: 1px solid #0f3460;
+            align-items: center;
+        }
+        .table-row:hover { background: #1a1a3e; }
+        
+        .btn-small {
+            padding: 5px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-right: 5px;
+        }
+        .btn-view { background: #4CAF50; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        
+        .hidden { display: none; }
+        
+        .empty { padding: 50px; text-align: center; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🔐 Admin Dashboard</h1>
+            <button class="logout-btn" onclick="logout()">Abmelden</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>👤 User</h3>
+                <div class="number" id="user-count">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>🏪 Shops</h3>
+                <div class="number" id="shop-count">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>📦 Produkte</h3>
+                <div class="number" id="product-count">-</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('users')">User</button>
+            <button class="tab" onclick="showTab('shops')">Alle Shops</button>
+            <button class="tab" onclick="showTab('products')">Alle Produkte</button>
+        </div>
+        
+        <!-- Users Tab -->
+        <div id="users-tab">
+            <div class="data-table">
+                <div class="table-header">
+                    <div>ID</div>
+                    <div>Email</div>
+                    <div>Rolle</div>
+                    <div>Registriert</div>
+                    <div>Aktionen</div>
+                </div>
+                <div id="users-list"></div>
+            </div>
+        </div>
+        
+        <!-- Shops Tab -->
+        <div id="shops-tab" class="hidden">
+            <div class="data-table">
+                <div class="table-header">
+                    <div>ID</div>
+                    <div>Name</div>
+                    <div>Slug</div>
+                    <div>Besitzer</div>
+                    <div>Status</div>
+                    <div>Aktionen</div>
+                </div>
+                <div id="shops-list"></div>
+            </div>
+        </div>
+        
+        <!-- Products Tab -->
+        <div id="products-tab" class="hidden">
+            <div class="data-table">
+                <div class="table-header">
+                    <div>ID</div>
+                    <div>Name</div>
+                    <div>Preis</div>
+                    <div>Shop</div>
+                    <div>Aktionen</div>
+                </div>
+                <div id="products-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        // Check admin auth
+        if (!token || user.role !== 'admin') {
+            window.location.href = 'login.html';
+        }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('users-tab').classList.toggle('hidden', tab !== 'users');
+            document.getElementById('shops-tab').classList.toggle('hidden', tab !== 'shops');
+            document.getElementById('products-tab').classList.toggle('hidden', tab !== 'products');
+        }
+        
+        async function loadStats() {
+            try {
+                const [usersRes, shopsRes, productsRes] = await Promise.all([
+                    fetch(`${API_URL}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API_URL}/admin/shops`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API_URL}/admin/products`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                
+                const users = await usersRes.json();
+                const shops = await shopsRes.json();
+                const products = await productsRes.json();
+                
+                document.getElementById('user-count').textContent = users.length;
+                document.getElementById('shop-count').textContent = shops.length;
+                document.getElementById('product-count').textContent = products.length;
+                
+                renderUsers(users);
+                renderShops(shops);
+                renderProducts(products);
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        function renderUsers(users) {
+            const container = document.getElementById('users-list');
+            if (users.length === 0) {
+                container.innerHTML = '<div class="empty">Keine User</div>';
+                return;
+            }
+            
+            container.innerHTML = users.map(u => `
+                <div class="table-row">
+                    <div>#${u.id}</div>
+                    <div>${u.email}</div>
+                    <div>${u.role}</div>
+                    <div>${new Date(u.created_at).toLocaleDateString()}</div>
+                    <div>
+                        ${u.id !== 1 ? `<button class="btn-small btn-delete" onclick="deleteUser(${u.id})">Löschen</button>` : '<span>Admin</span>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderShops(shops) {
+            const container = document.getElementById('shops-list');
+            if (shops.length === 0) {
+                container.innerHTML = '<div class="empty">Keine Shops</div>';
+                return;
+            }
+            
+            container.innerHTML = shops.map(s => `
+                <div class="table-row">
+                    <div>#${s.id}</div>
+                    <div>${s.name}</div>
+                    <div>/${s.slug}</div>
+                    <div>${s.owner_email}</div>
+                    <div>${s.is_active ? '✅ Aktiv' : '❌ Inaktiv'}</div>
+                    <div>
+                        <a href="shop.html?shop=${s.slug}" target="_blank" class="btn-small btn-view">Ansehen</a>
+                        <button class="btn-small btn-delete" onclick="deleteShop(${s.id})">Löschen</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderProducts(products) {
+            const container = document.getElementById('products-list');
+            if (products.length === 0) {
+                container.innerHTML = '<div class="empty">Keine Produkte</div>';
+                return;
+            }
+            
+            container.innerHTML = products.map(p => `
+                <div class="table-row">
+                    <div>#${p.id}</div>
+                    <div>${p.name}</div>
+                    <div>${p.price}€</div>
+                    <div>${p.shop_name}</div>
+                    <div>
+                        <button class="btn-small btn-delete" onclick="deleteProduct(${p.id})">Löschen</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function deleteUser(id) {
+            if (!confirm('User wirklich löschen?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/users/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    loadStats();
+                } else {
+                    alert('Fehler beim Löschen');
+                }
+            } catch (error) {
+                alert('Netzwerkfehler');
+            }
+        }
+        
+        async function deleteShop(id) {
+            if (!confirm('Shop wirklich löschen? Alle Produkte werden auch gelöscht!')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/shops/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    loadStats();
+                } else {
+                    alert('Fehler beim Löschen');
+                }
+            } catch (error) {
+                alert('Netzwerkfehler');
+            }
+        }
+        
+        async function deleteProduct(id) {
+            if (!confirm('Produkt wirklich löschen?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/products/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    loadStats();
+                } else {
+                    alert('Fehler beim Löschen');
+                }
+            } catch (error) {
+                alert('Netzwerkfehler');
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+        
+        loadStats();
+    </script>
+</body>
+</html>

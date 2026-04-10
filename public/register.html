@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrieren - Sellityet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { text-align: center; color: #333; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+        
+        .role-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .role-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .role-card:hover { border-color: #667eea; }
+        .role-card.selected {
+            border-color: #FF6B6B;
+            background: #fff5f5;
+        }
+        .role-card .icon { font-size: 2.5em; margin-bottom: 10px; }
+        .role-card h3 { color: #333; margin-bottom: 5px; }
+        .role-card p { color: #666; font-size: 0.9em; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: #FF6B6B;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .login-link a { color: #667eea; text-decoration: none; }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Account erstellen</h1>
+        <p class="subtitle">Wähle, wie du Sellityet nutzen möchtest</p>
+        
+        <div class="role-selection">
+            <div class="role-card" onclick="selectRole('customer')" id="role-customer">
+                <div class="icon">🛒</div>
+                <h3>Ich möchte kaufen</h3>
+                <p>Entdecke Shops und Produkte</p>
+            </div>
+            <div class="role-card" onclick="selectRole('owner')" id="role-owner">
+                <div class="icon">🏪</div>
+                <h3>Ich möchte verkaufen</h3>
+                <p>Eröffne deinen eigenen Shop</p>
+            </div>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <form id="register-form">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" required placeholder="deine@email.com">
+            </div>
+            <div class="form-group">
+                <label>Passwort</label>
+                <input type="password" id="password" required placeholder="Mindestens 6 Zeichen">
+            </div>
+            <button type="submit" class="btn" id="submit-btn">Account erstellen</button>
+        </form>
+        
+        <div class="login-link">
+            Bereits registriert? <a href="login.html">Anmelden</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let selectedRole = null;
+        
+        function selectRole(role) {
+            selectedRole = role;
+            document.querySelectorAll('.role-card').forEach(card => card.classList.remove('selected'));
+            document.getElementById(`role-${role}`).classList.add('selected');
+        }
+        
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedRole) {
+                showError('Bitte wähle: Kaufen oder Verkaufen?');
+                return;
+            }
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('submit-btn');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Wird erstellt...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, role: selectedRole })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Weiterleitung basierend auf Rolle
+                    if (data.user.role === 'owner') {
+                        window.location.href = 'owner.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                } else {
+                    showError(data.error || 'Registrierung fehlgeschlagen');
+                }
+            } catch (error) {
+                showError('Netzwerkfehler. Bitte erneut versuchen.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Account erstellen';
+            }
+        });
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
