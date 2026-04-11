@@ -12,11 +12,12 @@ if (process.env.CLOUDINARY_URL) {
     secure: true
   });
 } else {
-  // Use individual variables
+  // Fallback to direct config (replace with env vars in production)
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: 'dqjv09qfc',
+    api_key: '194236154687873',
+    api_secret: 'XjdGkc0-_V-Q-kst6Go6-SCQnAM',
+    secure: true
   });
 }
 
