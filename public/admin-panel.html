@@ -69,8 +69,10 @@
             document.querySelector('.user-menu div div:first-child').textContent = userRole === 'admin' ? 'Master Admin' : 'Shop Owner';
         }
         
-        // Build nav on load
-        buildNavigation();
+        // Build nav after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            buildNavigation();
+        });
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
