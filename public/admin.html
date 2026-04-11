@@ -1468,35 +1468,38 @@
         }
         
         async function savePaymentSettings() {
-            console.log('savePaymentSettings called');
+            const errorDiv = document.getElementById('payment-settings-error');
             
-            // Check auth
+            // Auth check mit klarer Fehlermeldung
             if (!authToken) {
-                console.error('No auth token');
-                alert('Nicht eingeloggt. Bitte neu anmelden.');
+                errorDiv.innerHTML = '<div class="error-message">❌ Fehler 401: Nicht eingeloggt. Bitte melde dich neu an.</div>';
                 return;
             }
             
-            // Get selected payment methods
-            const selectedMethods = Array.from(document.querySelectorAll('.payment-method-check:checked'))
-                .map(cb => cb.value);
+            // Hole Checkboxen
+            const checkboxes = document.querySelectorAll('.payment-method-check:checked');
+            if (checkboxes.length === 0) {
+                errorDiv.innerHTML = '<div class="error-message">❌ Fehler: Wähle mindestens eine Zahlungsmethode aus.</div>';
+                return;
+            }
             
-            console.log('Selected methods:', selectedMethods);
+            const selectedMethods = Array.from(checkboxes).map(cb => cb.value);
             
             const data = {
                 payment_methods: selectedMethods,
-                stripe_public_key: document.getElementById('stripe-public-key')?.value || '',
-                stripe_secret_key: document.getElementById('stripe-secret-key')?.value || '',
-                paypal_client_id: document.getElementById('paypal-client-id')?.value || '',
-                paypal_client_secret: document.getElementById('paypal-client-secret')?.value || '',
+                stripe_public_key: document.getElementById('stripe-public-key')?.value || null,
+                stripe_secret_key: document.getElementById('stripe-secret-key')?.value || null,
+                paypal_client_id: document.getElementById('paypal-client-id')?.value || null,
+                paypal_client_secret: document.getElementById('paypal-client-secret')?.value || null,
                 paypal_mode: document.getElementById('paypal-mode')?.value || 'sandbox',
-                bank_account_name: document.getElementById('bank-account-name')?.value || '',
-                bank_account_iban: document.getElementById('bank-account-iban')?.value || '',
-                bank_account_bic: document.getElementById('bank-account-bic')?.value || '',
-                bank_transfer_instructions: document.getElementById('bank-transfer-instructions')?.value || ''
+                bank_account_name: document.getElementById('bank-account-name')?.value || null,
+                bank_account_iban: document.getElementById('bank-account-iban')?.value || null,
+                bank_account_bic: document.getElementById('bank-account-bic')?.value || null,
+                bank_transfer_instructions: document.getElementById('bank-transfer-instructions')?.value || null
             };
             
-            console.log('Sending data:', data);
+            // Zeige Lade-Status
+            errorDiv.innerHTML = '<div style="color: #2563EB;">⏳ Speichere...</div>';
             
             try {
                 const res = await fetch(`${API_URL}/owner/shops/payment-settings`, {
@@ -1508,21 +1511,28 @@
                     body: JSON.stringify(data)
                 });
                 
-                console.log('Response status:', res.status);
-                
                 if (res.ok) {
-                    document.getElementById('payment-settings-error').innerHTML = 
-                        '<div class="alert alert-success">✅ Zahlungseinstellungen gespeichert!</div>';
+                    errorDiv.innerHTML = '<div class="alert alert-success">✅ Zahlungseinstellungen erfolgreich gespeichert!</div>';
                 } else {
-                    const err = await res.json();
-                    console.error('Error response:', err);
-                    document.getElementById('payment-settings-error').innerHTML = 
-                        `<div class="error-message">${err.error || 'Fehler beim Speichern'}</div>`;
+                    let errorMsg = '❌ Fehler beim Speichern';
+                    
+                    if (res.status === 400) errorMsg = '❌ Fehler 400: Ungültige Daten gesendet';
+                    else if (res.status === 401) errorMsg = '❌ Fehler 401: Nicht autorisiert. Bitte neu einloggen.';
+                    else if (res.status === 404) errorMsg = '❌ Fehler 404: Kein Shop gefunden. Erstelle zuerst einen Shop.';
+                    else if (res.status === 500) errorMsg = '❌ Fehler 500: Server-Fehler. Bitte später erneut versuchen.';
+                    
+                    try {
+                        const err = await res.json();
+                        if (err.error) errorMsg += `<br><small>${err.error}</small>`;
+                        if (err.details) errorMsg += `<br><small>Details: ${err.details}</small>`;
+                    } catch (e) {
+                        // JSON parse failed, use default message
+                    }
+                    
+                    errorDiv.innerHTML = `<div class="error-message">${errorMsg}</div>`;
                 }
             } catch (e) {
-                console.error('Exception:', e);
-                document.getElementById('payment-settings-error').innerHTML = 
-                    `<div class="error-message">Fehler: ${e.message}</div>`;
+                errorDiv.innerHTML = `<div class="error-message">❌ Netzwerk-Fehler: ${e.message}<br>Prüfe deine Internetverbindung.</div>`;
             }
         }
         
