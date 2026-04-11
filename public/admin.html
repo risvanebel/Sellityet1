@@ -538,6 +538,12 @@
                     <label class="form-label">Bild-URL</label>
                     <input type="text" class="form-input" id="product-image" placeholder="https://...">
                 </div>
+                
+                <div class="form-group" id="variants-section" style="display: none;">
+                    <label class="form-label">Varianten</label>
+                    <div id="variants-list" style="margin-bottom: 12px;"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addVariantField()">+ Variante hinzufügen</button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeProductModal()">Abbrechen</button>
@@ -871,8 +877,14 @@
                     document.getElementById('product-stock').value = product.quantity || 0;
                     document.getElementById('product-min-stock').value = product.min_stock || 5;
                     document.getElementById('product-image').value = product.image_urls && product.image_urls[0] || '';
+                    
+                    // Show variants section for existing products
+                    document.getElementById('variants-section').style.display = 'block';
+                    loadVariants(productId);
                 }
             } else {
+                // Show variants section for new products too
+                document.getElementById('variants-section').style.display = 'block';
                 // Clear form
                 document.getElementById('product-name').value = '';
                 document.getElementById('product-sku').value = '';
@@ -891,6 +903,78 @@
         
         function closeProductModal() {
             document.getElementById('product-modal').classList.remove('active');
+            document.getElementById('variants-section').style.display = 'none';
+            document.getElementById('variants-list').innerHTML = '';
+        }
+        
+        let variantCount = 0;
+        function addVariantField() {
+            variantCount++;
+            const div = document.createElement('div');
+            div.className = 'form-row';
+            div.style.marginBottom = '12px';
+            div.innerHTML = `
+                <div class="form-group" style="flex: 2;">
+                    <input type="text" class="form-input variant-name" placeholder="Variante (z.B. 10ml, Rot)" style="margin-bottom: 0;">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input variant-price" placeholder="Preis ±" step="0.01" style="margin-bottom: 0;">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input variant-stock" placeholder="Bestand" style="margin-bottom: 0;">
+                </div>
+                <button type="button" class="btn btn-icon" onclick="this.parentElement.remove()" style="height: 42px;">🗑️</button>
+            `;
+            document.getElementById('variants-list').appendChild(div);
+        }
+        
+        async function loadVariants(productId) {
+            try {
+                const res = await fetch(`${API_URL}/owner/products/${productId}/variants`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const variants = await res.json();
+                
+                if (variants.length > 0) {
+                    document.getElementById('variants-section').style.display = 'block';
+                    document.getElementById('variants-list').innerHTML = '';
+                    variants.forEach(v => {
+                        variantCount++;
+                        const div = document.createElement('div');
+                        div.className = 'form-row';
+                        div.style.marginBottom = '12px';
+                        div.innerHTML = `
+                            <div class="form-group" style="flex: 2;">
+                                <input type="text" class="form-input variant-name" value="${v.name}" placeholder="Variante" style="margin-bottom: 0;">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" class="form-input variant-price" value="${v.price_adjustment}" placeholder="Preis ±" step="0.01" style="margin-bottom: 0;">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" class="form-input variant-stock" value="${v.stock}" placeholder="Bestand" style="margin-bottom: 0;">
+                            </div>
+                            <input type="hidden" class="variant-id" value="${v.id}">
+                            <button type="button" class="btn btn-icon" onclick="deleteVariant(${v.id}, this)" style="height: 42px;">🗑️</button>
+                        `;
+                        document.getElementById('variants-list').appendChild(div);
+                    });
+                }
+            } catch (e) {
+                console.error('Load variants error:', e);
+            }
+        }
+        
+        async function deleteVariant(variantId, btn) {
+            if (!confirm('Variante löschen?')) return;
+            try {
+                await fetch(`${API_URL}/owner/variants/${variantId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                btn.parentElement.remove();
+            } catch (e) {
+                alert('Fehler beim Löschen');
+            }
         }
         
         async function saveProduct() {
@@ -950,6 +1034,31 @@
                 });
                 
                 if (res.ok) {
+                    const product = await res.json();
+                    
+                    // Save variants
+                    const variantRows = document.querySelectorAll('#variants-list > div');
+                    for (const row of variantRows) {
+                        const name = row.querySelector('.variant-name').value;
+                        const priceAdj = row.querySelector('.variant-price').value;
+                        const stock = row.querySelector('.variant-stock').value;
+                        
+                        if (name) {
+                            await fetch(`${API_URL}/owner/products/${product.id || id}/variants`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${authToken}`
+                                },
+                                body: JSON.stringify({
+                                    name,
+                                    price_adjustment: parseFloat(priceAdj) || 0,
+                                    stock: parseInt(stock) || 0
+                                })
+                            });
+                        }
+                    }
+                    
                     closeProductModal();
                     loadProducts();
                     loadDashboard();
