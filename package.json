@@ -4,9 +4,8 @@
   "description": "MicroStore - White Label Shop Platform",
   "main": "index.js",
   "scripts": {
-    "start": "node server-pg.js",
-    "migrate": "node scripts/migrate.js",
-    "dev": "nodemon server-pg.js"
+    "start": "node index.js",
+    "test": "node tests/api.test.js"
   },
   "dependencies": {
     "express": "^4.18.2",
