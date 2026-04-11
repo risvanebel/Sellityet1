@@ -16,6 +16,7 @@ const {
   getStripeClient
 } = require('./src/config/payments');
 const { generateInvoiceHTML } = require('./src/utils/invoice');
+const { detectTenant, requireTenant } = require('./src/middleware/tenant');
 require('dotenv').config();
 
 const app = express();
@@ -34,6 +35,10 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Tenant detection middleware (before static files)
+app.use(detectTenant);
+
 app.use(express.static('public'));
 
 // Auth middleware
@@ -535,6 +540,161 @@ app.post('/api/coupons/validate', async (req, res) => {
     }
 });
 
+// ========== SUBDOMAIN / TENANT ROUTES ==========
+
+// Get current shop by subdomain (for frontend)
+app.get('/api/shop/current', async (req, res) => {
+    if (!req.shop) {
+        return res.status(404).json({ error: 'No shop found for this domain' });
+    }
+    
+    try {
+        // Return public shop info
+        const { rows } = await pool.query(`
+            SELECT s.id, s.name, s.slug, s.description, s.logo_url, s.primary_color,
+                   s.subdomain, s.custom_domain
+            FROM shops s
+            WHERE s.id = $1 AND s.is_active = true
+        `, [req.shop.id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Shop not found or inactive' });
+        }
+        
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Get current shop error:', error);
+        res.status(500).json({ error: 'Failed to fetch shop' });
+    }
+});
+
+// Get products for current shop (subdomain-based)
+app.get('/api/shop/products', async (req, res) => {
+    if (!req.shop) {
+        return res.status(404).json({ error: 'No shop found for this domain' });
+    }
+    
+    try {
+        const { rows } = await pool.query(`
+            SELECT p.*, c.name as category_name
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.shop_id = $1 AND p.status = 'published'
+            ORDER BY p.created_at DESC
+        `, [req.shop.id]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Get shop products error:', error);
+        res.status(500).json({ error: 'Failed to fetch products' });
+    }
+});
+
+// ========== CUSTOMER AUTH (Shop-bound) ==========
+
+// Register customer (bound to current shop)
+app.post('/api/auth/register-customer', async (req, res) => {
+    if (!req.shop) {
+        return res.status(400).json({ error: 'No shop context' });
+    }
+    
+    const { email, password, first_name, last_name } = req.body;
+    
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    try {
+        // Check if customer exists in this shop
+        const { rows: existing } = await pool.query(
+            'SELECT id FROM customers WHERE email = $1 AND shop_id = $2',
+            [email.toLowerCase(), req.shop.id]
+        );
+        
+        if (existing.length > 0) {
+            return res.status(409).json({ error: 'Email already registered in this shop' });
+        }
+        
+        const hash = await bcrypt.hash(password, 10);
+        
+        const { rows } = await pool.query(`
+            INSERT INTO customers (shop_id, email, password_hash, first_name, last_name)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, email, first_name, last_name, created_at
+        `, [req.shop.id, email.toLowerCase(), hash, first_name || null, last_name || null]);
+        
+        const customer = rows[0];
+        const token = jwt.sign(
+            { id: customer.id, email: customer.email, shop_id: req.shop.id, type: 'customer' },
+            JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+        
+        res.status(201).json({
+            token,
+            customer: {
+                id: customer.id,
+                email: customer.email,
+                first_name: customer.first_name,
+                last_name: customer.last_name
+            }
+        });
+    } catch (error) {
+        console.error('Customer registration error:', error);
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+// Login customer (bound to current shop)
+app.post('/api/auth/login-customer', async (req, res) => {
+    if (!req.shop) {
+        return res.status(400).json({ error: 'No shop context' });
+    }
+    
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    try {
+        const { rows } = await pool.query(
+            'SELECT * FROM customers WHERE email = $1 AND shop_id = $2',
+            [email.toLowerCase(), req.shop.id]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        const customer = rows[0];
+        const valid = await bcrypt.compare(password, customer.password_hash);
+        
+        if (!valid) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        const token = jwt.sign(
+            { id: customer.id, email: customer.email, shop_id: req.shop.id, type: 'customer' },
+            JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+        
+        res.json({
+            token,
+            customer: {
+                id: customer.id,
+                email: customer.email,
+                first_name: customer.first_name,
+                last_name: customer.last_name
+            }
+        });
+    } catch (error) {
+        console.error('Customer login error:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
 // ========== PUBLIC ==========
 
 // Get all shops
@@ -641,16 +801,19 @@ app.post('/api/owner/shops', authMiddleware, requireRole('owner', 'admin'), asyn
     }
     
     try {
+        // Use slug as subdomain (they should match for simplicity)
+        const subdomain = slug;
+        
         const { rows } = await pool.query(`
-            INSERT INTO shops (owner_id, name, slug, description, primary_color)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO shops (owner_id, name, slug, subdomain, description, primary_color)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
-        `, [req.user.id, name, slug, description, primary_color || '#2563EB']);
+        `, [req.user.id, name, slug, subdomain, description, primary_color || '#2563EB']);
         
         res.status(201).json(rows[0]);
     } catch (error) {
         if (error.code === '23505') {
-            return res.status(400).json({ error: 'Slug already exists' });
+            return res.status(400).json({ error: 'Slug or subdomain already exists' });
         }
         console.error('Create shop error:', error);
         res.status(500).json({ error: 'Failed to create shop' });

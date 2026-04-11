@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kunden Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .shop-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .shop-logo {
+            width: 80px;
+            height: 80px;
+            background: #3B82F6;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin-bottom: 16px;
+        }
+        .shop-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .shop-hint {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #3B82F6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #2563EB;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .error {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        .error.show { display: block; }
+        .links {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .links a {
+            color: #3B82F6;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            color: #9CA3AF;
+            font-size: 14px;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #E5E7EB;
+        }
+        .divider span {
+            padding: 0 16px;
+        }
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #E5E7EB;
+        }
+        .btn-secondary:hover {
+            background: #F9FAFB;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="shop-header">
+            <div class="shop-logo" id="shop-logo">🏪</div>
+            <div class="shop-name" id="shop-name">Laden...</div>
+            <div class="shop-hint">Kunden-Login für diesen Shop</div>
+        </div>
+        
+        <div id="error" class="error"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label>E-Mail</label>
+                <input type="email" id="email" required placeholder="ihre@email.de">
+            </div>
+            <div class="form-group">
+                <label>Passwort</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" id="submitBtn">Anmelden</button>
+        </form>
+        
+        <div class="divider"><span>oder</span></div>
+        
+        <button class="btn-secondary" onclick="window.location.href='/customer-register.html'" style="margin-bottom: 12px;">
+            Neuen Account erstellen
+        </button>
+        
+        <div class="links">
+            <a href="/shop-home.html">← Zurück zum Shop</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        let currentShop = null;
+
+        async function loadShopContext() {
+            try {
+                const res = await fetch(`${API_URL}/shop/current`);
+                if (res.ok) {
+                    currentShop = await res.json();
+                    document.getElementById('shop-name').textContent = currentShop.name;
+                    document.getElementById('shop-logo').style.background = currentShop.primary_color || '#3B82F6';
+                }
+            } catch (error) {
+                console.error('Error loading shop:', error);
+            }
+        }
+
+        // Check if already logged in as customer for this shop
+        const customerToken = localStorage.getItem('customer_token');
+        const customerShopId = localStorage.getItem('customer_shop_id');
+        
+        if (customerToken && customerShopId) {
+            // Verify token is still valid
+            fetch(`${API_URL}/auth/verify-customer`, {
+                headers: { 'Authorization': `Bearer ${customerToken}` }
+            }).then(res => {
+                if (res.ok) {
+                    window.location.href = '/customer-account.html';
+                }
+            }).catch(() => {
+                localStorage.removeItem('customer_token');
+                localStorage.removeItem('customer_shop_id');
+            });
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const errorDiv = document.getElementById('error');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Anmelden...';
+            errorDiv.classList.remove('show');
+            
+            try {
+                const res = await fetch(`${API_URL}/auth/login-customer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        password,
+                        shop_id: currentShop?.id 
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    localStorage.setItem('customer_token', data.token);
+                    localStorage.setItem('customer_shop_id', currentShop?.id);
+                    localStorage.setItem('customer', JSON.stringify(data.customer));
+                    window.location.href = '/customer-account.html';
+                } else {
+                    errorDiv.textContent = data.error || 'Anmeldung fehlgeschlagen';
+                    errorDiv.classList.add('show');
+                }
+            } catch (e) {
+                errorDiv.textContent = 'Verbindungsfehler';
+                errorDiv.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Anmelden';
+            }
+        });
+
+        // Load shop context
+        loadShopContext();
+    </script>
+</body>
+</html>
