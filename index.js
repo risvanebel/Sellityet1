@@ -57,7 +57,25 @@ app.get('/shop/:slug', (req, res) => {
     res.sendFile(__dirname + '/public/shop-view.html');
 });
 
-// ========== SECURITY: TEMP ENDPOINTS REMOVED ==========
+// ========== SETUP / MIGRATION ==========
+app.get('/api/setup', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Run variants migration
+        const sqlPath = path.join(__dirname, 'migrations/002_variants.sql');
+        if (fs.existsSync(sqlPath)) {
+            const sql = fs.readFileSync(sqlPath, 'utf8');
+            await pool.query(sql);
+        }
+        
+        res.json({ success: true, message: 'Setup complete' });
+    } catch (error) {
+        console.error('Setup error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ========== AUTH ==========
 
