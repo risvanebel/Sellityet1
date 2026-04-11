@@ -589,9 +589,22 @@
         let allProducts = [];
         let allOrders = [];
         
-        // Check auth
+        // Check auth - redirect if no token
         if (!authToken) {
             window.location.href = '/login.html';
+        } else {
+            // Verify token is valid
+            fetch(`${API_URL}/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            }).then(res => {
+                if (!res.ok) {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html';
+                }
+            }).catch(() => {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            });
         }
         
         function toggleSidebar() {
