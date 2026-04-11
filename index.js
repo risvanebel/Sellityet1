@@ -2211,7 +2211,7 @@ app.post('/api/orders', async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Create order error:', error);
-        res.status(500).json({ error: 'Failed to create order' });
+        res.status(500).json({ error: 'Failed to create order', details: error.message });
     } finally {
         client.release();
     }
