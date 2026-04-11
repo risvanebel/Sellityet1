@@ -341,6 +341,9 @@
                     <div class="nav-item" onclick="showSection('orders')">
                         <span>Bestellungen</span>
                     </div>
+                    <div class="nav-item" onclick="showSection('coupons')">
+                        <span>🎫 Gutscheine</span>
+                    </div>
                     <div class="nav-item" onclick="showSection('shop')">
                         <span>Shop-Einstellungen</span>
                     </div>
@@ -453,6 +456,17 @@
                                 <div class="loading"><div class="spinner"></div>Lade Bestellungen...</div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Coupons -->
+                <div id="coupons" class="section">
+                    <div class="content-header">
+                        <h2 class="header-title">🎫 Gutscheine</h2>
+                        <button class="btn btn-primary" onclick="openCouponModal()">+ Neuer Gutschein</button>
+                    </div>
+                    <div id="coupons-container">
+                        <div class="loading"><div class="spinner"></div>Lade Gutscheine...</div>
                     </div>
                 </div>
 
@@ -641,6 +655,7 @@
                 'dashboard': 'Dashboard',
                 'products': 'Produkte',
                 'orders': 'Bestellungen',
+                'coupons': 'Gutscheine',
                 'shop': 'Shop-Einstellungen'
             };
             document.getElementById('page-title').textContent = titles[section];
@@ -649,6 +664,8 @@
             const actionsDiv = document.getElementById('header-actions');
             if (section === 'products') {
                 actionsDiv.innerHTML = '<button class="btn btn-primary" onclick="openProductModal()">+ Neues Produkt</button>';
+            } else if (section === 'coupons') {
+                actionsDiv.innerHTML = '<button class="btn btn-primary" onclick="openCouponModal()">+ Neuer Gutschein</button>';
             } else {
                 actionsDiv.innerHTML = '';
             }
@@ -657,6 +674,7 @@
             if (section === 'dashboard') loadDashboard();
             if (section === 'products') loadProducts();
             if (section === 'orders') loadOrders();
+            if (section === 'coupons') loadCoupons();
             if (section === 'shop') loadShop();
         }
         
@@ -895,6 +913,161 @@
             });
             
             renderOrders(filtered);
+        }
+        
+        // ========== COUPONS ==========
+        
+        async function loadCoupons() {
+            try {
+                const res = await fetch(`${API_URL}/owner/coupons`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) {
+                    document.getElementById('coupons-container').innerHTML = 
+                        '<div class="error-message">Fehler beim Laden der Gutscheine</div>';
+                    return;
+                }
+                
+                const coupons = await res.json();
+                renderCoupons(coupons);
+            } catch (e) {
+                console.error('Load coupons error:', e);
+                document.getElementById('coupons-container').innerHTML = 
+                    '<div class="error-message">Fehler beim Laden</div>';
+            }
+        }
+        
+        function renderCoupons(coupons) {
+            if (coupons.length === 0) {
+                document.getElementById('coupons-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎫</div>
+                        <h3>Noch keine Gutscheine</h3>
+                        <p>Erstelle Gutscheine für Rabattaktionen.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Rabatt</th>
+                                <th>Verwendet</th>
+                                <th>Gültig bis</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${coupons.map(c => `
+                                <tr>
+                                    <td><strong>${c.code}</strong></td>
+                                    <td>
+                                        ${c.discount_type === 'percentage' 
+                                            ? `${c.discount_value}%` 
+                                            : `€${c.discount_value}`}
+                                    </td>
+                                    <td>${c.times_used || 0} / ${c.usage_limit || '∞'}</td>
+                                    <td>${c.valid_until ? new Date(c.valid_until).toLocaleDateString('de-DE') : 'Unbegrenzt'}</td>
+                                    <td>
+                                        <span class="badge ${c.is_active ? 'badge-success' : 'badge-neutral'}">
+                                            ${c.is_active ? 'Aktiv' : 'Inaktiv'}
+                                        </span>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button class="btn btn-icon" onclick="toggleCoupon(${c.id}, ${!c.is_active})" title="${c.is_active ? 'Deaktivieren' : 'Aktivieren'}">
+                                            ${c.is_active ? '🚫' : '✅'}
+                                        </button>
+                                        <button class="btn btn-icon" onclick="deleteCoupon(${c.id})" title="Löschen">🗑️</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('coupons-container').innerHTML = html;
+        }
+        
+        async function toggleCoupon(id, isActive) {
+            try {
+                const res = await fetch(`${API_URL}/owner/coupons/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ is_active: isActive })
+                });
+                
+                if (res.ok) {
+                    loadCoupons();
+                }
+            } catch (e) {
+                alert('Fehler beim Aktualisieren');
+            }
+        }
+        
+        async function deleteCoupon(id) {
+            if (!confirm('Gutschein wirklich löschen?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/coupons/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (res.ok) {
+                    loadCoupons();
+                }
+            } catch (e) {
+                alert('Fehler beim Löschen');
+            }
+        }
+        
+        function openCouponModal() {
+            const code = prompt('Gutschein-Code (z.B. SUMMER20):');
+            if (!code) return;
+            
+            const type = confirm('Prozentualer Rabatt? (OK=%, Abbrechen=€)') ? 'percentage' : 'fixed_amount';
+            const value = parseFloat(prompt('Rabatt-Wert (z.B. 20 für 20% oder 20€):'));
+            if (!value || value <= 0) return;
+            
+            const usageLimit = parseInt(prompt('Maximale Verwendungen (leer=unbegrenzt):') || '0') || null;
+            
+            createCoupon(code, type, value, usageLimit);
+        }
+        
+        async function createCoupon(code, type, value, usageLimit) {
+            try {
+                const res = await fetch(`${API_URL}/owner/coupons`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        code: code.toUpperCase(),
+                        discount_type: type,
+                        discount_value: value,
+                        usage_limit: usageLimit
+                    })
+                });
+                
+                if (res.ok) {
+                    loadCoupons();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Fehler beim Erstellen');
+                }
+            } catch (e) {
+                alert('Fehler beim Erstellen');
+            }
         }
         
         function downloadInvoice(orderId) {
