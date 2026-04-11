@@ -955,6 +955,35 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
     }
 });
 
+// PRODUCT CREATION AUDIT LOG
+const productCreationLog = [];
+
+function logProductCreation(userId, userEmail, productName, source) {
+    const entry = {
+        timestamp: new Date().toISOString(),
+        userId,
+        userEmail,
+        productName,
+        source,
+        userAgent: 'API'
+    };
+    productCreationLog.push(entry);
+    console.log(`📝 PRODUCT CREATED: ${JSON.stringify(entry)}`);
+    
+    // Keep only last 100 entries
+    if (productCreationLog.length > 100) {
+        productCreationLog.shift();
+    }
+}
+
+// View audit log (admin only)
+app.get('/api/admin/product-audit', authMiddleware, requireRole('admin'), async (req, res) => {
+    res.json({
+        recentCreations: productCreationLog.slice(-20),
+        totalLogged: productCreationLog.length
+    });
+});
+
 // ANTI-SPAM: Block automatic product creation
 const BLOCKED_PRODUCT_NAMES = ['test', 'produkt', 'e-liquid', 'hardware', 'demo', 'sample'];
 const MAX_PRODUCTS_PER_MINUTE = 5;
@@ -1045,6 +1074,9 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
         `, [product.id, initial_quantity || 0, 5]);
         
         await client.query('COMMIT');
+        
+        // Log product creation for audit
+        logProductCreation(req.user.id, req.user.email, product.name, 'manual_api');
         
         res.status(201).json(product);
     } catch (error) {
