@@ -388,7 +388,7 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
 
 // Create product
 app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
-    const { shop_id, name, description, price, category_id, sku, status, initial_quantity } = req.body;
+    const { shop_id, name, description, price, category_id, sku, status, initial_quantity, image_urls } = req.body;
     
     if (!shop_id || !name || !price) {
         return res.status(400).json({ error: 'Shop ID, name, and price are required' });
@@ -410,12 +410,12 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
             return res.status(403).json({ error: 'Not your shop' });
         }
         
-        // Create product
+        // Create product with image_urls
         const { rows: productRows } = await client.query(`
-            INSERT INTO products (shop_id, category_id, name, description, price, sku, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO products (shop_id, category_id, name, description, price, sku, status, image_urls)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
-        `, [shop_id, category_id, name, description, price, sku, status || 'draft']);
+        `, [shop_id, category_id, name, description, price, sku, status || 'draft', image_urls ? JSON.stringify(image_urls) : null]);
         
         const product = productRows[0];
         
@@ -439,19 +439,32 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
 
 // Update product
 app.put('/api/owner/products/:id', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
-    const { name, description, price, category_id, sku, status } = req.body;
+    const { name, description, price, category_id, sku, status, image_urls } = req.body;
     const productId = req.params.id;
     
     try {
+        // Build update fields dynamically
+        let updateFields = ['name = $1', 'description = $2', 'price = $3', 'category_id = $4', 
+                           'sku = $5', 'status = $6', 'updated_at = CURRENT_TIMESTAMP'];
+        let params = [name, description, price, category_id, sku, status];
+        let paramIndex = 7;
+        
+        if (image_urls !== undefined) {
+            updateFields.push(`image_urls = $${paramIndex}`);
+            params.push(image_urls ? JSON.stringify(image_urls) : null);
+            paramIndex++;
+        }
+        
+        params.push(productId, req.user.id);
+        
         // Verify ownership through shop
         const { rows } = await pool.query(`
             UPDATE products p
-            SET name = $1, description = $2, price = $3, category_id = $4, 
-                sku = $5, status = $6, updated_at = CURRENT_TIMESTAMP
+            SET ${updateFields.join(', ')}
             FROM shops s
-            WHERE p.id = $7 AND p.shop_id = s.id AND s.owner_id = $8
+            WHERE p.id = $${paramIndex} AND p.shop_id = s.id AND s.owner_id = $${paramIndex + 1}
             RETURNING p.*
-        `, [name, description, price, category_id, sku, status, productId, req.user.id]);
+        `, params);
         
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Product not found or not yours' });
