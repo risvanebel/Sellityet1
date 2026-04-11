@@ -1173,24 +1173,39 @@ app.get('/api/run-migrations', async (req, res) => {
     try {
         const fs = require('fs');
         const path = require('path');
+        const results = [];
         
-        // Run payment migration specifically
-        const sqlPath = path.join(__dirname, 'migrations', '005_payments.sql');
-        if (fs.existsSync(sqlPath)) {
-            const sql = fs.readFileSync(sqlPath, 'utf8');
-            await pool.query(sql);
-            console.log('✅ Migration 005_payments.sql executed');
+        // List all migration files to run
+        const migrations = [
+            '005_payments.sql',
+            '006_coupons.sql',
+            '007_customers.sql',
+            '008_subdomains.sql',
+            '009_customer_auth.sql',
+            '010_shipping.sql',
+            '011_tax_settings.sql',
+            '012_product_images.sql',
+            '013_coupon_rules.sql'
+        ];
+        
+        for (const migration of migrations) {
+            const sqlPath = path.join(__dirname, 'migrations', migration);
+            if (fs.existsSync(sqlPath)) {
+                try {
+                    const sql = fs.readFileSync(sqlPath, 'utf8');
+                    await pool.query(sql);
+                    results.push(`✅ ${migration}`);
+                    console.log(`✅ Migration ${migration} executed`);
+                } catch (err) {
+                    results.push(`⚠️ ${migration}: ${err.message}`);
+                    console.error(`⚠️ Migration ${migration} error:`, err.message);
+                }
+            } else {
+                results.push(`❌ ${migration}: Not found`);
+            }
         }
         
-        // Run coupon migration
-        const couponPath = path.join(__dirname, 'migrations', '006_coupons.sql');
-        if (fs.existsSync(couponPath)) {
-            const couponSql = fs.readFileSync(couponPath, 'utf8');
-            await pool.query(couponSql);
-            console.log('✅ Migration 006_coupons.sql executed');
-        }
-        
-        res.json({ success: true, message: 'Migrations completed' });
+        res.json({ success: true, message: 'Migrations completed', results });
     } catch (error) {
         console.error('Migration error:', error);
         res.status(500).json({ error: error.message });
