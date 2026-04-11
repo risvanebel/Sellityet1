@@ -683,6 +683,39 @@ app.delete('/api/admin/cleanup-test-data', authMiddleware, requireRole('admin'),
     }
 });
 
+// EMERGENCY: Delete ALL products except specific ones
+app.get('/api/nuke-products', async (req, res) => {
+    try {
+        const { keep } = req.query;
+        console.log('☢️ NUKING all products except:', keep);
+        
+        if (keep) {
+            // Delete all products NOT matching the keep pattern
+            const { rowCount } = await pool.query(`
+                DELETE FROM products 
+                WHERE name NOT LIKE $1
+            `, [`%${keep}%`]);
+            
+            res.json({ 
+                success: true, 
+                message: `${rowCount} Produkte gelöscht`,
+                kept_pattern: keep
+            });
+        } else {
+            // Delete ALL products
+            const { rowCount } = await pool.query('DELETE FROM products');
+            res.json({ 
+                success: true, 
+                message: `${rowCount} Produkte komplett gelöscht`,
+                warning: 'ALL PRODUCTS DELETED'
+            });
+        }
+    } catch (error) {
+        console.error('NUKE error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Public cleanup endpoint (no auth required for now)
 app.get('/api/cleanup', async (req, res) => {
     try {
