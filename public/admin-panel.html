@@ -763,15 +763,17 @@
         if (!authToken) {
             window.location.href = '/login.html';
         } else {
-            // Verify token is valid and load shop
-            fetch(`${API_URL}/admin/stats`, {
+            // Verify token is valid (works for both admin and owner)
+            fetch(`${API_URL}/owner/shops`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
             }).then(res => {
                 if (!res.ok) {
+                    console.log('Token invalid, redirecting to login');
                     localStorage.removeItem('token');
+                    localStorage.removeItem('user');
                     window.location.href = '/login.html';
                 } else {
-                    // Load shop data for all users
+                    // Token valid, check if we need to create shop
                     loadShop().then(() => {
                         // If no shop exists, show shop creation modal
                         if (!currentShop) {
@@ -784,8 +786,10 @@
                         }
                     });
                 }
-            }).catch(() => {
+            }).catch((err) => {
+                console.error('Auth check failed:', err);
                 localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 window.location.href = '/login.html';
             });
         }
