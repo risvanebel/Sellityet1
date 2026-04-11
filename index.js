@@ -657,6 +657,29 @@ app.post('/api/owner/shops', authMiddleware, requireRole('owner', 'admin'), asyn
     }
 });
 
+// Delete all test products (admin only)
+app.delete('/api/admin/cleanup-test-data', authMiddleware, requireRole('admin'), async (req, res) => {
+    try {
+        // Delete products with test SKUs or names containing 'Test'
+        const { rowCount } = await pool.query(`
+            DELETE FROM products 
+            WHERE sku LIKE 'TEST%' 
+               OR name LIKE '%Test%'
+               OR name LIKE '%test%'
+               OR created_at < CURRENT_TIMESTAMP - INTERVAL '1 day'
+        `);
+        
+        res.json({ 
+            success: true, 
+            message: `${rowCount} Test-Produkte gelöscht`,
+            deleted_count: rowCount
+        });
+    } catch (error) {
+        console.error('Cleanup error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Emergency DB fix endpoint
 app.get('/api/fix-db', async (req, res) => {
     try {
