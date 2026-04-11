@@ -66,12 +66,34 @@ app.get('/api/upload/test', async (req, res) => {
     }
 });
 
+// Multer error handler middleware
+function handleMulterError(err, req, res, next) {
+    if (err instanceof multer.MulterError) {
+        console.error('Multer error:', err);
+        return res.status(400).json({ error: 'Upload error: ' + err.message });
+    } else if (err) {
+        console.error('Other error:', err);
+        return res.status(500).json({ error: err.message });
+    }
+    next();
+}
+
 // Public test endpoint
-app.post('/api/upload-test', upload.single('image'), async (req, res) => {
+app.post('/api/upload-test', upload.single('image'), handleMulterError, async (req, res) => {
     try {
+        console.log('Upload-test received:', req.file);
+        
         if (!req.file) {
             return res.status(400).json({ error: 'Keine Bilddatei' });
         }
+        
+        console.log('File details:', {
+            fieldname: req.file.fieldname,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size
+        });
+        
         const result = await uploadToCloudinary(req.file.buffer);
         res.json({ url: result.secure_url, public_id: result.public_id });
     } catch (error) {
