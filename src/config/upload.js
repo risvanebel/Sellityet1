@@ -1,19 +1,13 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 
-// Configure Cloudinary
-if (process.env.CLOUDINARY_URL) {
-  // Parse URL format: cloudinary://api_key:api_secret@cloud_name
-  const url = new URL(process.env.CLOUDINARY_URL);
-  cloudinary.config({
-    cloud_name: url.hostname,
-    api_key: url.username,
-    api_secret: url.password,
-    secure: true
-  });
-} else {
-  console.error('CLOUDINARY_URL not set');
-}
+// Configure Cloudinary - using hardcoded values for reliability
+cloudinary.config({
+  cloud_name: 'dqjv09qfc',
+  api_key: '194236154687873',
+  api_secret: 'XjdGkc0-_V-Q-kst6Go6-SCQnAM',
+  secure: true
+});
 
 // Multer configuration (memory storage)
 const storage = multer.memoryStorage();
