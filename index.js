@@ -1256,7 +1256,7 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
         res.json(rows);
     } catch (error) {
         console.error('Get owner products error:', error);
-        res.status(500).json({ error: 'Failed to fetch products' });
+        res.status(500).json({ error: 'Failed to fetch products', details: error.message });
     }
 });
 
