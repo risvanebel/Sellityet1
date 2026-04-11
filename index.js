@@ -657,6 +657,35 @@ app.post('/api/owner/shops', authMiddleware, requireRole('owner', 'admin'), asyn
     }
 });
 
+// Run missing migrations (admin only)
+app.get('/api/run-migrations', authMiddleware, requireRole('admin'), async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Run payment migration specifically
+        const sqlPath = path.join(__dirname, 'migrations', '005_payments.sql');
+        if (fs.existsSync(sqlPath)) {
+            const sql = fs.readFileSync(sqlPath, 'utf8');
+            await pool.query(sql);
+            console.log('✅ Migration 005_payments.sql executed');
+        }
+        
+        // Run coupon migration
+        const couponPath = path.join(__dirname, 'migrations', '006_coupons.sql');
+        if (fs.existsSync(couponPath)) {
+            const couponSql = fs.readFileSync(couponPath, 'utf8');
+            await pool.query(couponSql);
+            console.log('✅ Migration 006_coupons.sql executed');
+        }
+        
+        res.json({ success: true, message: 'Migrations completed' });
+    } catch (error) {
+        console.error('Migration error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get low stock products
 app.get('/api/owner/products/low-stock', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     try {
