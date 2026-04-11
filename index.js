@@ -1934,3 +1934,4 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 MicroStore Server running on port ${PORT}`);
     console.log(`📊 Health check: /api/health`);
 });
+// Trigger redeploy Sat Apr 11 18:50:31 CEST 2026
