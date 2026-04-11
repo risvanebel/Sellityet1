@@ -410,12 +410,12 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
             return res.status(403).json({ error: 'Not your shop' });
         }
         
-        // Create product with image_urls
+        // Create product with image_urls (PostgreSQL array format)
         const { rows: productRows } = await client.query(`
             INSERT INTO products (shop_id, category_id, name, description, price, sku, status, image_urls)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[])
             RETURNING *
-        `, [shop_id, category_id, name, description, price, sku, status || 'draft', image_urls ? JSON.stringify(image_urls) : null]);
+        `, [shop_id, category_id, name, description, price, sku, status || 'draft', image_urls || null]);
         
         const product = productRows[0];
         
@@ -450,8 +450,8 @@ app.put('/api/owner/products/:id', authMiddleware, requireRole('owner', 'admin')
         let paramIndex = 7;
         
         if (image_urls !== undefined) {
-            updateFields.push(`image_urls = $${paramIndex}`);
-            params.push(image_urls ? JSON.stringify(image_urls) : null);
+            updateFields.push(`image_urls = $${paramIndex}::text[]`);
+            params.push(image_urls || null);
             paramIndex++;
         }
         
