@@ -573,7 +573,7 @@ app.get('/api/shop/products', async (req, res) => {
     if (!req.shop) {
         return res.status(404).json({ error: 'No shop found for this domain' });
     }
-    
+
     try {
         const { rows } = await pool.query(`
             SELECT p.*, c.name as category_name
@@ -582,7 +582,16 @@ app.get('/api/shop/products', async (req, res) => {
             WHERE p.shop_id = $1 AND p.status = 'published'
             ORDER BY p.created_at DESC
         `, [req.shop.id]);
-        
+
+        // Load images for each product
+        for (let product of rows) {
+            const { rows: images } = await pool.query(
+                'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
+                [product.id]
+            );
+            product.image_urls = images.map(img => img.image_url);
+        }
+
         res.json(rows);
     } catch (error) {
         console.error('Get shop products error:', error);
@@ -1100,7 +1109,7 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
             ORDER BY p.created_at DESC
         `, [req.user.id]);
         
-        // Calculate total stock from variants for each product
+        // Calculate total stock from variants and load images for each product
         for (let product of rows) {
             if (product.has_variants) {
                 const { rows: variants } = await pool.query(
@@ -1109,6 +1118,13 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
                 );
                 product.quantity = parseInt(variants[0].total);
             }
+            
+            // Load product images
+            const { rows: images } = await pool.query(
+                'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
+                [product.id]
+            );
+            product.image_urls = images.map(img => img.image_url);
         }
         
         res.json(rows);
@@ -1383,6 +1399,132 @@ app.delete('/api/owner/variants/:id', authMiddleware, requireRole('owner', 'admi
         res.json({ message: 'Variant deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete variant' });
+    }
+});
+
+// ========== PRODUCT IMAGES ==========
+
+// Get product images
+app.get('/api/owner/products/:id/images', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT pi.* FROM product_images pi
+            JOIN products p ON pi.product_id = p.id
+            JOIN shops s ON p.shop_id = s.id
+            WHERE pi.product_id = $1 AND s.owner_id = $2
+            ORDER BY pi.sort_order, pi.created_at
+        `, [req.params.id, req.user.id]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Get product images error:', error);
+        res.status(500).json({ error: 'Failed to fetch images' });
+    }
+});
+
+// Add product image
+app.post('/api/owner/products/:id/images', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { image_url, alt_text, is_primary } = req.body;
+    
+    if (!image_url) {
+        return res.status(400).json({ error: 'Image URL required' });
+    }
+    
+    try {
+        // Verify ownership
+        const { rows: checkRows } = await pool.query(`
+            SELECT p.id FROM products p
+            JOIN shops s ON p.shop_id = s.id
+            WHERE p.id = $1 AND s.owner_id = $2
+        `, [req.params.id, req.user.id]);
+        
+        if (checkRows.length === 0) {
+            return res.status(403).json({ error: 'Not your product' });
+        }
+        
+        // If setting as primary, unset others
+        if (is_primary) {
+            await pool.query(
+                'UPDATE product_images SET is_primary = false WHERE product_id = $1',
+                [req.params.id]
+            );
+        }
+        
+        // Get next sort order
+        const { rows: maxOrder } = await pool.query(
+            'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM product_images WHERE product_id = $1',
+            [req.params.id]
+        );
+        
+        const { rows } = await pool.query(`
+            INSERT INTO product_images (product_id, image_url, alt_text, sort_order, is_primary)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [req.params.id, image_url, alt_text || null, maxOrder[0].next_order, is_primary || false]);
+        
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        console.error('Add product image error:', error);
+        res.status(500).json({ error: 'Failed to add image' });
+    }
+});
+
+// Delete product image
+app.delete('/api/owner/images/:imageId', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        // Verify ownership
+        const { rows: checkRows } = await pool.query(`
+            SELECT pi.id FROM product_images pi
+            JOIN products p ON pi.product_id = p.id
+            JOIN shops s ON p.shop_id = s.id
+            WHERE pi.id = $1 AND s.owner_id = $2
+        `, [req.params.imageId, req.user.id]);
+        
+        if (checkRows.length === 0) {
+            return res.status(403).json({ error: 'Not your image' });
+        }
+        
+        await pool.query('DELETE FROM product_images WHERE id = $1', [req.params.imageId]);
+        res.json({ message: 'Image deleted' });
+    } catch (error) {
+        console.error('Delete image error:', error);
+        res.status(500).json({ error: 'Failed to delete image' });
+    }
+});
+
+// Set primary image
+app.put('/api/owner/images/:imageId/primary', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        // Get product_id and verify ownership
+        const { rows: checkRows } = await pool.query(`
+            SELECT pi.id, pi.product_id FROM product_images pi
+            JOIN products p ON pi.product_id = p.id
+            JOIN shops s ON p.shop_id = s.id
+            WHERE pi.id = $1 AND s.owner_id = $2
+        `, [req.params.imageId, req.user.id]);
+        
+        if (checkRows.length === 0) {
+            return res.status(403).json({ error: 'Not your image' });
+        }
+        
+        const productId = checkRows[0].product_id;
+        
+        // Unset all other primary images for this product
+        await pool.query(
+            'UPDATE product_images SET is_primary = false WHERE product_id = $1',
+            [productId]
+        );
+        
+        // Set this as primary
+        await pool.query(
+            'UPDATE product_images SET is_primary = true WHERE id = $1',
+            [req.params.imageId]
+        );
+        
+        res.json({ message: 'Primary image updated' });
+    } catch (error) {
+        console.error('Set primary image error:', error);
+        res.status(500).json({ error: 'Failed to update image' });
     }
 });
 

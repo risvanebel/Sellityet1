@@ -806,10 +806,14 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Produktbild</label>
-                    <input type="file" class="form-input" id="product-image-file" accept="image/*" onchange="previewImage(this)">
-                    <div id="image-preview" style="margin-top: 12px; max-width: 200px;"></div>
-                    <input type="hidden" id="product-image-url">
+                    <label class="form-label">Produktbilder</label>
+                    <input type="file" class="form-input" id="product-image-files" accept="image/*" multiple onchange="previewMultipleImages(this)">
+                    <div class="form-hint">Wähle mehrere Bilder aus. Das erste Bild wird als Hauptbild verwendet.</div>
+                    <div id="images-preview-container" style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 12px;"></div>
+                    <div id="existing-images-container" style="margin-top: 16px; display: none;">
+                        <div class="form-hint">Vorhandene Bilder:</div>
+                        <div id="existing-images-list" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;"></div>
+                    </div>
                 </div>
                 
                 <div class="form-group" id="variants-section" style="display: none;">
@@ -2052,7 +2056,13 @@
                     document.getElementById('product-discount').value = product.discount_price || '';
                     document.getElementById('product-stock').value = product.quantity || 0;
                     document.getElementById('product-min-stock').value = product.min_stock || 5;
-                    // Image is read-only in edit mode for now
+                    
+                    // Clear new images preview
+                    document.getElementById('images-preview-container').innerHTML = '';
+                    selectedImageFiles = [];
+                    
+                    // Load existing images
+                    loadProductImages(productId);
                     
                     // Show variants section for existing products
                     document.getElementById('variants-section').style.display = 'block';
@@ -2071,9 +2081,11 @@
                 document.getElementById('product-discount').value = '';
                 document.getElementById('product-stock').value = '0';
                 document.getElementById('product-min-stock').value = '5';
-                document.getElementById('product-image-file').value = '';
-                document.getElementById('product-image-url').value = '';
-                document.getElementById('image-preview').innerHTML = '';
+                document.getElementById('product-image-files').value = '';
+                document.getElementById('images-preview-container').innerHTML = '';
+                document.getElementById('existing-images-container').style.display = 'none';
+                document.getElementById('existing-images-list').innerHTML = '';
+                selectedImageFiles = [];
                 }
                 
                 document.getElementById('product-modal').classList.add('active');
@@ -2149,10 +2161,14 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Produktbild</label>
-                    <input type="file" class="form-input" id="product-image-file" accept="image/*" onchange="previewImage(this)">
-                    <div id="image-preview" style="margin-top: 12px; max-width: 200px;"></div>
-                    <input type="hidden" id="product-image-url">
+                    <label class="form-label">Produktbilder</label>
+                    <input type="file" class="form-input" id="product-image-files" accept="image/*" multiple onchange="previewMultipleImages(this)">
+                    <div class="form-hint">Wähle mehrere Bilder aus. Das erste Bild wird als Hauptbild verwendet.</div>
+                    <div id="images-preview-container" style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 12px;"></div>
+                    <div id="existing-images-container" style="margin-top: 16px; display: none;">
+                        <div class="form-hint">Vorhandene Bilder:</div>
+                        <div id="existing-images-list" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;"></div>
+                    </div>
                 </div>
                 
                 <div class="form-group" id="variants-section" style="display: none;">
@@ -2162,16 +2178,119 @@
                 </div>
             `;
             document.getElementById('variants-section').style.display = 'none';
+            selectedImageFiles = [];
         }
         
-        function previewImage(input) {
-            const preview = document.getElementById('image-preview');
-            if (input.files && input.files[0]) {
+        // Store selected files for upload
+        let selectedImageFiles = [];
+        
+        function previewMultipleImages(input) {
+            const previewContainer = document.getElementById('images-preview-container');
+            previewContainer.innerHTML = '';
+            selectedImageFiles = [];
+            
+            if (input.files && input.files.length > 0) {
+                selectedImageFiles = Array.from(input.files);
+                
+                selectedImageFiles.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const div = document.createElement('div');
+                        div.style.cssText = 'position: relative; width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 2px solid ' + (index === 0 ? '#2563EB' : '#E2E8F0') + ';';
+                        div.innerHTML = `
+                            <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">
+                            ${index === 0 ? '<div style="position: absolute; top: 4px; left: 4px; background: #2563EB; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Hauptbild</div>' : ''}
+                            <button type="button" onclick="removeNewImage(${index})" style="position: absolute; top: 4px; right: 4px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px;">×</button>
+                        `;
+                        previewContainer.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+        
+        function removeNewImage(index) {
+            selectedImageFiles.splice(index, 1);
+            // Re-render previews
+            const previewContainer = document.getElementById('images-preview-container');
+            previewContainer.innerHTML = '';
+            selectedImageFiles.forEach((file, idx) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; border-radius: 8px;">`;
+                    const div = document.createElement('div');
+                    div.style.cssText = 'position: relative; width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 2px solid ' + (idx === 0 ? '#2563EB' : '#E2E8F0') + ';';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">
+                        ${idx === 0 ? '<div style="position: absolute; top: 4px; left: 4px; background: #2563EB; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Hauptbild</div>' : ''}
+                        <button type="button" onclick="removeNewImage(${idx})" style="position: absolute; top: 4px; right: 4px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px;">×</button>
+                    `;
+                    previewContainer.appendChild(div);
                 };
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function loadProductImages(productId) {
+            try {
+                const res = await fetch(`${API_URL}/owner/products/${productId}/images`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (res.ok) {
+                    const images = await res.json();
+                    const container = document.getElementById('existing-images-list');
+                    const containerWrapper = document.getElementById('existing-images-container');
+                    
+                    if (images.length > 0) {
+                        containerWrapper.style.display = 'block';
+                        container.innerHTML = images.map((img, idx) => `
+                            <div style="position: relative; width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 2px solid ${img.is_primary ? '#2563EB' : '#E2E8F0'};">
+                                <img src="${img.image_url}" style="width: 100%; height: 100%; object-fit: cover;">
+                                ${img.is_primary ? '<div style="position: absolute; top: 4px; left: 4px; background: #2563EB; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Hauptbild</div>' : ''}
+                                <button type="button" onclick="deleteProductImage(${img.id})" style="position: absolute; top: 4px; right: 4px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px;">×</button>
+                                ${!img.is_primary ? `<button type="button" onclick="setPrimaryImage(${img.id})" style="position: absolute; bottom: 4px; left: 4px; background: #2563EB; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer;">Als Hauptbild</button>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        containerWrapper.style.display = 'none';
+                    }
+                }
+            } catch (e) {
+                console.error('Load product images error:', e);
+            }
+        }
+        
+        async function deleteProductImage(imageId) {
+            if (!confirm('Bild wirklich löschen?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/images/${imageId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (res.ok) {
+                    const productId = document.getElementById('product-id').value;
+                    if (productId) loadProductImages(productId);
+                }
+            } catch (e) {
+                console.error('Delete image error:', e);
+            }
+        }
+        
+        async function setPrimaryImage(imageId) {
+            try {
+                const res = await fetch(`${API_URL}/owner/images/${imageId}/primary`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (res.ok) {
+                    const productId = document.getElementById('product-id').value;
+                    if (productId) loadProductImages(productId);
+                }
+            } catch (e) {
+                console.error('Set primary image error:', e);
             }
         }
         
@@ -2285,28 +2404,34 @@
             const discountPrice = document.getElementById('product-discount').value;
             const stock = parseInt(document.getElementById('product-stock').value) || 0;
             const minStock = parseInt(document.getElementById('product-min-stock').value) || 5;
-            const imageFile = document.getElementById('product-image-file').files[0];
             
             if (!name || !price) {
                 document.getElementById('product-error').innerHTML = '<div class="error-message">Name und Preis sind erforderlich</div>';
                 return;
             }
             
-            // Upload image if selected
-            let imageUrl = null;
-            console.log('Image file selected:', imageFile);
-            if (imageFile) {
+            // Upload images if selected
+            const imageUrls = [];
+            console.log('Selected image files:', selectedImageFiles.length);
+            
+            if (selectedImageFiles.length > 0) {
                 try {
-                    document.getElementById('product-error').innerHTML = '<div class="loading">Bild wird hochgeladen...</div>';
-                    imageUrl = await uploadImage(imageFile);
-                    console.log('Image uploaded successfully:', imageUrl);
+                    document.getElementById('product-error').innerHTML = '<div class="loading">Bilder werden hochgeladen...</div>';
+                    
+                    for (let i = 0; i < selectedImageFiles.length; i++) {
+                        const file = selectedImageFiles[i];
+                        const url = await uploadImage(file);
+                        imageUrls.push(url);
+                        console.log(`Image ${i+1} uploaded:`, url);
+                    }
+                    
+                    console.log('All images uploaded:', imageUrls);
                 } catch (e) {
                     console.error('Image upload failed:', e);
                     document.getElementById('product-error').innerHTML = '<div class="error-message">Bild-Upload fehlgeschlagen: ' + e.message + '</div>';
                     return;
                 }
             }
-            console.log('Final imageUrl:', imageUrl);
             
             try {
                 if (!currentShop) {
@@ -2330,8 +2455,8 @@
                     body.category_id = category === 'E-Liquid' ? 1 : category === 'Hardware' ? 2 : 3;
                 }
                 
-                if (imageUrl) {
-                    body.image_urls = [imageUrl];
+                if (imageUrls.length > 0) {
+                    body.image_urls = imageUrls;
                 }
                 
                 const url = id ? `${API_URL}/owner/products/${id}` : `${API_URL}/owner/products`;
@@ -2363,6 +2488,23 @@
                         }
                     }
                     
+                    // Save images using new API
+                    if (imageUrls.length > 0) {
+                        for (let i = 0; i < imageUrls.length; i++) {
+                            await fetch(`${API_URL}/owner/products/${productId}/images`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${authToken}`
+                                },
+                                body: JSON.stringify({
+                                    image_url: imageUrls[i],
+                                    is_primary: i === 0 // First image is primary
+                                })
+                            });
+                        }
+                    }
+                    
                     // Save variants
                     const variantRows = document.querySelectorAll('#variants-list > div');
                     for (const row of variantRows) {
@@ -2385,6 +2527,9 @@
                             });
                         }
                     }
+                    
+                    // Clear selected files
+                    selectedImageFiles = [];
                     
                     closeProductModal();
                     loadProducts();
