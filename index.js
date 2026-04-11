@@ -1168,6 +1168,37 @@ setTimeout(async () => {
     }
 }, 10000);
 
+// Fix product images table
+app.get('/api/fix-product-images', async (req, res) => {
+    try {
+        // Create product_images table
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS product_images (
+                id SERIAL PRIMARY KEY,
+                product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+                image_url VARCHAR(500) NOT NULL,
+                alt_text VARCHAR(255),
+                sort_order INTEGER DEFAULT 0,
+                is_primary BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_product_images_product ON product_images(product_id)
+        `);
+        
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_product_images_sort ON product_images(product_id, sort_order)
+        `);
+        
+        res.json({ success: true, message: 'Product images table created' });
+    } catch (error) {
+        console.error('Fix error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Run missing migrations endpoint
 app.get('/api/run-migrations', async (req, res) => {
     try {
