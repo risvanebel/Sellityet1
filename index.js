@@ -661,6 +661,43 @@ app.get('/api/owner/orders/:id', authMiddleware, requireRole('owner', 'admin'), 
     }
 });
 
+// Update shop email settings
+app.put('/api/owner/shops/email-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { 
+        email_enabled, notification_email, sender_email,
+        smtp_host, smtp_port, smtp_user, smtp_pass 
+    } = req.body;
+    
+    try {
+        const { rows } = await pool.query(`
+            UPDATE shops s
+            SET email_enabled = $1,
+                notification_email = $2,
+                sender_email = $3,
+                smtp_host = $4,
+                smtp_port = $5,
+                smtp_user = $6,
+                smtp_pass = $7,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE s.owner_id = $8
+            RETURNING s.*
+        `, [
+            email_enabled, notification_email, sender_email,
+            smtp_host, smtp_port, smtp_user, smtp_pass,
+            req.user.id
+        ]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No shop found' });
+        }
+        
+        res.json({ success: true, message: 'Email settings saved' });
+    } catch (error) {
+        console.error('Update email settings error:', error);
+        res.status(500).json({ error: 'Failed to save email settings' });
+    }
+});
+
 // Update order status
 app.put('/api/owner/orders/:id/status', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     const { status, tracking_number } = req.body;

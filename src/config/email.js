@@ -1,27 +1,70 @@
 const nodemailer = require('nodemailer');
 
-// Configure email transporter
-// Using Gmail SMTP as default - can be changed to any provider
-const transporter = nodemailer.createTransporter({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+// Create transporter with shop-specific or default settings
+function createTransporter(shop) {
+  // Use shop-specific SMTP if available and enabled
+  if (shop?.email_enabled && shop?.smtp_host && shop?.smtp_user) {
+    return nodemailer.createTransporter({
+      host: shop.smtp_host,
+      port: shop.smtp_port || 587,
+      secure: false,
+      auth: {
+        user: shop.smtp_user,
+        pass: shop.smtp_pass
+      }
+    });
   }
-});
+  
+  // Fallback to environment variables
+  if (process.env.SMTP_USER) {
+    return nodemailer.createTransporter({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  }
+  
+  return null;
+}
 
-// Verify connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email configuration error:', error.message);
-  } else {
-    console.log('✅ Email server ready');
+// Get sender email address
+function getSenderEmail(shop) {
+  if (shop?.sender_email) {
+    return shop.sender_email;
   }
-});
+  return process.env.SMTP_USER || 'noreply@sellityet.com';
+}
+
+// Get notification email (owner email)
+function getNotificationEmail(shop, fallbackOwnerEmail) {
+  if (shop?.notification_email) {
+    return shop.notification_email;
+  }
+  return fallbackOwnerEmail;
+}
+
+// Check if emails are enabled
+function isEmailEnabled(shop) {
+  // If shop has explicit settings, use them
+  if (shop?.email_enabled !== undefined) {
+    return shop.email_enabled;
+  }
+  // Otherwise check if global SMTP is configured
+  return !!process.env.SMTP_USER;
+}
 
 async function sendOrderConfirmation(to, order, shop) {
+  const transporter = createTransporter(shop);
+  if (!transporter || !isEmailEnabled(shop)) {
+    console.log('Email not sent: Not configured');
+    return;
+  }
+  
+  const senderEmail = getSenderEmail(shop);
   const itemsHtml = order.items.map(item => `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">
@@ -39,7 +82,7 @@ async function sendOrderConfirmation(to, order, shop) {
     : order.shipping_address;
 
   const mailOptions = {
-    from: `"${shop.name}" <${process.env.SMTP_USER}>`,
+    from: `"${shop.name}" <${senderEmail}>`,
     to: to,
     subject: `Bestellbestätigung ${order.order_number}`,
     html: `
@@ -110,6 +153,15 @@ async function sendOrderConfirmation(to, order, shop) {
 }
 
 async function sendOrderNotificationToOwner(order, shop, ownerEmail) {
+  const transporter = createTransporter(shop);
+  if (!transporter || !isEmailEnabled(shop)) {
+    console.log('Owner notification not sent: Not configured');
+    return;
+  }
+  
+  const senderEmail = getSenderEmail(shop);
+  const notificationEmail = getNotificationEmail(shop, ownerEmail);
+  
   const itemsHtml = order.items.map(item => `
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.product_name}</td>
@@ -118,8 +170,8 @@ async function sendOrderNotificationToOwner(order, shop, ownerEmail) {
   `).join('');
 
   const mailOptions = {
-    from: `"${shop.name}" <${process.env.SMTP_USER}>`,
-    to: ownerEmail,
+    from: `"${shop.name}" <${senderEmail}>`,
+    to: notificationEmail,
     subject: `🛒 Neue Bestellung ${order.order_number}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -149,12 +201,19 @@ async function sendOrderNotificationToOwner(order, shop, ownerEmail) {
 }
 
 async function sendShippingConfirmation(to, order, shop, trackingNumber) {
+  const transporter = createTransporter(shop);
+  if (!transporter || !isEmailEnabled(shop)) {
+    console.log('Shipping confirmation not sent: Not configured');
+    return;
+  }
+  
+  const senderEmail = getSenderEmail(shop);
   const trackingInfo = trackingNumber 
     ? `<p><strong>Tracking-Nummer:</strong> ${trackingNumber}</p>` 
     : '';
 
   const mailOptions = {
-    from: `"${shop.name}" <${process.env.SMTP_USER}>`,
+    from: `"${shop.name}" <${senderEmail}>`,
     to: to,
     subject: `Ihre Bestellung ${order.order_number} wurde versendet`,
     html: `

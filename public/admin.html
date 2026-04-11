@@ -994,7 +994,7 @@
                 currentShop = shop;
                 
                 document.getElementById('shop-container').innerHTML = `
-                    <div class="card">
+                    <div class="card" style="margin-bottom: 24px;">
                         <div class="card-header">
                             <h3 class="card-title">Shop-Informationen</h3>
                         </div>
@@ -1027,10 +1027,114 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📧 E-Mail Einstellungen</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="email-settings-error"></div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="email-enabled" ${shop.email_enabled ? 'checked' : ''}>
+                                    E-Mails aktivieren
+                                </label>
+                                <div class="form-hint">Wenn aktiviert, werden Bestellbestätigungen an Kunden und Benachrichtigungen an dich gesendet.</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Deine E-Mail (für Benachrichtigungen)</label>
+                                <input type="email" class="form-input" id="notification-email" value="${shop.notification_email || ''}" placeholder="deine@email.de">
+                                <div class="form-hint">Du erhältst hier neue Bestellungen.</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Absender E-Mail</label>
+                                <input type="email" class="form-input" id="sender-email" value="${shop.sender_email || ''}" placeholder="noreply@deinshop.de">
+                                <div class="form-hint">Diese Adresse wird als Absender an Kunden angezeigt.</div>
+                            </div>
+                            
+                            <hr style="margin: 24px 0; border: none; border-top: 1px solid #E2E8F0;">
+                            
+                            <h4 style="margin-bottom: 16px;">SMTP Server (optional)</h4>
+                            <div class="form-hint" style="margin-bottom: 16px;">
+                                Nur ausfüllen wenn du deinen eigenen E-Mail-Server nutzen möchtest. 
+                                Sonst werden die Standard-Einstellungen verwendet.
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">SMTP Server</label>
+                                    <input type="text" class="form-input" id="smtp-host" value="${shop.smtp_host || ''}" placeholder="smtp.gmail.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Port</label>
+                                    <input type="number" class="form-input" id="smtp-port" value="${shop.smtp_port || '587'}">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">SMTP Benutzername</label>
+                                <input type="text" class="form-input" id="smtp-user" value="${shop.smtp_user || ''}" placeholder="deine@email.de">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">SMTP Passwort</label>
+                                <input type="password" class="form-input" id="smtp-pass" value="${shop.smtp_pass || ''}" placeholder="••••••••">
+                                <div class="form-hint">Für Gmail: App-Passwort verwenden!</div>
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="saveEmailSettings()" style="margin-top: 16px;">
+                                E-Mail Einstellungen speichern
+                            </button>
+                        </div>
+                    </div>
                 `;
             } catch (e) {
                 document.getElementById('shop-container').innerHTML = 
                     '<div class="error-message">Fehler beim Laden des Shops</div>';
+            }
+        }
+        
+        async function saveEmailSettings() {
+            const emailEnabled = document.getElementById('email-enabled').checked;
+            const notificationEmail = document.getElementById('notification-email').value;
+            const senderEmail = document.getElementById('sender-email').value;
+            const smtpHost = document.getElementById('smtp-host').value;
+            const smtpPort = document.getElementById('smtp-port').value;
+            const smtpUser = document.getElementById('smtp-user').value;
+            const smtpPass = document.getElementById('smtp-pass').value;
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/shops/email-settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        email_enabled: emailEnabled,
+                        notification_email: notificationEmail,
+                        sender_email: senderEmail,
+                        smtp_host: smtpHost,
+                        smtp_port: parseInt(smtpPort) || 587,
+                        smtp_user: smtpUser,
+                        smtp_pass: smtpPass
+                    })
+                });
+                
+                if (res.ok) {
+                    document.getElementById('email-settings-error').innerHTML = 
+                        '<div class="alert alert-success">✅ E-Mail Einstellungen gespeichert!</div>';
+                } else {
+                    const err = await res.json();
+                    document.getElementById('email-settings-error').innerHTML = 
+                        `<div class="error-message">${err.error}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('email-settings-error').innerHTML = 
+                    '<div class="error-message">Fehler beim Speichern</div>';
             }
         }
         
