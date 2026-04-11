@@ -1,0 +1,4 @@
+# Sellityet Auto-Test Cron Jobs
+# Tests run every hour to catch issues
+
+0 * * * * cd /data/.openclaw/workspace/microstore && ./scripts/auto-test.sh >> /tmp/sellityet-cron.log 2>&1

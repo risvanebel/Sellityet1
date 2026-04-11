@@ -643,6 +643,19 @@ app.delete('/api/admin/users/:id', authMiddleware, requireRole('admin'), async (
     }
 });
 
+// Run auto-tests on startup (after 30s delay for DB connection)
+setTimeout(async () => {
+    console.log('🧪 Running auto-tests...');
+    try {
+        const { execSync } = require('child_process');
+        const result = execSync('./scripts/auto-test.sh', { encoding: 'utf8', timeout: 60000 });
+        console.log(result);
+        console.log('✅ Auto-tests completed');
+    } catch (error) {
+        console.error('❌ Auto-tests failed:', error.stdout || error.message);
+    }
+}, 30000);
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 MicroStore Server running on port ${PORT}`);
