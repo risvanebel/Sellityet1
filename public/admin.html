@@ -1501,8 +1501,13 @@
             // Zeige Lade-Status
             errorDiv.innerHTML = '<div style="color: #2563EB;">⏳ Speichere...</div>';
             
+            // Timeout für den Request
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 Sekunden Timeout
+            
             try {
                 const res = await fetch(`${API_URL}/owner/shops/payment-settings`, {
+                    signal: controller.signal,
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1510,6 +1515,8 @@
                     },
                     body: JSON.stringify(data)
                 });
+                
+                clearTimeout(timeoutId);
                 
                 if (res.ok) {
                     errorDiv.innerHTML = '<div class="alert alert-success">✅ Zahlungseinstellungen erfolgreich gespeichert!</div>';
@@ -1532,7 +1539,12 @@
                     errorDiv.innerHTML = `<div class="error-message">${errorMsg}</div>`;
                 }
             } catch (e) {
-                errorDiv.innerHTML = `<div class="error-message">❌ Netzwerk-Fehler: ${e.message}<br>Prüfe deine Internetverbindung.</div>`;
+                clearTimeout(timeoutId);
+                if (e.name === 'AbortError') {
+                    errorDiv.innerHTML = '<div class="error-message">❌ Timeout: Der Server antwortet nicht. Bitte später erneut versuchen.</div>';
+                } else {
+                    errorDiv.innerHTML = `<div class="error-message">❌ Netzwerk-Fehler: ${e.message}<br>Prüfe deine Internetverbindung.</div>`;
+                }
             }
         }
         
