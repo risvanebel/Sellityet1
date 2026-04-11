@@ -10,6 +10,67 @@
         if (!token) {
             window.location.href = '/login.html';
         }
+        
+        // Get user role
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userRole = user.role || 'owner';
+        
+        // Build navigation based on role
+        function buildNavigation() {
+            const nav = document.getElementById('main-nav');
+            
+            let navHTML = '<div class="nav-section"><div class="nav-label">Hauptmenü</div>';
+            
+            // Common menu items for both admin and owner
+            navHTML += `
+                <div class="nav-item active" onclick="showSection('dashboard')">
+                    <span>📊 Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="showSection('products')">
+                    <span>📦 Produkte</span>
+                </div>
+                <div class="nav-item" onclick="showSection('orders')">
+                    <span>🛒 Bestellungen</span>
+                </div>
+                <div class="nav-item" onclick="showSection('customers')">
+                    <span>👥 Kunden</span>
+                </div>
+                <div class="nav-item" onclick="showSection('coupons')">
+                    <span>🎫 Gutscheine</span>
+                </div>
+                <div class="nav-item" onclick="showSection('shop')">
+                    <span>⚙️ Shop-Einstellungen</span>
+                </div>
+            `;
+            
+            // Admin-only menu items
+            if (userRole === 'admin') {
+                navHTML += `
+                    <div class="nav-section" style="margin-top: 24px;">
+                        <div class="nav-label" style="color: #EF4444;">🔐 Master Admin</div>
+                        <div class="nav-item" onclick="showSection('admin-users')">
+                            <span>👤 Alle Benutzer</span>
+                        </div>
+                        <div class="nav-item" onclick="showSection('admin-shops')">
+                            <span>🏪 Alle Shops</span>
+                        </div>
+                        <div class="nav-item" onclick="showSection('admin-stats')">
+                            <span>📈 Plattform-Stats</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            navHTML += '</div>';
+            nav.innerHTML = navHTML;
+            
+            // Update user display in sidebar
+            document.querySelector('.user-avatar').textContent = (user.email || 'A').charAt(0).toUpperCase();
+            document.querySelector('.user-menu div div:first-child').textContent = userRole === 'admin' ? 'Master Admin' : 'Shop Owner';
+        }
+        
+        // Build nav on load
+        buildNavigation();
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -336,28 +397,8 @@
                     <span>Sellityet</span>
                 </a>
             </div>
-            <nav class="nav">
-                <div class="nav-section">
-                    <div class="nav-label">Hauptmenü</div>
-                    <div class="nav-item active" onclick="showSection('dashboard')">
-                        <span>Dashboard</span>
-                    </div>
-                    <div class="nav-item" onclick="showSection('products')">
-                        <span>Produkte</span>
-                    </div>
-                    <div class="nav-item" onclick="showSection('orders')">
-                        <span>Bestellungen</span>
-                    </div>
-                    <div class="nav-item" onclick="showSection('customers')">
-                        <span>👥 Kunden</span>
-                    </div>
-                    <div class="nav-item" onclick="showSection('coupons')">
-                        <span>🎫 Gutscheine</span>
-                    </div>
-                    <div class="nav-item" onclick="showSection('shop')">
-                        <span>Shop-Einstellungen</span>
-                    </div>
-                </div>
+            <nav class="nav" id="main-nav">
+                <!-- Navigation wird dynamisch per JavaScript geladen -->
             </nav>
             <div class="sidebar-footer">
                 <div class="user-menu" onclick="logout()">
@@ -516,6 +557,48 @@
                 <div id="shop" class="section">
                     <div id="shop-container">
                         <div class="loading"><div class="spinner"></div>Lade Shop-Daten...</div>
+                    </div>
+                </div>
+                
+                <!-- Admin: All Users (Admin only) -->
+                <div id="admin-users" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">👤 Alle Benutzer</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="admin-users-container">
+                                <div class="loading"><div class="spinner"></div>Lade Benutzer...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Admin: All Shops (Admin only) -->
+                <div id="admin-shops" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🏪 Alle Shops</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="admin-shops-container">
+                                <div class="loading"><div class="spinner"></div>Lade Shops...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Admin: Platform Stats (Admin only) -->
+                <div id="admin-stats" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📈 Plattform-Statistiken</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="admin-stats-container">
+                                <div class="loading"><div class="spinner"></div>Lade Statistiken...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -699,7 +782,10 @@
                 'orders': 'Bestellungen',
                 'customers': 'Kunden',
                 'coupons': 'Gutscheine',
-                'shop': 'Shop-Einstellungen'
+                'shop': 'Shop-Einstellungen',
+                'admin-users': 'Alle Benutzer (Master)',
+                'admin-shops': 'Alle Shops (Master)',
+                'admin-stats': 'Plattform-Stats (Master)'
             };
             document.getElementById('page-title').textContent = titles[section];
             
@@ -720,6 +806,9 @@
             if (section === 'customers') loadCustomers();
             if (section === 'coupons') loadCoupons();
             if (section === 'shop') loadShop();
+            if (section === 'admin-users' && userRole === 'admin') loadAdminUsers();
+            if (section === 'admin-shops' && userRole === 'admin') loadAdminShops();
+            if (section === 'admin-stats' && userRole === 'admin') loadAdminStats();
         }
         
         async function loadDashboard() {
@@ -2205,6 +2294,176 @@
                 }
             } catch (e) {
                 document.getElementById('shop-error').innerHTML = '<div class="error-message">Netzwerkfehler</div>';
+            }
+        }
+        
+        // ========== ADMIN FUNCTIONS (Master only) ==========
+        
+        async function loadAdminUsers() {
+            if (userRole !== 'admin') {
+                document.getElementById('admin-users-container').innerHTML = 
+                    '<div class="error-message">Zugriff verweigert</div>';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to load');
+                
+                const users = await res.json();
+                
+                const html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>E-Mail</th>
+                                    <th>Rolle</th>
+                                    <th>Erstellt</th>
+                                    <th style="text-align: right;">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${users.map(u => `
+                                    <tr>
+                                        <td>${u.email}</td>
+                                        <td><span class="badge ${u.role === 'admin' ? 'badge-danger' : 'badge-success'}">${u.role}</span></td>
+                                        <td>${new Date(u.created_at).toLocaleDateString('de-DE')}</td>
+                                        <td style="text-align: right;">
+                                            ${u.id !== 1 ? `<button class="btn btn-icon" onclick="deleteUser(${u.id})" style="color: #EF4444;">🗑️</button>` : ''}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                document.getElementById('admin-users-container').innerHTML = html;
+            } catch (e) {
+                document.getElementById('admin-users-container').innerHTML = 
+                    '<div class="error-message">Fehler beim Laden</div>';
+            }
+        }
+        
+        async function loadAdminShops() {
+            if (userRole !== 'admin') {
+                document.getElementById('admin-shops-container').innerHTML = 
+                    '<div class="error-message">Zugriff verweigert</div>';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/admin/shops`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to load');
+                
+                const shops = await res.json();
+                
+                const html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Shop</th>
+                                    <th>Besitzer</th>
+                                    <th>Status</th>
+                                    <th>Erstellt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${shops.map(s => `
+                                    <tr>
+                                        <td><strong>${s.name}</strong><br><small>/${s.slug}</small></td>
+                                        <td>${s.owner_email}</td>
+                                        <td><span class="badge ${s.is_active ? 'badge-success' : 'badge-neutral'}">${s.is_active ? 'Aktiv' : 'Inaktiv'}</span></td>
+                                        <td>${new Date(s.created_at).toLocaleDateString('de-DE')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                document.getElementById('admin-shops-container').innerHTML = html;
+            } catch (e) {
+                document.getElementById('admin-shops-container').innerHTML = 
+                    '<div class="error-message">Fehler beim Laden</div>';
+            }
+        }
+        
+        async function loadAdminStats() {
+            if (userRole !== 'admin') {
+                document.getElementById('admin-stats-container').innerHTML = 
+                    '<div class="error-message">Zugriff verweigert</div>';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to load');
+                
+                const stats = await res.json();
+                
+                const html = `
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <div class="stat-value" style="color: white; font-size: 2.5rem;">${stats.users}</div>
+                            <div class="stat-label" style="color: rgba(255,255,255,0.8);">Benutzer</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                            <div class="stat-value" style="color: white; font-size: 2.5rem;">${stats.shops}</div>
+                            <div class="stat-label" style="color: rgba(255,255,255,0.8);">Shops</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                            <div class="stat-value" style="color: white; font-size: 2.5rem;">${stats.products}</div>
+                            <div class="stat-label" style="color: rgba(255,255,255,0.8);">Produkte</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                            <div class="stat-value" style="color: white; font-size: 2.5rem;">€${stats.totalRevenue.toFixed(2)}</div>
+                            <div class="stat-label" style="color: rgba(255,255,255,0.8);">Gesamtumsatz</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <h4 style="margin-bottom: 16px;">📊 Plattform-Übersicht</h4>
+                        <p>Durchschnittlicher Umsatz pro Shop: €${stats.shops > 0 ? (stats.totalRevenue / stats.shops).toFixed(2) : '0.00'}</p>
+                        <p>Durchschnittliche Produkte pro Shop: ${stats.shops > 0 ? (stats.products / stats.shops).toFixed(0) : '0'}</p>
+                    </div>
+                `;
+                document.getElementById('admin-stats-container').innerHTML = html;
+            } catch (e) {
+                document.getElementById('admin-stats-container').innerHTML = 
+                    '<div class="error-message">Fehler beim Laden</div>';
+            }
+        }
+        
+        async function deleteUser(userId) {
+            if (userRole !== 'admin') {
+                alert('Zugriff verweigert');
+                return;
+            }
+            
+            if (!confirm('Benutzer wirklich löschen?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (res.ok) {
+                    loadAdminUsers();
+                } else {
+                    alert('Fehler beim Löschen');
+                }
+            } catch (e) {
+                alert('Fehler beim Löschen');
             }
         }
         
