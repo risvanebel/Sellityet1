@@ -1610,25 +1610,47 @@ app.post('/api/orders/:orderId/payment/paypal-capture', async (req, res) => {
   }
 });
 
-// Update shop payment settings
+// Update shop payment settings - SIMPLIFIED
 app.put('/api/owner/shops/payment-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
-  const {
-    payment_methods,
-    stripe_public_key,
-    stripe_secret_key,
-    paypal_client_id,
-    paypal_client_secret,
-    paypal_mode,
-    bank_account_name,
-    bank_account_iban,
-    bank_account_bic,
-    bank_transfer_instructions,
-    sepa_mandate_text
-  } = req.body;
-  
   try {
-    const { rows } = await pool.query(`
-      UPDATE shops s
+    console.log('Payment settings update requested by user:', req.user.id);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
+    const {
+      payment_methods,
+      stripe_public_key,
+      stripe_secret_key,
+      paypal_client_id,
+      paypal_client_secret,
+      paypal_mode,
+      bank_account_name,
+      bank_account_iban,
+      bank_account_bic,
+      bank_transfer_instructions
+    } = req.body;
+    
+    // Validate payment_methods
+    if (!Array.isArray(payment_methods)) {
+      return res.status(400).json({ error: 'payment_methods must be an array' });
+    }
+    
+    // Get shop for this owner
+    const { rows: shopRows } = await pool.query(
+      'SELECT id FROM shops WHERE owner_id = $1',
+      [req.user.id]
+    );
+    
+    if (shopRows.length === 0) {
+      console.log('No shop found for owner:', req.user.id);
+      return res.status(404).json({ error: 'No shop found' });
+    }
+    
+    const shopId = shopRows[0].id;
+    console.log('Found shop ID:', shopId);
+    
+    // Simplified update - only update what we have
+    const updateQuery = `
+      UPDATE shops
       SET payment_methods = $1,
           stripe_public_key = $2,
           stripe_secret_key = $3,
@@ -1639,33 +1661,43 @@ app.put('/api/owner/shops/payment-settings', authMiddleware, requireRole('owner'
           bank_account_iban = $8,
           bank_account_bic = $9,
           bank_transfer_instructions = $10,
-          sepa_mandate_text = $11,
           updated_at = CURRENT_TIMESTAMP
-      WHERE s.owner_id = $12
-      RETURNING s.*
-    `, [
-      JSON.stringify(payment_methods),
-      stripe_public_key,
-      stripe_secret_key,
-      paypal_client_id,
-      paypal_client_secret,
-      paypal_mode,
-      bank_account_name,
-      bank_account_iban,
-      bank_account_bic,
-      bank_transfer_instructions,
-      sepa_mandate_text,
-      req.user.id
-    ]);
+      WHERE id = $11
+      RETURNING id
+    `;
+    
+    const values = [
+      JSON.stringify(payment_methods || []),
+      stripe_public_key || null,
+      stripe_secret_key || null,
+      paypal_client_id || null,
+      paypal_client_secret || null,
+      paypal_mode || 'sandbox',
+      bank_account_name || null,
+      bank_account_iban || null,
+      bank_account_bic || null,
+      bank_transfer_instructions || null,
+      shopId
+    ];
+    
+    console.log('Executing update...');
+    const { rows } = await pool.query(updateQuery, values);
+    console.log('Update result:', rows);
     
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'No shop found' });
+      return res.status(404).json({ error: 'Shop not found or no changes made' });
     }
     
-    res.json({ success: true, message: 'Payment settings saved' });
+    res.json({ success: true, message: 'Payment settings saved', shop_id: rows[0].id });
+    
   } catch (error) {
-    console.error('Update payment settings error:', error);
-    res.status(500).json({ error: 'Failed to save payment settings' });
+    console.error('Update payment settings ERROR:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to save payment settings',
+      details: error.message 
+    });
   }
 });
 
