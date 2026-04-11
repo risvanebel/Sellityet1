@@ -2145,8 +2145,8 @@ app.post('/api/orders', async (req, res) => {
                 INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku, 
                                         quantity, unit_price, variant_name)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            `, [order.id, item.product_id, item.variant_id, item.product_name, item.sku,
-                item.quantity, item.price, item.variant_name]);
+            `, [order.id, item.product_id, item.variant_id || null, item.product_name || 'Product', item.sku || item.product_sku || null,
+                item.quantity, item.unit_price || item.price || 0, item.variant_name || null]);
             
             // Update inventory
             if (item.variant_id) {
