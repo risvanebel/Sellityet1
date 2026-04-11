@@ -1,11 +1,11 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 
-// Configure Cloudinary - using hardcoded values for reliability
+// Configure Cloudinary - using ROOT credentials
 cloudinary.config({
   cloud_name: 'dqjv09qfc',
-  api_key: '194236154687873',
-  api_secret: 'XjdGkc0-_V-Q-kst6Go6-SCQnAM',
+  api_key: '291617337945684',
+  api_secret: 'O7zVbWzVeKVAtQ_KSSzkVlMx6g8',
   secure: true
 });
 
