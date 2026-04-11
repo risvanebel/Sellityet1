@@ -401,6 +401,18 @@
                     </div>
                     
                     <div id="dashboard-alerts"></div>
+                    
+                    <!-- Analytics Section -->
+                    <div class="card" style="margin-top: 24px;">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 Shop Analytics (30 Tage)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="analytics-container">
+                                <div class="loading"><div class="spinner"></div>Lade Analytics...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Products -->
@@ -680,9 +692,10 @@
         
         async function loadDashboard() {
             try {
-                const [statsRes, productsRes] = await Promise.all([
+                const [statsRes, productsRes, analyticsRes] = await Promise.all([
                     fetch(`${API_URL}/admin/stats`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
-                    fetch(`${API_URL}/owner/products`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+                    fetch(`${API_URL}/owner/products`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+                    fetch(`${API_URL}/owner/analytics`, { headers: { 'Authorization': `Bearer ${authToken}` } })
                 ]);
                 
                 const stats = await statsRes.json();
@@ -708,9 +721,65 @@
                 } else {
                     alertsDiv.innerHTML = '';
                 }
+                
+                // Load analytics
+                if (analyticsRes.ok) {
+                    const analytics = await analyticsRes.json();
+                    renderAnalytics(analytics);
+                }
             } catch (e) {
                 console.error('Dashboard error:', e);
             }
+        }
+        
+        function renderAnalytics(analytics) {
+            const container = document.getElementById('analytics-container');
+            
+            const topProductsHtml = analytics.top_products && analytics.top_products.length > 0
+                ? analytics.top_products.map(p => `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #E2E8F0;">
+                        <span>${p.name}</span>
+                        <span><strong>${p.total_sold}</strong> verkauft (€${parseFloat(p.revenue).toFixed(2)})</span>
+                    </div>
+                `).join('')
+                : '<p style="color: #64748B;">Noch keine Verkäufe</p>';
+            
+            const recentOrdersHtml = analytics.recent_orders && analytics.recent_orders.length > 0
+                ? analytics.recent_orders.map(o => `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #E2E8F0;">
+                        <span>${o.order_number}</span>
+                        <span>€${parseFloat(o.total_amount).toFixed(2)}</span>
+                    </div>
+                `).join('')
+                : '<p style="color: #64748B;">Noch keine Bestellungen</p>';
+            
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
+                    <div style="text-align: center; padding: 16px; background: #F8FAFC; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #2563EB;">€${analytics.sales.total_revenue.toFixed(2)}</div>
+                        <div style="font-size: 12px; color: #64748B; margin-top: 4px;">Umsatz (30 Tage)</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: #F8FAFC; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #2563EB;">${analytics.sales.order_count}</div>
+                        <div style="font-size: 12px; color: #64748B; margin-top: 4px;">Bestellungen</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: #F8FAFC; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #2563EB;">€${analytics.sales.avg_order_value.toFixed(2)}</div>
+                        <div style="font-size: 12px; color: #64748B; margin-top: 4px;">Ø Bestellwert</div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div>
+                        <h4 style="margin-bottom: 12px;">🔥 Top Produkte</h4>
+                        ${topProductsHtml}
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 12px;">🛒 Neueste Bestellungen</h4>
+                        ${recentOrdersHtml}
+                    </div>
+                </div>
+            `;
         }
         
         async function loadProducts() {

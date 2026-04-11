@@ -370,6 +370,82 @@ app.put('/api/owner/coupons/:id', authMiddleware, requireRole('owner', 'admin'),
     }
 });
 
+// Get shop analytics
+app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { period = '30' } = req.query; // days
+    
+    try {
+        // Get shop ID
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+            [req.user.id]
+        );
+        
+        if (shopRows.length === 0) {
+            return res.json({
+                sales: { total: 0, count: 0 },
+                topProducts: [],
+                recentOrders: []
+            });
+        }
+        
+        const shopId = shopRows[0].id;
+        
+        // Sales stats
+        const { rows: salesRows } = await pool.query(`
+            SELECT 
+                COALESCE(SUM(total_amount), 0) as total_revenue,
+                COUNT(*) as order_count,
+                AVG(total_amount) as avg_order_value
+            FROM orders
+            WHERE shop_id = $1 
+              AND created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND status != 'cancelled'
+        `, [shopId]);
+        
+        // Top products
+        const { rows: topProducts } = await pool.query(`
+            SELECT 
+                p.name,
+                SUM(oi.quantity) as total_sold,
+                SUM(oi.quantity * oi.unit_price) as revenue
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.shop_id = $1 
+              AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND o.status != 'cancelled'
+            GROUP BY p.id, p.name
+            ORDER BY total_sold DESC
+            LIMIT 5
+        `, [shopId]);
+        
+        // Recent orders
+        const { rows: recentOrders } = await pool.query(`
+            SELECT o.*, 
+                   (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
+            FROM orders o
+            WHERE o.shop_id = $1
+            ORDER BY o.created_at DESC
+            LIMIT 5
+        `, [shopId]);
+        
+        res.json({
+            period: `${period} days`,
+            sales: {
+                total_revenue: parseFloat(salesRows[0].total_revenue),
+                order_count: parseInt(salesRows[0].order_count),
+                avg_order_value: parseFloat(salesRows[0].avg_order_value || 0)
+            },
+            top_products: topProducts,
+            recent_orders: recentOrders
+        });
+    } catch (error) {
+        console.error('Get analytics error:', error);
+        res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+});
+
 // Delete coupon
 app.delete('/api/owner/coupons/:id', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     try {
