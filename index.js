@@ -66,6 +66,22 @@ app.get('/api/upload/test', async (req, res) => {
     }
 });
 
+// Direct Cloudinary test
+app.post('/api/upload/direct', async (req, res) => {
+    try {
+        const cloudinary = require('cloudinary').v2;
+        // Test with a simple image from URL
+        const result = await cloudinary.uploader.upload(
+            'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+            { folder: 'test' }
+        );
+        res.json({ success: true, url: result.secure_url });
+    } catch (error) {
+        console.error('Direct upload error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Multer error handler middleware
 function handleMulterError(err, req, res, next) {
     if (err instanceof multer.MulterError) {
