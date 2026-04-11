@@ -54,6 +54,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ========== UPLOAD ==========
+// Cache bust: 2025-04-11-0908
 app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
