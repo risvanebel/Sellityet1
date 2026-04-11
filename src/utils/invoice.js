@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const puppeteer = require('puppeteer');
 
 // Simple HTML-based invoice generator
 function generateInvoiceHTML(order, shop) {
@@ -262,6 +263,36 @@ function getPaymentInstructions(method, shop) {
     }
 }
 
+// Generate PDF from HTML
+async function generateInvoicePDF(order, shop) {
+    const html = generateInvoiceHTML(order, shop);
+    
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        
+        const pdf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+        });
+        
+        return pdf;
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        throw error;
+    } finally {
+        if (browser) await browser.close();
+    }
+}
+
 module.exports = {
-    generateInvoiceHTML
+    generateInvoiceHTML,
+    generateInvoicePDF
 };

@@ -15,7 +15,7 @@ const {
   createCryptoPayment,
   getStripeClient
 } = require('./src/config/payments');
-const { generateInvoiceHTML } = require('./src/utils/invoice');
+const { generateInvoiceHTML, generateInvoicePDF } = require('./src/utils/invoice');
 const { detectTenant, requireTenant } = require('./src/middleware/tenant');
 require('dotenv').config();
 
@@ -2161,11 +2161,12 @@ app.get('/api/owner/orders/:orderId/invoice', authMiddleware, requireRole('owner
             bank_account_bic: order.bank_account_bic
         };
         
-        const invoiceHTML = generateInvoiceHTML(order, shop);
+        // Generate PDF
+        const pdfBuffer = await generateInvoicePDF(order, shop);
         
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `inline; filename="Rechnung-${order.order_number}.html"`);
-        res.send(invoiceHTML);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="Rechnung-${order.order_number}.pdf"`);
+        res.send(pdfBuffer);
         
     } catch (error) {
         console.error('Generate invoice error:', error);

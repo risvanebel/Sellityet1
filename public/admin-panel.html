@@ -1477,6 +1477,15 @@
                         <label class="form-label">Gesamtbetrag</label>
                         <p style="font-size: 1.5rem; font-weight: 600;">€${parseFloat(order.total_amount).toFixed(2)}</p>
                     </div>
+                    <div style="display: flex; gap: 12px; margin: 24px 0;">
+                        <a href="${API_URL}/owner/orders/${order.id}/invoice" 
+                           target="_blank"
+                           class="btn btn-primary" 
+                           style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                            📄 Rechnung anzeigen
+                        </a>
+                    </div>
+                    
                     <h4 style="margin-top: 24px; margin-bottom: 16px;">Artikel</h4>
                     ${order.items.map(item => `
                         <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 8px;">
