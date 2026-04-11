@@ -1053,15 +1053,19 @@
             
             // Upload image if selected
             let imageUrl = null;
+            console.log('Image file selected:', imageFile);
             if (imageFile) {
                 try {
                     document.getElementById('product-error').innerHTML = '<div class="loading">Bild wird hochgeladen...</div>';
                     imageUrl = await uploadImage(imageFile);
+                    console.log('Image uploaded successfully:', imageUrl);
                 } catch (e) {
-                    document.getElementById('product-error').innerHTML = '<div class="error-message">Bild-Upload fehlgeschlagen</div>';
+                    console.error('Image upload failed:', e);
+                    document.getElementById('product-error').innerHTML = '<div class="error-message">Bild-Upload fehlgeschlagen: ' + e.message + '</div>';
                     return;
                 }
             }
+            console.log('Final imageUrl:', imageUrl);
             
             try {
                 if (!currentShop) {
