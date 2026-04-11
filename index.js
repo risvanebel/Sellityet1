@@ -75,8 +75,8 @@ app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res)
         const result = await uploadToCloudinary(req.file.buffer);
         res.json({ url: result.secure_url, public_id: result.public_id });
     } catch (error) {
-        console.error('Upload error:', error);
-        res.status(500).json({ error: 'Upload fehlgeschlagen' });
+        console.error('Upload error:', error.message, error.stack);
+        res.status(500).json({ error: 'Upload fehlgeschlagen: ' + error.message });
     }
 });
 

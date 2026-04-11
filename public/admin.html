@@ -932,18 +932,32 @@
         }
         
         async function uploadImage(file) {
+            console.log('Uploading image:', file.name, file.size, file.type);
             const formData = new FormData();
             formData.append('image', file);
             
-            const res = await fetch(`${API_URL}/upload`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${authToken}` },
-                body: formData
-            });
-            
-            if (!res.ok) throw new Error('Upload failed');
-            const data = await res.json();
-            return data.url;
+            try {
+                const res = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+                
+                console.log('Upload response status:', res.status);
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    console.error('Upload error response:', errorData);
+                    throw new Error(errorData.error || `Upload failed: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                console.log('Upload success:', data.url);
+                return data.url;
+            } catch (e) {
+                console.error('Upload exception:', e);
+                throw e;
+            }
         }
         
         let variantCount = 0;
