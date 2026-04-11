@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            color: #0F172A;
+            line-height: 1.5;
+        }
+        .shop-header {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .shop-header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .shop-header p { font-size: 1.1rem; opacity: 0.9; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .product-image {
+            height: 200px;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+        }
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .product-content {
+            padding: 20px;
+        }
+        .product-category {
+            font-size: 12px;
+            color: #2563EB;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .product-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .product-description {
+            font-size: 14px;
+            color: #64748B;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .product-price {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0F172A;
+        }
+        .product-price .original {
+            text-decoration: line-through;
+            color: #94A3B8;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background: #2563EB;
+            color: white;
+        }
+        .btn:hover { background: #1D4ED8; }
+        .btn:disabled {
+            background: #94A3B8;
+            cursor: not-allowed;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .empty-state-icon { font-size: 64px; margin-bottom: 20px; }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #64748B;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563EB;
+            text-decoration: none;
+        }
+        .stock-low { color: #DC2626; font-size: 12px; }
+        @media (max-width: 640px) {
+            .shop-header h1 { font-size: 1.8rem; }
+            .products-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shop-header" id="shop-header">
+        <h1>Lade Shop...</h1>
+    </div>
+    
+    <div class="container">
+        <a href="/" class="back-link">← Zurück zu allen Shops</a>
+        
+        <div id="products-container">
+            <div class="loading">Lade Produkte...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopSlug = window.location.pathname.split('/').pop();
+        
+        async function loadShop() {
+            try {
+                const res = await fetch(`${API_URL}/shops/${shopSlug}`);
+                if (!res.ok) throw new Error('Shop not found');
+                const shop = await res.json();
+                
+                document.getElementById('shop-header').style.background = shop.primary_color || '#2563EB';
+                document.getElementById('shop-header').innerHTML = `
+                    <h1>${shop.name}</h1>
+                    <p>${shop.description || 'Willkommen in unserem Shop'}</p>
+                `;
+                
+                loadProducts(shop.id);
+            } catch (error) {
+                document.getElementById('shop-header').innerHTML = `
+                    <h1>Shop nicht gefunden</h1>
+                    <p>Dieser Shop existiert nicht oder wurde deaktiviert.</p>
+                `;
+                document.getElementById('products-container').innerHTML = '';
+            }
+        }
+        
+        async function loadProducts(shopId) {
+            try {
+                const res = await fetch(`${API_URL}/shops/${shopId}/products`);
+                const products = await res.json();
+                
+                if (products.length === 0) {
+                    document.getElementById('products-container').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <h2>Noch keine Produkte</h2>
+                            <p>Dieser Shop hat noch keine Produkte im Angebot.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                document.getElementById('products-container').innerHTML = `
+                    <div class="products-grid">
+                        ${products.map(p => `
+                            <div class="product-card">
+                                <div class="product-image">
+                                    ${p.image_urls && p.image_urls[0] 
+                                        ? `<img src="${p.image_urls[0]}" alt="${p.name}">` 
+                                        : '📦'}
+                                </div>
+                                <div class="product-content">
+                                    <div class="product-category">${p.category_name || 'Produkt'}</div>
+                                    <h3 class="product-name">${p.name}</h3>
+                                    <p class="product-description">${p.description || ''}</p>
+                                    <div class="product-footer">
+                                        <div class="product-price">
+                                            ${p.discount_price 
+                                                ? `<span class="original">€${p.price}</span>€${p.discount_price}` 
+                                                : `€${p.price}`}
+                                        </div>
+                                        <button class="btn" ${p.quantity === 0 ? 'disabled' : ''}>
+                                            ${p.quantity === 0 ? 'Ausverkauft' : 'In den Warenkorb'}
+                                        </button>
+                                    </div>
+                                    ${p.quantity <= (p.min_stock || 5) && p.quantity > 0 
+                                        ? `<div class="stock-low">Nur noch ${p.quantity} verfügbar</div>` 
+                                        : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('products-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h2>Fehler beim Laden</h2>
+                        <p>Die Produkte konnten nicht geladen werden.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        loadShop();
+    </script>
+</body>
+</html>
