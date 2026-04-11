@@ -307,41 +307,47 @@ app.get('/api/owner/coupons', authMiddleware, requireRole('owner', 'admin'), asy
 app.post('/api/owner/coupons', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     const {
         code, description, discount_type, discount_value,
-        min_order_amount, max_discount_amount, usage_limit,
-        valid_from, valid_until, applies_to, product_ids, category_ids
+        min_order_amount, max_discount_amount, usage_limit, customer_usage_limit,
+        valid_from, valid_until, applies_to, product_ids, category_ids,
+        exclude_sale_items, excluded_product_ids, excluded_category_ids,
+        first_order_only, requires_minimum_items
     } = req.body;
-    
+
     if (!code || !discount_value) {
         return res.status(400).json({ error: 'Code and discount value required' });
     }
-    
+
     try {
         // Get shop for this owner
         const { rows: shopRows } = await pool.query(
             'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
             [req.user.id]
         );
-        
+
         if (shopRows.length === 0) {
             return res.status(404).json({ error: 'No shop found' });
         }
-        
+
         const shopId = shopRows[0].id;
-        
+
         const { rows } = await pool.query(`
             INSERT INTO coupons (
                 shop_id, code, description, discount_type, discount_value,
-                min_order_amount, max_discount_amount, usage_limit,
-                valid_from, valid_until, applies_to, product_ids, category_ids
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                min_order_amount, max_discount_amount, usage_limit, customer_usage_limit,
+                valid_from, valid_until, applies_to, product_ids, category_ids,
+                exclude_sale_items, excluded_product_ids, excluded_category_ids,
+                first_order_only, requires_minimum_items
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
             RETURNING *
         `, [
             shopId, code.toUpperCase(), description, discount_type || 'percentage', discount_value,
-            min_order_amount || 0, max_discount_amount || null, usage_limit || null,
+            min_order_amount || 0, max_discount_amount || null, usage_limit || null, customer_usage_limit || null,
             valid_from || new Date(), valid_until || null, applies_to || 'all',
-            product_ids || null, category_ids || null
+            product_ids || null, category_ids || null,
+            exclude_sale_items || false, excluded_product_ids || null, excluded_category_ids || null,
+            first_order_only || false, requires_minimum_items || 0
         ]);
-        
+
         res.status(201).json(rows[0]);
     } catch (error) {
         console.error('Create coupon error:', error);
@@ -354,24 +360,56 @@ app.post('/api/owner/coupons', authMiddleware, requireRole('owner', 'admin'), as
 
 // Update coupon
 app.put('/api/owner/coupons/:id', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
-    const { is_active, usage_limit, valid_until } = req.body;
-    
+    const {
+        code, description, discount_type, discount_value,
+        min_order_amount, max_discount_amount, usage_limit, customer_usage_limit,
+        valid_from, valid_until, is_active, applies_to, product_ids, category_ids,
+        exclude_sale_items, excluded_product_ids, excluded_category_ids,
+        first_order_only, requires_minimum_items
+    } = req.body;
+
     try {
+        // Build dynamic update query
+        const updates = [];
+        const values = [];
+        let paramIdx = 1;
+
+        if (code !== undefined) { updates.push(`code = $${paramIdx++}`); values.push(code.toUpperCase()); }
+        if (description !== undefined) { updates.push(`description = $${paramIdx++}`); values.push(description); }
+        if (discount_type !== undefined) { updates.push(`discount_type = $${paramIdx++}`); values.push(discount_type); }
+        if (discount_value !== undefined) { updates.push(`discount_value = $${paramIdx++}`); values.push(discount_value); }
+        if (min_order_amount !== undefined) { updates.push(`min_order_amount = $${paramIdx++}`); values.push(min_order_amount); }
+        if (max_discount_amount !== undefined) { updates.push(`max_discount_amount = $${paramIdx++}`); values.push(max_discount_amount); }
+        if (usage_limit !== undefined) { updates.push(`usage_limit = $${paramIdx++}`); values.push(usage_limit); }
+        if (customer_usage_limit !== undefined) { updates.push(`customer_usage_limit = $${paramIdx++}`); values.push(customer_usage_limit); }
+        if (valid_from !== undefined) { updates.push(`valid_from = $${paramIdx++}`); values.push(valid_from); }
+        if (valid_until !== undefined) { updates.push(`valid_until = $${paramIdx++}`); values.push(valid_until); }
+        if (is_active !== undefined) { updates.push(`is_active = $${paramIdx++}`); values.push(is_active); }
+        if (applies_to !== undefined) { updates.push(`applies_to = $${paramIdx++}`); values.push(applies_to); }
+        if (product_ids !== undefined) { updates.push(`product_ids = $${paramIdx++}`); values.push(product_ids); }
+        if (category_ids !== undefined) { updates.push(`category_ids = $${paramIdx++}`); values.push(category_ids); }
+        if (exclude_sale_items !== undefined) { updates.push(`exclude_sale_items = $${paramIdx++}`); values.push(exclude_sale_items); }
+        if (excluded_product_ids !== undefined) { updates.push(`excluded_product_ids = $${paramIdx++}`); values.push(excluded_product_ids); }
+        if (excluded_category_ids !== undefined) { updates.push(`excluded_category_ids = $${paramIdx++}`); values.push(excluded_category_ids); }
+        if (first_order_only !== undefined) { updates.push(`first_order_only = $${paramIdx++}`); values.push(first_order_only); }
+        if (requires_minimum_items !== undefined) { updates.push(`requires_minimum_items = $${paramIdx++}`); values.push(requires_minimum_items); }
+
+        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+        values.push(req.params.id, req.user.id);
+
         const { rows } = await pool.query(`
             UPDATE coupons c
-            SET is_active = COALESCE($1, is_active),
-                usage_limit = COALESCE($2, usage_limit),
-                valid_until = COALESCE($3, valid_until),
-                updated_at = CURRENT_TIMESTAMP
+            SET ${updates.join(', ')}
             FROM shops s
-            WHERE c.id = $4 AND c.shop_id = s.id AND s.owner_id = $5
+            WHERE c.id = $${paramIdx++} AND c.shop_id = s.id AND s.owner_id = $${paramIdx}
             RETURNING c.*
-        `, [is_active, usage_limit, valid_until, req.params.id, req.user.id]);
-        
+        `, values);
+
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Coupon not found' });
         }
-        
+
         res.json(rows[0]);
     } catch (error) {
         console.error('Update coupon error:', error);
@@ -477,40 +515,80 @@ app.delete('/api/owner/coupons/:id', authMiddleware, requireRole('owner', 'admin
 
 // Validate and apply coupon (public)
 app.post('/api/coupons/validate', async (req, res) => {
-    const { code, shop_id, cart_total, product_ids } = req.body;
-    
+    const { code, shop_id, cart_total, product_ids, customer_email, is_first_order } = req.body;
+
     if (!code || !shop_id) {
         return res.status(400).json({ error: 'Code and shop required' });
     }
-    
+
     try {
         const { rows } = await pool.query(`
             SELECT * FROM coupons
-            WHERE code = UPPER($1) 
-              AND shop_id = $2 
+            WHERE code = UPPER($1)
+              AND shop_id = $2
               AND is_active = true
               AND (valid_until IS NULL OR valid_until > CURRENT_TIMESTAMP)
               AND (valid_from <= CURRENT_TIMESTAMP)
         `, [code, shop_id]);
-        
+
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Invalid or expired coupon' });
         }
-        
+
         const coupon = rows[0];
-        
+
         // Check usage limit
         if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
             return res.status(400).json({ error: 'Coupon usage limit reached' });
         }
-        
+
+        // Check customer usage limit
+        if (coupon.customer_usage_limit && customer_email) {
+            const { rows: customerUsage } = await pool.query(
+                'SELECT COUNT(*) as count FROM coupon_usage WHERE coupon_id = $1 AND customer_email = $2',
+                [coupon.id, customer_email]
+            );
+            if (parseInt(customerUsage[0].count) >= coupon.customer_usage_limit) {
+                return res.status(400).json({ error: `You can only use this coupon ${coupon.customer_usage_limit} time(s)` });
+            }
+        }
+
+        // Check first order only
+        if (coupon.first_order_only && !is_first_order) {
+            return res.status(400).json({ error: 'This coupon is only valid for first orders' });
+        }
+
         // Check minimum order amount
         if (cart_total < coupon.min_order_amount) {
-            return res.status(400).json({ 
-                error: `Minimum order amount is €${coupon.min_order_amount}` 
+            return res.status(400).json({
+                error: `Minimum order amount is €${coupon.min_order_amount}`
             });
         }
-        
+
+        // Check minimum items requirement
+        if (coupon.requires_minimum_items > 0) {
+            // This would need item count from cart
+        }
+
+        // Check product/category exclusions if product_ids provided
+        if (product_ids && product_ids.length > 0) {
+            // Check excluded products
+            if (coupon.excluded_product_ids && coupon.excluded_product_ids.length > 0) {
+                const excludedInCart = product_ids.filter(id => coupon.excluded_product_ids.includes(id));
+                if (excludedInCart.length > 0) {
+                    return res.status(400).json({ error: 'Coupon does not apply to some items in your cart' });
+                }
+            }
+
+            // Check if coupon is product-specific
+            if (coupon.applies_to === 'products' && coupon.product_ids) {
+                const applicableInCart = product_ids.filter(id => coupon.product_ids.includes(id));
+                if (applicableInCart.length === 0) {
+                    return res.status(400).json({ error: 'Coupon does not apply to any items in your cart' });
+                }
+            }
+        }
+
         // Calculate discount
         let discount = 0;
         if (coupon.discount_type === 'percentage') {
@@ -521,7 +599,7 @@ app.post('/api/coupons/validate', async (req, res) => {
         } else {
             discount = coupon.discount_value;
         }
-        
+
         res.json({
             valid: true,
             coupon: {

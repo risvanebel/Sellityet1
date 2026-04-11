@@ -1409,6 +1409,8 @@
         
         // ========== COUPONS ==========
         
+        let allCoupons = [];
+        
         async function loadCoupons() {
             try {
                 const res = await fetch(`${API_URL}/owner/coupons`, {
@@ -1421,8 +1423,8 @@
                     return;
                 }
                 
-                const coupons = await res.json();
-                renderCoupons(coupons);
+                allCoupons = await res.json();
+                renderCoupons(allCoupons);
             } catch (e) {
                 console.error('Load coupons error:', e);
                 document.getElementById('coupons-container').innerHTML = 
@@ -1452,11 +1454,20 @@
                                 <th>Verwendet</th>
                                 <th>Gültig bis</th>
                                 <th>Status</th>
+                                <th>Regeln</th>
                                 <th style="text-align: right;">Aktionen</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${coupons.map(c => `
+                            ${coupons.map(c => {
+                                const rules = [];
+                                if (c.min_order_amount > 0) rules.push(`Min. €${c.min_order_amount}`);
+                                if (c.exclude_sale_items) rules.push('Keine Angebote');
+                                if (c.first_order_only) rules.push('Nur Erstbestellung');
+                                if (c.applies_to === 'products') rules.push('Nur bestimmte Produkte');
+                                if (c.requires_minimum_items > 0) rules.push(`Min. ${c.requires_minimum_items} Artikel`);
+                                
+                                return `
                                 <tr>
                                     <td><strong>${c.code}</strong></td>
                                     <td>
@@ -1464,14 +1475,16 @@
                                             ? `${c.discount_value}%` 
                                             : `€${c.discount_value}`}
                                     </td>
-                                    <td>${c.times_used || 0} / ${c.usage_limit || '∞'}</td>
+                                    <td>${c.usage_count || 0} / ${c.usage_limit || '∞'}</td>
                                     <td>${c.valid_until ? new Date(c.valid_until).toLocaleDateString('de-DE') : 'Unbegrenzt'}</td>
                                     <td>
                                         <span class="badge ${c.is_active ? 'badge-success' : 'badge-neutral'}">
                                             ${c.is_active ? 'Aktiv' : 'Inaktiv'}
                                         </span>
                                     </td>
+                                    <td><small style="color: #64748B;">${rules.join(', ') || 'Keine'}</small></td>
                                     <td style="text-align: right;">
+                                        <button class="btn btn-icon" onclick="editCoupon(${c.id})" title="Bearbeiten">✏️</button>
                                         <button class="btn btn-icon" onclick="toggleCoupon(${c.id}, ${!c.is_active})" title="${c.is_active ? 'Deaktivieren' : 'Aktivieren'}">
                                             ${c.is_active ? '🚫' : '✅'}
                                         </button>
@@ -1522,20 +1535,222 @@
             }
         }
         
-        function openCouponModal() {
-            const code = prompt('Gutschein-Code (z.B. SUMMER20):');
-            if (!code) return;
+        let couponProductSelections = [];
+        let couponExcludedProductSelections = [];
+
+        function openCouponModal(coupon = null) {
+            const isEdit = coupon !== null;
+            document.getElementById('product-modal-title').textContent = isEdit ? 'Gutschein bearbeiten' : 'Neuer Gutschein';
             
-            const type = confirm('Prozentualer Rabatt? (OK=%, Abbrechen=€)') ? 'percentage' : 'fixed_amount';
-            const value = parseFloat(prompt('Rabatt-Wert (z.B. 20 für 20% oder 20€):'));
-            if (!value || value <= 0) return;
+            document.getElementById('product-modal-body').innerHTML = `
+                <div id="coupon-error"></div>
+                <input type="hidden" id="coupon-id" value="${isEdit ? coupon.id : ''}">
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label">Gutschein-Code *</label>
+                        <input type="text" class="form-input" id="coupon-code" placeholder="z.B. SUMMER20" value="${isEdit ? coupon.code : ''}" ${isEdit ? 'readonly' : ''}>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="coupon-active">
+                            <option value="true" ${isEdit && coupon.is_active ? 'selected' : ''}>Aktiv</option>
+                            <option value="false" ${isEdit && !coupon.is_active ? 'selected' : ''}>Inaktiv</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Beschreibung</label>
+                    <input type="text" class="form-input" id="coupon-description" placeholder="z.B. Sommer Sale 2024" value="${isEdit ? (coupon.description || '') : ''}">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Rabatt-Typ *</label>
+                        <select class="form-select" id="coupon-type">
+                            <option value="percentage" ${isEdit && coupon.discount_type === 'percentage' ? 'selected' : ''}>Prozent (%)</option>
+                            <option value="fixed_amount" ${isEdit && coupon.discount_type === 'fixed_amount' ? 'selected' : ''}>Festbetrag (€)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rabatt-Wert *</label>
+                        <input type="number" class="form-input" id="coupon-value" placeholder="20" step="0.01" value="${isEdit ? coupon.discount_value : ''}">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Mindestbestellwert (€)</label>
+                        <input type="number" class="form-input" id="coupon-min-order" placeholder="0" step="0.01" value="${isEdit ? (coupon.min_order_amount || '') : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max. Rabatt (€)</label>
+                        <input type="number" class="form-input" id="coupon-max-discount" placeholder="" step="0.01" value="${isEdit ? (coupon.max_discount_amount || '') : ''}">
+                        <div class="form-hint">Nur bei Prozent-Rabatten</div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Max. Verwendungen gesamt</label>
+                        <input type="number" class="form-input" id="coupon-usage-limit" placeholder="∞" value="${isEdit ? (coupon.usage_limit || '') : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max. Verwendungen pro Kunde</label>
+                        <input type="number" class="form-input" id="coupon-customer-limit" placeholder="∞" value="${isEdit ? (coupon.customer_usage_limit || '') : ''}">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Gültig von</label>
+                        <input type="date" class="form-input" id="coupon-valid-from" value="${isEdit && coupon.valid_from ? coupon.valid_from.split('T')[0] : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gültig bis</label>
+                        <input type="date" class="form-input" id="coupon-valid-until" value="${isEdit && coupon.valid_until ? coupon.valid_until.split('T')[0] : ''}">
+                    </div>
+                </div>
+                
+                <hr style="margin: 24px 0; border: none; border-top: 1px solid #E2E8F0;">
+                <h4 style="margin-bottom: 16px;">🎯 Einschränkungen</h4>
+                
+                <div class="form-group">
+                    <label class="form-label">Gültig für</label>
+                    <select class="form-select" id="coupon-applies-to">
+                        <option value="all" ${isEdit && coupon.applies_to === 'all' ? 'selected' : ''}>Alle Produkte</option>
+                        <option value="products" ${isEdit && coupon.applies_to === 'products' ? 'selected' : ''}>Nur bestimmte Produkte</option>
+                        <option value="categories" ${isEdit && coupon.applies_to === 'categories' ? 'selected' : ''}>Nur bestimmte Kategorien</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="coupon-products-section" style="display: ${isEdit && coupon.applies_to === 'products' ? 'block' : 'none'};">
+                    <label class="form-label">Gültige Produkte</label>
+                    <select class="form-select" id="coupon-products" multiple style="height: 120px;">
+                        ${allProducts.map(p => `<option value="${p.id}" ${isEdit && coupon.product_ids && coupon.product_ids.includes(p.id) ? 'selected' : ''}>${p.name}</option>`).join('')}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="coupon-exclude-sale" ${isEdit && coupon.exclude_sale_items ? 'checked' : ''}>
+                        Reduzierte Artikel (Sonderpreis) ausschließen
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Ausgeschlossene Produkte</label>
+                    <select class="form-select" id="coupon-excluded-products" multiple style="height: 100px;">
+                        ${allProducts.map(p => `<option value="${p.id}" ${isEdit && coupon.excluded_product_ids && coupon.excluded_product_ids.includes(p.id) ? 'selected' : ''}>${p.name}</option>`).join('')}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="coupon-first-order" ${isEdit && coupon.first_order_only ? 'checked' : ''}>
+                        Nur für Erstbesteller
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Mindestanzahl Artikel</label>
+                    <input type="number" class="form-input" id="coupon-min-items" placeholder="0" value="${isEdit ? (coupon.requires_minimum_items || '') : ''}">
+                </div>
+                
+                <button class="btn btn-primary" onclick="saveCoupon()">${isEdit ? 'Gutschein aktualisieren' : 'Gutschein erstellen'}</button>
+            `;
             
-            const usageLimit = parseInt(prompt('Maximale Verwendungen (leer=unbegrenzt):') || '0') || null;
+            document.getElementById('product-modal').classList.add('active');
             
-            createCoupon(code, type, value, usageLimit);
+            // Add change listener for applies-to
+            document.getElementById('coupon-applies-to').addEventListener('change', function() {
+                document.getElementById('coupon-products-section').style.display = 
+                    this.value === 'products' ? 'block' : 'none';
+            });
         }
         
-        async function createCoupon(code, type, value, usageLimit) {
+        async function saveCoupon() {
+            const id = document.getElementById('coupon-id').value;
+            const isEdit = id !== '';
+            
+            const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+            const discountType = document.getElementById('coupon-type').value;
+            const discountValue = parseFloat(document.getElementById('coupon-value').value);
+            
+            if (!code || !discountValue) {
+                document.getElementById('coupon-error').innerHTML = '<div class="error-message">Code und Rabatt-Wert sind erforderlich</div>';
+                return;
+            }
+            
+            // Get selected products
+            const appliesTo = document.getElementById('coupon-applies-to').value;
+            const productSelect = document.getElementById('coupon-products');
+            const selectedProducts = appliesTo === 'products' && productSelect 
+                ? Array.from(productSelect.selectedOptions).map(o => parseInt(o.value))
+                : null;
+            
+            // Get excluded products
+            const excludedSelect = document.getElementById('coupon-excluded-products');
+            const excludedProducts = excludedSelect && excludedSelect.selectedOptions.length > 0
+                ? Array.from(excludedSelect.selectedOptions).map(o => parseInt(o.value))
+                : null;
+            
+            const body = {
+                code,
+                description: document.getElementById('coupon-description').value || null,
+                discount_type: discountType,
+                discount_value: discountValue,
+                min_order_amount: parseFloat(document.getElementById('coupon-min-order').value) || 0,
+                max_discount_amount: parseFloat(document.getElementById('coupon-max-discount').value) || null,
+                usage_limit: parseInt(document.getElementById('coupon-usage-limit').value) || null,
+                customer_usage_limit: parseInt(document.getElementById('coupon-customer-limit').value) || null,
+                valid_from: document.getElementById('coupon-valid-from').value || null,
+                valid_until: document.getElementById('coupon-valid-until').value || null,
+                is_active: document.getElementById('coupon-active').value === 'true',
+                applies_to: appliesTo,
+                product_ids: selectedProducts,
+                category_ids: null, // TODO: Add category support
+                exclude_sale_items: document.getElementById('coupon-exclude-sale').checked,
+                excluded_product_ids: excludedProducts,
+                excluded_category_ids: null,
+                first_order_only: document.getElementById('coupon-first-order').checked,
+                requires_minimum_items: parseInt(document.getElementById('coupon-min-items').value) || 0
+            };
+            
+            try {
+                const url = isEdit ? `${API_URL}/owner/coupons/${id}` : `${API_URL}/owner/coupons`;
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (res.ok) {
+                    closeProductModal();
+                    loadCoupons();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('coupon-error').innerHTML = `<div class="error-message">${err.error || 'Fehler beim Speichern'}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('coupon-error').innerHTML = '<div class="error-message">Netzwerkfehler</div>';
+            }
+        }
+        
+        function editCoupon(id) {
+            const coupon = allCoupons.find(c => c.id === id);
+            if (coupon) {
+                openCouponModal(coupon);
+            }
+        }
+        
+        async function createCouponSimple(code, type, value, usageLimit) {
             try {
                 const res = await fetch(`${API_URL}/owner/coupons`, {
                     method: 'POST',
