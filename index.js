@@ -371,6 +371,69 @@ app.put('/api/owner/products/:id/inventory', authMiddleware, requireRole('owner'
     }
 });
 
+// Get product variants
+app.get('/api/owner/products/:id/variants', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT v.* FROM product_variants v
+            JOIN products p ON v.product_id = p.id
+            JOIN shops s ON p.shop_id = s.id
+            WHERE p.id = $1 AND s.owner_id = $2 AND v.is_active = true
+            ORDER BY v.name
+        `, [req.params.id, req.user.id]);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch variants' });
+    }
+});
+
+// Create variant
+app.post('/api/owner/products/:id/variants', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { name, sku, price_adjustment, stock } = req.body;
+    const productId = req.params.id;
+    
+    try {
+        // Verify ownership
+        const { rows: checkRows } = await pool.query(`
+            SELECT p.id FROM products p
+            JOIN shops s ON p.shop_id = s.id
+            WHERE p.id = $1 AND s.owner_id = $2
+        `, [productId, req.user.id]);
+        
+        if (checkRows.length === 0) {
+            return res.status(403).json({ error: 'Not your product' });
+        }
+        
+        // Create variant
+        const { rows } = await pool.query(`
+            INSERT INTO product_variants (product_id, name, sku, price_adjustment, stock)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [productId, name, sku, price_adjustment || 0, stock || 0]);
+        
+        // Update product to indicate it has variants
+        await pool.query(`
+            UPDATE products SET has_variants = true WHERE id = $1
+        `, [productId]);
+        
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create variant' });
+    }
+});
+
+// Delete variant
+app.delete('/api/owner/variants/:id', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        await pool.query(`
+            UPDATE product_variants SET is_active = false WHERE id = $1
+        `, [req.params.id]);
+        res.json({ message: 'Variant deleted' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete variant' });
+    }
+});
+
 // ========== ADMIN ==========
 
 // Get all users
