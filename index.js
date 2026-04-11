@@ -52,6 +52,11 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
+// ========== SHOP VIEW ==========
+app.get('/shop/:slug', (req, res) => {
+    res.sendFile(__dirname + '/public/shop-view.html');
+});
+
 // ========== SECURITY: TEMP ENDPOINTS REMOVED ==========
 
 // ========== AUTH ==========
