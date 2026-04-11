@@ -3,176 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anmelden - Sellityet</title>
+    <title>Login - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
         }
-        .container {
+        .login-container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 400px;
+            border-radius: 16px;
+            padding: 48px;
             width: 100%;
+            max-width: 420px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-        h1 { text-align: center; color: #333; margin-bottom: 30px; }
-        
-        .form-group { margin-bottom: 20px; }
-        .form-group label {
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #2563EB, #7C3AED);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0F172A;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
+            font-size: 14px;
             font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
         }
-        .form-group input {
+        .form-input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1em;
-            transition: border-color 0.2s;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s;
         }
-        .form-group input:focus {
+        .form-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
         }
-        
-        .btn {
+        .submit-btn {
             width: 100%;
-            padding: 15px;
-            background: #FF6B6B;
+            padding: 14px;
+            background: linear-gradient(135deg, #2563EB, #7C3AED);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
-            margin-top: 10px;
+            transition: all 0.2s;
         }
-        .btn:hover { transform: translateY(-2px); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        
-        .back-link {
-            text-align: center;
-            margin-top: 20px;
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37,99,235,0.3);
         }
-        .back-link a {
-            color: #667eea;
-            text-decoration: none;
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
-        
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            padding: 15px;
-            border-radius: 10px;
+        .error-message {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 12px 16px;
+            border-radius: 8px;
             margin-bottom: 20px;
+            font-size: 14px;
             display: none;
         }
-        
-        .admin-hint {
-            margin-top: 30px;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 10px;
-            font-size: 0.9em;
-            color: #666;
-            text-align: center;
+        .error-message.show {
+            display: block;
         }
-        .admin-hint code {
-            background: #e0e0e0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 24px;
+            color: #6B7280;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            color: #2563EB;
+        }
+        .role-indicator {
+            text-align: center;
+            padding: 8px 16px;
+            background: #F3F4F6;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #6B7280;
+            margin-bottom: 24px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔐 Anmelden</h1>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">S</div>
+            <h1>Sellityet Admin</h1>
+        </div>
         
-        <div class="error" id="error"></div>
+        <div class="role-indicator">🔒 Geschützter Bereich</div>
         
-        <form id="login-form">
+        <div class="error-message" id="error"></div>
+        
+        <form id="login-form" onsubmit="handleLogin(event)">
             <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" required placeholder="deine@email.com">
+                <label class="form-label">E-Mail</label>
+                <input type="email" class="form-input" id="email" required placeholder="admin@beispiel.de">
             </div>
+            
             <div class="form-group">
-                <label>Passwort</label>
-                <input type="password" id="password" required placeholder="Dein Passwort">
+                <label class="form-label">Passwort</label>
+                <input type="password" class="form-input" id="password" required placeholder="••••••••">
             </div>
-            <button type="submit" class="btn" id="submit-btn">Anmelden</button>
+            
+            <button type="submit" class="submit-btn" id="submit-btn">
+                Anmelden
+            </button>
         </form>
         
-        <div class="back-link">
-            <a href="index.html">← Zurück zur Startseite</a>
-        </div>
-        
-        <div class="admin-hint">
-            <strong>Admin-Zugang:</strong><br>
-            <code>admin@sellityet.com</code><br>
-            <code>admin123</code>
-        </div>
+        <a href="/" class="back-link">← Zurück zum Shop</a>
     </div>
 
     <script>
-        const API_URL = window.location.origin + '/api';
+        const API_URL = '/api';
         
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+        // Check if already logged in
+        const token = localStorage.getItem('token');
+        if (token) {
+            window.location.href = '/admin-panel.html';
+        }
+        
+        async function handleLogin(e) {
             e.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const submitBtn = document.getElementById('submit-btn');
+            const errorDiv = document.getElementById('error');
             
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Wird angemeldet...';
+            submitBtn.textContent = 'Anmelden...';
+            errorDiv.classList.remove('show');
             
             try {
-                const response = await fetch(`${API_URL}/auth/login`, {
+                const res = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
-                const data = await response.json();
+                const data = await res.json();
                 
-                if (response.ok) {
+                if (res.ok) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    // Weiterleitung basierend auf Rolle
-                    if (data.user.role === 'admin') {
-                        window.location.href = 'admin.html';
-                    } else if (data.user.role === 'owner') {
-                        window.location.href = 'owner.html';
-                    } else {
-                        window.location.href = 'index.html';
-                    }
+                    window.location.href = '/admin-panel.html';
                 } else {
-                    showError(data.error || 'Anmeldung fehlgeschlagen');
+                    errorDiv.textContent = data.error || 'Anmeldung fehlgeschlagen';
+                    errorDiv.classList.add('show');
                 }
-            } catch (error) {
-                showError('Netzwerkfehler. Bitte erneut versuchen.');
+            } catch (e) {
+                errorDiv.textContent = 'Verbindungsfehler. Bitte später erneut versuchen.';
+                errorDiv.classList.add('show');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Anmelden';
             }
-        });
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
         }
     </script>
 </body>
