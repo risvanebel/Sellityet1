@@ -15,6 +15,7 @@ const {
   createCryptoPayment,
   getStripeClient
 } = require('./src/config/payments');
+const { generateInvoiceHTML } = require('./src/utils/invoice');
 require('dotenv').config();
 
 const app = express();
@@ -390,6 +391,31 @@ app.post('/api/owner/shops', authMiddleware, requireRole('owner', 'admin'), asyn
         }
         console.error('Create shop error:', error);
         res.status(500).json({ error: 'Failed to create shop' });
+    }
+});
+
+// Get low stock products
+app.get('/api/owner/products/low-stock', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const threshold = req.query.threshold || 10;
+        
+        const { rows } = await pool.query(`
+            SELECT p.*, c.name as category_name,
+                   COALESCE(SUM(pv.stock), p.stock) as total_stock
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            LEFT JOIN product_variants pv ON p.id = pv.product_id
+            JOIN shops s ON p.shop_id = s.id
+            WHERE s.owner_id = $1
+            GROUP BY p.id, c.name
+            HAVING COALESCE(SUM(pv.stock), p.stock) <= $2
+            ORDER BY total_stock ASC
+        `, [req.user.id, threshold]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Get low stock products error:', error);
+        res.status(500).json({ error: 'Failed to fetch low stock products' });
     }
 });
 
@@ -1081,6 +1107,45 @@ app.get('/api/shops/:shopId/payment-methods', async (req, res) => {
   }
 });
 
+// Track order (public)
+app.get('/api/orders/track', async (req, res) => {
+    const { number, email } = req.query;
+    
+    if (!number || !email) {
+        return res.status(400).json({ error: 'Order number and email required' });
+    }
+    
+    try {
+        const { rows: orderRows } = await pool.query(`
+            SELECT o.*, s.name as shop_name, s.slug as shop_slug
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.order_number = $1 AND o.customer_email = $2
+        `, [number, email]);
+        
+        if (orderRows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        
+        const order = orderRows[0];
+        
+        // Get order items
+        const { rows: items } = await pool.query(`
+            SELECT oi.*, p.name as product_name
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $1
+        `, [order.id]);
+        
+        order.items = items;
+        
+        res.json(order);
+    } catch (error) {
+        console.error('Track order error:', error);
+        res.status(500).json({ error: 'Failed to track order' });
+    }
+});
+
 // Initialize payment
 app.post('/api/orders/:orderId/payment', async (req, res) => {
   const { method } = req.body;
@@ -1193,6 +1258,57 @@ app.post('/api/orders/:orderId/payment/confirm', async (req, res) => {
     console.error('Confirm payment error:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Generate invoice PDF
+app.get('/api/owner/orders/:orderId/invoice', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        // Get order with items and shop
+        const { rows: orderRows } = await pool.query(`
+            SELECT o.*, s.name as shop_name, s.email as shop_email, s.phone as shop_phone, 
+                   s.description as shop_description, s.bank_account_name, s.bank_account_iban, 
+                   s.bank_account_bic
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.id = $1 AND s.owner_id = $2
+        `, [req.params.orderId, req.user.id]);
+        
+        if (orderRows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        
+        const order = orderRows[0];
+        
+        // Get order items
+        const { rows: items } = await pool.query(`
+            SELECT oi.*, p.name as product_name
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $1
+        `, [req.params.orderId]);
+        
+        order.items = items;
+        
+        const shop = {
+            name: order.shop_name,
+            email: order.shop_email,
+            phone: order.shop_phone,
+            description: order.shop_description,
+            bank_account_name: order.bank_account_name,
+            bank_account_iban: order.bank_account_iban,
+            bank_account_bic: order.bank_account_bic
+        };
+        
+        const invoiceHTML = generateInvoiceHTML(order, shop);
+        
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `inline; filename="Rechnung-${order.order_number}.html"`);
+        res.send(invoiceHTML);
+        
+    } catch (error) {
+        console.error('Generate invoice error:', error);
+        res.status(500).json({ error: 'Failed to generate invoice' });
+    }
 });
 
 // Capture PayPal payment

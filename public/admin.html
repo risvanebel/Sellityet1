@@ -852,8 +852,9 @@
                                     </td>
                                     <td>${new Date(o.created_at).toLocaleDateString('de-DE')}</td>
                                     <td style="text-align: right;">
-                                        <button class="btn btn-icon" onclick="viewOrder(${o.id})">👁️</button>
-                                        <button class="btn btn-icon" onclick="updateOrderStatus(${o.id})">📝</button>
+                                        <button class="btn btn-icon" onclick="viewOrder(${o.id})" title="Ansehen">👁️</button>
+                                        <button class="btn btn-icon" onclick="downloadInvoice(${o.id})" title="Rechnung">📄</button>
+                                        <button class="btn btn-icon" onclick="updateOrderStatus(${o.id})" title="Status ändern">📝</button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -894,6 +895,17 @@
             });
             
             renderOrders(filtered);
+        }
+        
+        function downloadInvoice(orderId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Nicht eingeloggt');
+                return;
+            }
+            
+            // Open invoice in new tab
+            window.open(`${API_URL}/owner/orders/${orderId}/invoice?token=${token}`, '_blank');
         }
         
         async function viewOrder(id) {
