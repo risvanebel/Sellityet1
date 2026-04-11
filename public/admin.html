@@ -862,9 +862,11 @@
         
         // Product Modal
         function openProductModal(productId = null) {
-            document.getElementById('product-modal-title').textContent = productId ? 'Produkt bearbeiten' : 'Neues Produkt';
-            document.getElementById('product-id').value = productId || '';
-            document.getElementById('product-error').innerHTML = '';
+            console.log('openProductModal called with:', productId);
+            try {
+                document.getElementById('product-modal-title').textContent = productId ? 'Produkt bearbeiten' : 'Neues Produkt';
+                document.getElementById('product-id').value = productId || '';
+                document.getElementById('product-error').innerHTML = '';
             
             if (productId) {
                 const product = allProducts.find(p => p.id === productId);
@@ -878,7 +880,7 @@
                     document.getElementById('product-discount').value = product.discount_price || '';
                     document.getElementById('product-stock').value = product.quantity || 0;
                     document.getElementById('product-min-stock').value = product.min_stock || 5;
-                    document.getElementById('product-image').value = product.image_urls && product.image_urls[0] || '';
+                    // Image is read-only in edit mode for now
                     
                     // Show variants section for existing products
                     document.getElementById('variants-section').style.display = 'block';
@@ -903,6 +905,10 @@
             }
             
             document.getElementById('product-modal').classList.add('active');
+            } catch (e) {
+                console.error('Error in openProductModal:', e);
+                alert('Fehler beim Öffnen: ' + e.message);
+            }
         }
         
         function closeProductModal() {
