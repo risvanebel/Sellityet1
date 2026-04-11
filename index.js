@@ -66,13 +66,32 @@ app.get('/api/upload/test', async (req, res) => {
     }
 });
 
-app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res) => {
+// Public test endpoint
+app.post('/api/upload-test', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Keine Bilddatei' });
         }
-        
         const result = await uploadToCloudinary(req.file.buffer);
+        res.json({ url: result.secure_url, public_id: result.public_id });
+    } catch (error) {
+        console.error('Test upload error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res) => {
+    try {
+        console.log('Upload request received');
+        console.log('File:', req.file ? { name: req.file.originalname, size: req.file.size, mimetype: req.file.mimetype } : 'NO FILE');
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Keine Bilddatei empfangen' });
+        }
+        
+        console.log('Uploading to Cloudinary...');
+        const result = await uploadToCloudinary(req.file.buffer);
+        console.log('Cloudinary result:', result.secure_url);
         res.json({ url: result.secure_url, public_id: result.public_id });
     } catch (error) {
         console.error('Upload error:', error.message, error.stack);
