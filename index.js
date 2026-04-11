@@ -55,6 +55,17 @@ app.get('/api/health', async (req, res) => {
 
 // ========== UPLOAD ==========
 // Cache bust: 2025-04-11-0908
+
+// Test Cloudinary config
+app.get('/api/upload/test', async (req, res) => {
+    try {
+        const result = await require('cloudinary').v2.api.ping();
+        res.json({ status: 'ok', cloudinary: result });
+    } catch (error) {
+        res.status(500).json({ error: error.message, env: !!process.env.CLOUDINARY_URL });
+    }
+});
+
 app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
