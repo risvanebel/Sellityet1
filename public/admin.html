@@ -1468,9 +1468,20 @@
         }
         
         async function savePaymentSettings() {
+            console.log('savePaymentSettings called');
+            
+            // Check auth
+            if (!authToken) {
+                console.error('No auth token');
+                alert('Nicht eingeloggt. Bitte neu anmelden.');
+                return;
+            }
+            
             // Get selected payment methods
             const selectedMethods = Array.from(document.querySelectorAll('.payment-method-check:checked'))
                 .map(cb => cb.value);
+            
+            console.log('Selected methods:', selectedMethods);
             
             const data = {
                 payment_methods: selectedMethods,
@@ -1485,6 +1496,8 @@
                 bank_transfer_instructions: document.getElementById('bank-transfer-instructions')?.value || ''
             };
             
+            console.log('Sending data:', data);
+            
             try {
                 const res = await fetch(`${API_URL}/owner/shops/payment-settings`, {
                     method: 'PUT',
@@ -1495,17 +1508,21 @@
                     body: JSON.stringify(data)
                 });
                 
+                console.log('Response status:', res.status);
+                
                 if (res.ok) {
                     document.getElementById('payment-settings-error').innerHTML = 
                         '<div class="alert alert-success">✅ Zahlungseinstellungen gespeichert!</div>';
                 } else {
                     const err = await res.json();
+                    console.error('Error response:', err);
                     document.getElementById('payment-settings-error').innerHTML = 
-                        `<div class="error-message">${err.error}</div>`;
+                        `<div class="error-message">${err.error || 'Fehler beim Speichern'}</div>`;
                 }
             } catch (e) {
+                console.error('Exception:', e);
                 document.getElementById('payment-settings-error').innerHTML = 
-                    '<div class="error-message">Fehler beim Speichern</div>';
+                    `<div class="error-message">Fehler: ${e.message}</div>`;
             }
         }
         
