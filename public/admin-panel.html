@@ -81,6 +81,7 @@
         });
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -484,8 +485,14 @@
                     
                     <!-- Analytics Section -->
                     <div class="card" style="margin-top: 24px;">
-                        <div class="card-header">
-                            <h3 class="card-title">📊 Shop Analytics (30 Tage)</h3>
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 class="card-title">📊 Shop Analytics</h3>
+                            <select class="filter-select" id="analytics-period" onchange="loadDashboard()" style="width: auto;">
+                                <option value="7">Letzte 7 Tage</option>
+                                <option value="30" selected>Letzte 30 Tage</option>
+                                <option value="90">Letzte 90 Tage</option>
+                                <option value="365">Letztes Jahr</option>
+                            </select>
                         </div>
                         <div class="card-body">
                             <div id="analytics-container">
@@ -969,10 +976,12 @@
         
         async function loadDashboard() {
             try {
+                const period = document.getElementById('analytics-period')?.value || '30';
+                
                 const [statsRes, productsRes, analyticsRes] = await Promise.all([
                     fetch(`${API_URL}/admin/stats`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
                     fetch(`${API_URL}/owner/products`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
-                    fetch(`${API_URL}/owner/analytics`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+                    fetch(`${API_URL}/owner/analytics?period=${period}`, { headers: { 'Authorization': `Bearer ${authToken}` } })
                 ]);
                 
                 const stats = await statsRes.json();
@@ -1021,20 +1030,37 @@
                 `).join('')
                 : '<p style="color: #64748B;">Noch keine Verkäufe</p>';
             
-            const recentOrdersHtml = analytics.recent_orders && analytics.recent_orders.length > 0
-                ? analytics.recent_orders.map(o => `
+            const categoryHtml = analytics.category_stats && analytics.category_stats.length > 0
+                ? analytics.category_stats.map(c => `
                     <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #E2E8F0;">
-                        <span>${o.order_number}</span>
-                        <span>€${parseFloat(o.total_amount).toFixed(2)}</span>
+                        <span>${c.category}</span>
+                        <span><strong>€${parseFloat(c.revenue).toFixed(2)}</strong> (${c.items_sold} Stk)</span>
                     </div>
                 `).join('')
-                : '<p style="color: #64748B;">Noch keine Bestellungen</p>';
+                : '<p style="color: #64748B;">Noch keine Daten</p>';
+            
+            const paymentHtml = analytics.payment_stats && analytics.payment_stats.length > 0
+                ? analytics.payment_stats.map(p => {
+                    const methodNames = {
+                        'cod': 'Nachnahme', 'banktransfer': 'Überweisung', 'sepa': 'Lastschrift',
+                        'creditcard': 'Kreditkarte', 'paypal': 'PayPal', 'paypal_friends': 'PayPal F&F', 'crypto': 'Krypto'
+                    };
+                    return `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #E2E8F0;">
+                        <span>${methodNames[p.payment_method] || p.payment_method}</span>
+                        <span><strong>€${parseFloat(p.total_revenue).toFixed(2)}</strong> (${p.order_count}x)</span>
+                    </div>
+                `}).join('')
+                : '<p style="color: #64748B;">Noch keine Daten</p>';
+            
+            // Prepare chart data
+            const hasDailySales = analytics.daily_sales && analytics.daily_sales.length > 0;
             
             container.innerHTML = `
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
                     <div style="text-align: center; padding: 16px; background: #F8FAFC; border-radius: 8px;">
                         <div style="font-size: 24px; font-weight: 700; color: #2563EB;">€${analytics.sales.total_revenue.toFixed(2)}</div>
-                        <div style="font-size: 12px; color: #64748B; margin-top: 4px;">Umsatz (30 Tage)</div>
+                        <div style="font-size: 12px; color: #64748B; margin-top: 4px;">Umsatz</div>
                     </div>
                     <div style="text-align: center; padding: 16px; background: #F8FAFC; border-radius: 8px;">
                         <div style="font-size: 24px; font-weight: 700; color: #2563EB;">${analytics.sales.order_count}</div>
@@ -1046,17 +1072,66 @@
                     </div>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                ${hasDailySales ? `
+                <div style="margin-bottom: 24px;">
+                    <h4 style="margin-bottom: 12px;">📈 Umsatz-Verlauf</h4>
+                    <canvas id="sales-chart" height="100"></canvas>
+                </div>
+                ` : ''}
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;">
                     <div>
                         <h4 style="margin-bottom: 12px;">🔥 Top Produkte</h4>
                         ${topProductsHtml}
                     </div>
                     <div>
-                        <h4 style="margin-bottom: 12px;">🛒 Neueste Bestellungen</h4>
-                        ${recentOrdersHtml}
+                        <h4 style="margin-bottom: 12px;">📁 Umsatz nach Kategorie</h4>
+                        ${categoryHtml}
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 12px;">💳 Zahlungsmethoden</h4>
+                        ${paymentHtml}
                     </div>
                 </div>
             `;
+            
+            // Render chart if we have data
+            if (hasDailySales && typeof Chart !== 'undefined') {
+                const ctx = document.getElementById('sales-chart');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: analytics.daily_sales.map(d => new Date(d.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })),
+                            datasets: [{
+                                label: 'Umsatz (€)',
+                                data: analytics.daily_sales.map(d => parseFloat(d.revenue)),
+                                borderColor: '#2563EB',
+                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '€' + value.toFixed(0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
         }
         
         async function loadProducts() {

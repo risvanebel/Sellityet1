@@ -477,6 +477,51 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
             LIMIT 5
         `, [shopId]);
         
+        // Sales by category
+        const { rows: categoryStats } = await pool.query(`
+            SELECT 
+                COALESCE(c.name, 'Ohne Kategorie') as category,
+                SUM(oi.quantity) as items_sold,
+                SUM(oi.quantity * oi.unit_price) as revenue
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE o.shop_id = $1 
+              AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND o.status != 'cancelled'
+            GROUP BY c.name
+            ORDER BY revenue DESC
+        `, [shopId]);
+
+        // Sales over time (daily)
+        const { rows: dailySales } = await pool.query(`
+            SELECT 
+                DATE(created_at) as date,
+                SUM(total_amount) as revenue,
+                COUNT(*) as orders
+            FROM orders
+            WHERE shop_id = $1 
+              AND created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND status != 'cancelled'
+            GROUP BY DATE(created_at)
+            ORDER BY date
+        `, [shopId]);
+
+        // Payment method stats
+        const { rows: paymentStats } = await pool.query(`
+            SELECT 
+                payment_method,
+                COUNT(*) as order_count,
+                SUM(total_amount) as total_revenue
+            FROM orders
+            WHERE shop_id = $1 
+              AND created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND status != 'cancelled'
+            GROUP BY payment_method
+            ORDER BY total_revenue DESC
+        `, [shopId]);
+
         res.json({
             period: `${period} days`,
             sales: {
@@ -485,7 +530,10 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
                 avg_order_value: parseFloat(salesRows[0].avg_order_value || 0)
             },
             top_products: topProducts,
-            recent_orders: recentOrders
+            recent_orders: recentOrders,
+            category_stats: categoryStats,
+            daily_sales: dailySales,
+            payment_stats: paymentStats
         });
     } catch (error) {
         console.error('Get analytics error:', error);
