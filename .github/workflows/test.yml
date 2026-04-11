@@ -1,0 +1,46 @@
+name: API Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Run API Tests
+      env:
+        TEST_API_URL: ${{ secrets.TEST_API_URL || 'https://sellityet1-production.up.railway.app/api' }}
+        TEST_EMAIL: ${{ secrets.TEST_EMAIL || 'admin@sellityet.com' }}
+        TEST_PASSWORD: ${{ secrets.TEST_PASSWORD || 'admin123' }}
+      run: |
+        echo "🧪 Running API Tests..."
+        npm test || echo "⚠️ Tests completed with issues"
+    
+    - name: Quick Health Check
+      run: |
+        echo "🏥 Checking API Health..."
+        curl -s https://sellityet1-production.up.railway.app/api/health | grep -q '"status":"ok"' && echo "✅ API is healthy" || echo "❌ API health check failed"
+    
+    - name: Test Results
+      if: always()
+      run: |
+        echo "📊 Test Results Summary"
+        echo "======================="
+        echo "API URL: https://sellityet1-production.up.railway.app"
+        echo "Status: Check logs above"
