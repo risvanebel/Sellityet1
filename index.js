@@ -657,7 +657,49 @@ app.post('/api/owner/shops', authMiddleware, requireRole('owner', 'admin'), asyn
     }
 });
 
-// Run missing migrations
+// Auto-run missing migrations on health check
+async function runMissingMigrations() {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Check if payment_methods column exists
+        const { rows } = await pool.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'shops' AND column_name = 'payment_methods'
+        `);
+        
+        if (rows.length === 0) {
+            console.log('🔧 Running missing migrations...');
+            
+            // Run payment migration
+            const sqlPath = path.join(__dirname, 'migrations', '005_payments.sql');
+            if (fs.existsSync(sqlPath)) {
+                const sql = fs.readFileSync(sqlPath, 'utf8');
+                await pool.query(sql);
+                console.log('✅ Migration 005_payments.sql executed');
+            }
+            
+            // Run coupon migration
+            const couponPath = path.join(__dirname, 'migrations', '006_coupons.sql');
+            if (fs.existsSync(couponPath)) {
+                const couponSql = fs.readFileSync(couponPath, 'utf8');
+                await pool.query(couponSql);
+                console.log('✅ Migration 006_coupons.sql executed');
+            }
+            
+            console.log('🔧 All migrations completed');
+        }
+    } catch (error) {
+        console.error('Migration error:', error);
+    }
+}
+
+// Run migrations on startup
+setTimeout(runMissingMigrations, 5000);
+
+// Run missing migrations endpoint
 app.get('/api/run-migrations', async (req, res) => {
     try {
         const fs = require('fs');
