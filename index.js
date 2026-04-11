@@ -431,7 +431,7 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Create product error:', error);
-        res.status(500).json({ error: 'Failed to create product' });
+        res.status(500).json({ error: 'Failed to create product: ' + error.message });
     } finally {
         client.release();
     }
