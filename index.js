@@ -1100,6 +1100,102 @@ app.get('/api/owner/orders/:id', authMiddleware, requireRole('owner', 'admin'), 
     }
 });
 
+// ========== CUSTOMERS ==========
+
+// Get all customers for shop
+app.get('/api/owner/customers', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT c.*, 
+                   (SELECT COUNT(*) FROM orders WHERE customer_id = c.id) as order_count,
+                   (SELECT MAX(created_at) FROM orders WHERE customer_id = c.id) as last_order_date
+            FROM customers c
+            JOIN shops s ON c.shop_id = s.id
+            WHERE s.owner_id = $1
+            ORDER BY c.created_at DESC
+        `, [req.user.id]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Get customers error:', error);
+        res.status(500).json({ error: 'Failed to fetch customers' });
+    }
+});
+
+// Get single customer with order history
+app.get('/api/owner/customers/:id', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        // Get customer
+        const { rows: customerRows } = await pool.query(`
+            SELECT c.* FROM customers c
+            JOIN shops s ON c.shop_id = s.id
+            WHERE c.id = $1 AND s.owner_id = $2
+        `, [req.params.id, req.user.id]);
+        
+        if (customerRows.length === 0) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        
+        const customer = customerRows[0];
+        
+        // Get order history
+        const { rows: orders } = await pool.query(`
+            SELECT o.*, 
+                   (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
+            FROM orders o
+            WHERE o.customer_id = $1
+            ORDER BY o.created_at DESC
+        `, [req.params.id]);
+        
+        // Get notes
+        const { rows: notes } = await pool.query(`
+            SELECT cn.*, u.email as created_by_email
+            FROM customer_notes cn
+            LEFT JOIN users u ON cn.created_by = u.id
+            WHERE cn.customer_id = $1
+            ORDER BY cn.created_at DESC
+        `, [req.params.id]);
+        
+        customer.orders = orders;
+        customer.notes = notes;
+        
+        res.json(customer);
+    } catch (error) {
+        console.error('Get customer error:', error);
+        res.status(500).json({ error: 'Failed to fetch customer' });
+    }
+});
+
+// Add note to customer
+app.post('/api/owner/customers/:id/notes', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { note } = req.body;
+    
+    if (!note) {
+        return res.status(400).json({ error: 'Note required' });
+    }
+    
+    try {
+        // Verify customer belongs to owner's shop
+        const { rows } = await pool.query(`
+            INSERT INTO customer_notes (customer_id, note, created_by)
+            SELECT $1, $2, $3
+            FROM customers c
+            JOIN shops s ON c.shop_id = s.id
+            WHERE c.id = $1 AND s.owner_id = $4
+            RETURNING *
+        `, [req.params.id, note, req.user.id, req.user.id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        console.error('Add note error:', error);
+        res.status(500).json({ error: 'Failed to add note' });
+    }
+});
+
 // Update shop email settings
 app.put('/api/owner/shops/email-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     const { 

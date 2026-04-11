@@ -341,6 +341,9 @@
                     <div class="nav-item" onclick="showSection('orders')">
                         <span>Bestellungen</span>
                     </div>
+                    <div class="nav-item" onclick="showSection('customers')">
+                        <span>👥 Kunden</span>
+                    </div>
                     <div class="nav-item" onclick="showSection('coupons')">
                         <span>🎫 Gutscheine</span>
                     </div>
@@ -466,6 +469,26 @@
                         <div class="card-body">
                             <div id="orders-container">
                                 <div class="loading"><div class="spinner"></div>Lade Bestellungen...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customers -->
+                <div id="customers" class="section">
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <input type="text" class="search-input" id="customer-search" placeholder="Kunden suchen..." onkeyup="filterCustomers()">
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">👥 Kunden</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="customers-container">
+                                <div class="loading"><div class="spinner"></div>Lade Kunden...</div>
                             </div>
                         </div>
                     </div>
@@ -667,6 +690,7 @@
                 'dashboard': 'Dashboard',
                 'products': 'Produkte',
                 'orders': 'Bestellungen',
+                'customers': 'Kunden',
                 'coupons': 'Gutscheine',
                 'shop': 'Shop-Einstellungen'
             };
@@ -686,6 +710,7 @@
             if (section === 'dashboard') loadDashboard();
             if (section === 'products') loadProducts();
             if (section === 'orders') loadOrders();
+            if (section === 'customers') loadCustomers();
             if (section === 'coupons') loadCoupons();
             if (section === 'shop') loadShop();
         }
@@ -982,6 +1007,152 @@
             });
             
             renderOrders(filtered);
+        }
+        
+        // ========== CUSTOMERS ==========
+        
+        let allCustomers = [];
+        
+        async function loadCustomers() {
+            try {
+                const res = await fetch(`${API_URL}/owner/customers`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) {
+                    document.getElementById('customers-container').innerHTML = 
+                        '<div class="error-message">Fehler beim Laden der Kunden</div>';
+                    return;
+                }
+                
+                allCustomers = await res.json();
+                renderCustomers(allCustomers);
+            } catch (e) {
+                console.error('Load customers error:', e);
+                document.getElementById('customers-container').innerHTML = 
+                    '<div class="error-message">Fehler beim Laden</div>';
+            }
+        }
+        
+        function renderCustomers(customers) {
+            if (customers.length === 0) {
+                document.getElementById('customers-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <h3>Noch keine Kunden</h3>
+                        <p>Kunden werden automatisch angelegt, wenn sie bestellen.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kunde</th>
+                                <th>E-Mail</th>
+                                <th>Bestellungen</th>
+                                <th>Gesamtausgaben</th>
+                                <th>Letzte Bestellung</th>
+                                <th style="text-align: right;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${customers.map(c => `
+                                <tr>
+                                    <td>
+                                        <strong>${c.name || 'Gast'}</strong>
+                                    </td>
+                                    <td>${c.email}</td>
+                                    <td>${c.order_count || 0}</td>
+                                    <td>€${parseFloat(c.total_spent || 0).toFixed(2)}</td>
+                                    <td>${c.last_order_date ? new Date(c.last_order_date).toLocaleDateString('de-DE') : '-'}</td>
+                                    <td style="text-align: right;">
+                                        <button class="btn btn-icon" onclick="viewCustomer(${c.id})" title="Details">👁️</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('customers-container').innerHTML = html;
+        }
+        
+        function filterCustomers() {
+            const search = document.getElementById('customer-search').value.toLowerCase();
+            
+            const filtered = allCustomers.filter(c => {
+                return !search || 
+                    (c.name && c.name.toLowerCase().includes(search)) ||
+                    c.email.toLowerCase().includes(search);
+            });
+            
+            renderCustomers(filtered);
+        }
+        
+        async function viewCustomer(id) {
+            try {
+                const res = await fetch(`${API_URL}/owner/customers/${id}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) {
+                    alert('Fehler beim Laden der Kundendetails');
+                    return;
+                }
+                
+                const customer = await res.json();
+                
+                document.getElementById('product-modal-title').textContent = 'Kundendetails';
+                
+                const ordersHtml = customer.orders && customer.orders.length > 0
+                    ? customer.orders.map(o => `
+                        <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong>${o.order_number}</strong>
+                                <span>€${parseFloat(o.total_amount).toFixed(2)}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #64748B; margin-top: 4px;">
+                                ${new Date(o.created_at).toLocaleDateString('de-DE')} | ${o.item_count} Artikel
+                            </div>
+                        </div>
+                    `).join('')
+                    : '<p style="color: #64748B;">Keine Bestellungen</p>';
+                
+                document.getElementById('product-modal-body').innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <p>${customer.name || '-'}</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">E-Mail</label>
+                        <p>${customer.email}</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Telefon</label>
+                        <p>${customer.phone || '-'}</p>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Bestellungen</label>
+                            <p style="font-size: 1.5rem; font-weight: 600;">${customer.total_orders || 0}</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gesamtausgaben</label>
+                            <p style="font-size: 1.5rem; font-weight: 600;">€${parseFloat(customer.total_spent || 0).toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <h4 style="margin-top: 24px; margin-bottom: 16px;">Bestellhistorie</h4>
+                    ${ordersHtml}
+                `;
+                
+                document.getElementById('product-modal').classList.add('active');
+            } catch (e) {
+                alert('Fehler beim Laden der Kundendetails');
+            }
         }
         
         // ========== COUPONS ==========
