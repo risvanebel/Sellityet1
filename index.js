@@ -2092,6 +2092,24 @@ app.delete('/api/cart/items/:id', async (req, res) => {
 // ========== CHECKOUT ==========
 
 // Create order from cart
+// Simple test order endpoint
+app.post('/api/test-order', async (req, res) => {
+    try {
+        const { shop_id, customer_email, items, total_amount } = req.body;
+        
+        // Create simple order
+        const { rows } = await pool.query(`
+            INSERT INTO orders (order_number, shop_id, customer_email, total_amount, status, payment_status)
+            VALUES ($1, $2, $3, $4, 'pending', 'pending')
+            RETURNING *
+        `, ['TEST-' + Date.now(), shop_id, customer_email, total_amount]);
+        
+        res.json(rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/orders', async (req, res) => {
     const { 
         session_id, shop_id, 
