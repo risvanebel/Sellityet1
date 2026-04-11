@@ -731,13 +731,17 @@ app.get('/api/shop/products', async (req, res) => {
             ORDER BY p.created_at DESC
         `, [req.shop.id]);
 
-        // Load images for each product
+        // Load images for each product (ignore if table doesn't exist)
         for (let product of rows) {
-            const { rows: images } = await pool.query(
-                'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
-                [product.id]
-            );
-            product.image_urls = images.map(img => img.image_url);
+            try {
+                const { rows: images } = await pool.query(
+                    'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
+                    [product.id]
+                );
+                product.image_urls = images.map(img => img.image_url);
+            } catch (imgErr) {
+                product.image_urls = product.image_urls || [];
+            }
         }
 
         res.json(rows);
@@ -1282,12 +1286,16 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
                 product.quantity = parseInt(variants[0].total);
             }
             
-            // Load product images
-            const { rows: images } = await pool.query(
-                'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
-                [product.id]
-            );
-            product.image_urls = images.map(img => img.image_url);
+            // Load product images (ignore if table doesn't exist)
+            try {
+                const { rows: images } = await pool.query(
+                    'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
+                    [product.id]
+                );
+                product.image_urls = images.map(img => img.image_url);
+            } catch (imgErr) {
+                product.image_urls = product.image_urls || [];
+            }
         }
         
         res.json(rows);
