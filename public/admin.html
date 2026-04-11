@@ -1028,7 +1028,7 @@
                         </div>
                     </div>
                     
-                    <div class="card">
+                    <div class="card" style="margin-bottom: 24px;">
                         <div class="card-header">
                             <h3 class="card-title">📧 E-Mail Einstellungen</h3>
                         </div>
@@ -1090,10 +1090,168 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h3 class="card-title">💳 Zahlungsmethoden</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="payment-settings-error"></div>
+                            
+                            <div class="form-hint" style="margin-bottom: 20px;">
+                                Wähle aus, welche Zahlungsmethoden deinen Kunden angeboten werden.
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <input type="checkbox" class="payment-method-check" value="cod" 
+                                        ${(shop.payment_methods || []).includes('cod') ? 'checked' : ''}>
+                                    <span>💶 Nachnahme</span>
+                                </label>
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <input type="checkbox" class="payment-method-check" value="banktransfer"
+                                        ${(shop.payment_methods || []).includes('banktransfer') ? 'checked' : ''}>
+                                    <span>🏦 Überweisung</span>
+                                </label>
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <input type="checkbox" class="payment-method-check" value="sepa"
+                                        ${(shop.payment_methods || []).includes('sepa') ? 'checked' : ''}>
+                                    <span>📋 Lastschrift (SEPA)</span>
+                                </label>
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <input type="checkbox" class="payment-method-check" value="paypal_friends"
+                                        ${(shop.payment_methods || []).includes('paypal_friends') ? 'checked' : ''}>
+                                    <span>💸 PayPal Freunde & Familie</span>
+                                </label>
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <input type="checkbox" class="payment-method-check" value="creditcard"
+                                        ${(shop.payment_methods || []).includes('creditcard') ? 'checked' : ''}>
+                                    <span>💳 Kreditkarte (Stripe)</span>
+                                </label>
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <input type="checkbox" class="payment-method-check" value="paypal"
+                                        ${(shop.payment_methods || []).includes('paypal') ? 'checked' : ''}>
+                                    <span>🅿️ PayPal Business</span>
+                                </label>
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <input type="checkbox" class="payment-method-check" value="crypto"
+                                        ${(shop.payment_methods || []).includes('crypto') ? 'checked' : ''}>
+                                    <span>₿ Kryptowährung</span>
+                                </label>
+                            </div>
+                            
+                            <hr style="margin: 24px 0; border: none; border-top: 1px solid #E2E8F0;">
+                            
+                            <h4 style="margin-bottom: 16px;">🏦 Bankverbindung (für Überweisung/Lastschrift)</h4>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Kontoinhaber</label>
+                                <input type="text" class="form-input" id="bank-account-name" value="${shop.bank_account_name || ''}" placeholder="Max Mustermann">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">IBAN</label>
+                                <input type="text" class="form-input" id="bank-account-iban" value="${shop.bank_account_iban || ''}" placeholder="DE12 3456 7890 1234 5678 90">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">BIC</label>
+                                <input type="text" class="form-input" id="bank-account-bic" value="${shop.bank_account_bic || ''}" placeholder="COBADEFFXXX">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Zahlungshinweis für Überweisung</label>
+                                <textarea class="form-textarea" id="bank-transfer-instructions" rows="3" placeholder="Zahlbar innerhalb von 14 Tagen...">${shop.bank_transfer_instructions || ''}</textarea>
+                            </div>
+                            
+                            <hr style="margin: 24px 0; border: none; border-top: 1px solid #E2E8F0;">
+                            
+                            <h4 style="margin-bottom: 16px;">💳 Stripe (Kreditkarte)</h4>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Stripe Public Key</label>
+                                <input type="text" class="form-input" id="stripe-public-key" value="${shop.stripe_public_key || ''}" placeholder="pk_live_...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Stripe Secret Key</label>
+                                <input type="password" class="form-input" id="stripe-secret-key" value="${shop.stripe_secret_key || ''}" placeholder="sk_live_...">
+                                <div class="form-hint">Hier findest du die Keys: https://dashboard.stripe.com/apikeys</div>
+                            </div>
+                            
+                            <hr style="margin: 24px 0; border: none; border-top: 1px solid #E2E8F0;">
+                            
+                            <h4 style="margin-bottom: 16px;">🅿️ PayPal</h4>
+                            
+                            <div class="form-group">
+                                <label class="form-label">PayPal Client ID</label>
+                                <input type="text" class="form-input" id="paypal-client-id" value="${shop.paypal_client_id || ''}" placeholder="Client ID...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">PayPal Client Secret</label>
+                                <input type="password" class="form-input" id="paypal-client-secret" value="${shop.paypal_client_secret || ''}" placeholder="Client Secret...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">PayPal Modus</label>
+                                <select class="form-select" id="paypal-mode">
+                                    <option value="sandbox" ${shop.paypal_mode === 'sandbox' ? 'selected' : ''}>Sandbox (Test)</option>
+                                    <option value="live" ${shop.paypal_mode === 'live' ? 'selected' : ''}>Live (Produktion)</option>
+                                </select>
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="savePaymentSettings()" style="margin-top: 16px;">
+                                Zahlungseinstellungen speichern
+                            </button>
+                        </div>
+                    </div>
                 `;
             } catch (e) {
                 document.getElementById('shop-container').innerHTML = 
                     '<div class="error-message">Fehler beim Laden des Shops</div>';
+            }
+        }
+        
+        async function savePaymentSettings() {
+            // Get selected payment methods
+            const selectedMethods = Array.from(document.querySelectorAll('.payment-method-check:checked'))
+                .map(cb => cb.value);
+            
+            const data = {
+                payment_methods: selectedMethods,
+                stripe_public_key: document.getElementById('stripe-public-key')?.value || '',
+                stripe_secret_key: document.getElementById('stripe-secret-key')?.value || '',
+                paypal_client_id: document.getElementById('paypal-client-id')?.value || '',
+                paypal_client_secret: document.getElementById('paypal-client-secret')?.value || '',
+                paypal_mode: document.getElementById('paypal-mode')?.value || 'sandbox',
+                bank_account_name: document.getElementById('bank-account-name')?.value || '',
+                bank_account_iban: document.getElementById('bank-account-iban')?.value || '',
+                bank_account_bic: document.getElementById('bank-account-bic')?.value || '',
+                bank_transfer_instructions: document.getElementById('bank-transfer-instructions')?.value || ''
+            };
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/shops/payment-settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('payment-settings-error').innerHTML = 
+                        '<div class="alert alert-success">✅ Zahlungseinstellungen gespeichert!</div>';
+                } else {
+                    const err = await res.json();
+                    document.getElementById('payment-settings-error').innerHTML = 
+                        `<div class="error-message">${err.error}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('payment-settings-error').innerHTML = 
+                    '<div class="error-message">Fehler beim Speichern</div>';
             }
         }
         

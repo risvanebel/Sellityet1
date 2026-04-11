@@ -6,6 +6,15 @@ const jwt = require('jsonwebtoken');
 const pool = require('./src/config/database');
 const { upload, uploadToCloudinary } = require('./src/config/upload');
 const { sendOrderConfirmation, sendOrderNotificationToOwner, sendShippingConfirmation } = require('./src/config/email');
+const { 
+  PAYMENT_METHODS, 
+  getEnabledPaymentMethods, 
+  createStripePaymentIntent, 
+  createPayPalOrder,
+  capturePayPalOrder,
+  createCryptoPayment,
+  getStripeClient
+} = require('./src/config/payments');
 require('dotenv').config();
 
 const app = express();
@@ -1024,6 +1033,266 @@ app.get('/api/orders/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to get order' });
     }
 });
+
+// ========== PAYMENTS ==========
+
+// Get available payment methods for shop (public)
+app.get('/api/shops/:shopId/payment-methods', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT payment_methods, stripe_public_key, paypal_client_id, paypal_mode FROM shops WHERE id = $1',
+      [req.params.shopId]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Shop not found' });
+    }
+    
+    const shop = rows[0];
+    const methods = getEnabledPaymentMethods(shop);
+    
+    // Add configuration for each method
+    const response = methods.map(method => ({
+      ...method,
+      config: method.type === 'stripe' ? { 
+        public_key: shop.stripe_public_key || process.env.STRIPE_PUBLIC_KEY 
+      } : 
+      method.type === 'paypal' ? {
+        client_id: shop.paypal_client_id || process.env.PAYPAL_CLIENT_ID,
+        mode: shop.paypal_mode
+      } : null
+    }));
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Get payment methods error:', error);
+    res.status(500).json({ error: 'Failed to fetch payment methods' });
+  }
+});
+
+// Initialize payment
+app.post('/api/orders/:orderId/payment', async (req, res) => {
+  const { method } = req.body;
+  const orderId = req.params.orderId;
+  
+  try {
+    // Get order with shop
+    const { rows: orderRows } = await pool.query(`
+      SELECT o.*, s.* 
+      FROM orders o 
+      JOIN shops s ON o.shop_id = s.id 
+      WHERE o.id = $1
+    `, [orderId]);
+    
+    if (orderRows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    const order = orderRows[0];
+    
+    let paymentData;
+    
+    switch (method) {
+      case 'creditcard':
+        paymentData = await createStripePaymentIntent(order, order);
+        break;
+        
+      case 'paypal':
+        paymentData = await createPayPalOrder(order, order);
+        break;
+        
+      case 'crypto':
+        paymentData = await createCryptoPayment(order, req.body.currency || 'BTC');
+        await pool.query(
+          'UPDATE orders SET crypto_currency = $1, crypto_address = $2, crypto_amount = $3 WHERE id = $4',
+          [paymentData.currency, paymentData.address, paymentData.amount, orderId]
+        );
+        break;
+        
+      case 'banktransfer':
+      case 'sepa':
+      case 'paypal_friends':
+        // Manual payment methods - just return instructions
+        paymentData = {
+          instructions: getPaymentInstructions(method, order)
+        };
+        break;
+        
+      default:
+        return res.status(400).json({ error: 'Invalid payment method' });
+    }
+    
+    // Update order with payment method
+    await pool.query(
+      'UPDATE orders SET payment_method = $1, payment_provider = $2 WHERE id = $3',
+      [method, method === 'creditcard' ? 'stripe' : method, orderId]
+    );
+    
+    res.json({
+      method,
+      ...paymentData
+    });
+  } catch (error) {
+    console.error('Initialize payment error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Confirm Stripe payment
+app.post('/api/orders/:orderId/payment/confirm', async (req, res) => {
+  const { payment_intent_id } = req.body;
+  const orderId = req.params.orderId;
+  
+  try {
+    // Get shop for Stripe client
+    const { rows } = await pool.query(`
+      SELECT s.* FROM shops s
+      JOIN orders o ON o.shop_id = s.id
+      WHERE o.id = $1
+    `, [orderId]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    const shop = rows[0];
+    const stripeClient = getStripeClient(shop) || stripe(process.env.STRIPE_SECRET_KEY);
+    
+    // Retrieve payment intent
+    const paymentIntent = await stripeClient.paymentIntents.retrieve(payment_intent_id);
+    
+    if (paymentIntent.status === 'succeeded') {
+      // Update order status
+      await pool.query(
+        "UPDATE orders SET payment_status = 'paid', status = 'paid', payment_id = $1 WHERE id = $2",
+        [payment_intent_id, orderId]
+      );
+      
+      // Log transaction
+      await pool.query(
+        'INSERT INTO payment_transactions (order_id, provider, transaction_id, amount, status) VALUES ($1, $2, $3, $4, $5)',
+        [orderId, 'stripe', payment_intent_id, paymentIntent.amount / 100, 'completed']
+      );
+      
+      res.json({ success: true, status: 'paid' });
+    } else {
+      res.json({ success: false, status: paymentIntent.status });
+    }
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Capture PayPal payment
+app.post('/api/orders/:orderId/payment/paypal-capture', async (req, res) => {
+  const { paypal_order_id } = req.body;
+  const orderId = req.params.orderId;
+  
+  try {
+    const { rows } = await pool.query(`
+      SELECT s.*, o.total_amount FROM shops s
+      JOIN orders o ON o.shop_id = s.id
+      WHERE o.id = $1
+    `, [orderId]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    const shop = rows[0];
+    const captureResult = await capturePayPalOrder(paypal_order_id, shop);
+    
+    if (captureResult.status === 'COMPLETED') {
+      await pool.query(
+        "UPDATE orders SET payment_status = 'paid', status = 'paid', payment_id = $1 WHERE id = $2",
+        [paypal_order_id, orderId]
+      );
+      
+      await pool.query(
+        'INSERT INTO payment_transactions (order_id, provider, transaction_id, amount, status) VALUES ($1, $2, $3, $4, $5)',
+        [orderId, 'paypal', paypal_order_id, shop.total_amount, 'completed']
+      );
+      
+      res.json({ success: true, status: 'paid' });
+    } else {
+      res.json({ success: false, status: captureResult.status });
+    }
+  } catch (error) {
+    console.error('PayPal capture error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update shop payment settings
+app.put('/api/owner/shops/payment-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+  const {
+    payment_methods,
+    stripe_public_key,
+    stripe_secret_key,
+    paypal_client_id,
+    paypal_client_secret,
+    paypal_mode,
+    bank_account_name,
+    bank_account_iban,
+    bank_account_bic,
+    bank_transfer_instructions,
+    sepa_mandate_text
+  } = req.body;
+  
+  try {
+    const { rows } = await pool.query(`
+      UPDATE shops s
+      SET payment_methods = $1,
+          stripe_public_key = $2,
+          stripe_secret_key = $3,
+          paypal_client_id = $4,
+          paypal_client_secret = $5,
+          paypal_mode = $6,
+          bank_account_name = $7,
+          bank_account_iban = $8,
+          bank_account_bic = $9,
+          bank_transfer_instructions = $10,
+          sepa_mandate_text = $11,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE s.owner_id = $12
+      RETURNING s.*
+    `, [
+      JSON.stringify(payment_methods),
+      stripe_public_key,
+      stripe_secret_key,
+      paypal_client_id,
+      paypal_client_secret,
+      paypal_mode,
+      bank_account_name,
+      bank_account_iban,
+      bank_account_bic,
+      bank_transfer_instructions,
+      sepa_mandate_text,
+      req.user.id
+    ]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No shop found' });
+    }
+    
+    res.json({ success: true, message: 'Payment settings saved' });
+  } catch (error) {
+    console.error('Update payment settings error:', error);
+    res.status(500).json({ error: 'Failed to save payment settings' });
+  }
+});
+
+// Helper function for payment instructions
+function getPaymentInstructions(method, order) {
+  const baseInstructions = {
+    banktransfer: `Bitte überweise den Betrag an:\n\nIBAN: [WIRD AUSGEFÜLLT]\nBIC: [WIRD AUSGEFÜLLT]\nVerwendungszweck: ${order.order_number}`,
+    sepa: 'SEPA-Lastschrift wird nach Bestellung eingezogen.',
+    paypal_friends: 'Bitte sende den Betrag per PayPal an: [E-MAIL]\n\nWichtig: Als "Freunde & Familie" senden!'
+  };
+  
+  return baseInstructions[method] || 'Zahlungsinformationen folgen per E-Mail.';
+}
 
 // ========== ADMIN ==========
 

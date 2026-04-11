@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=EUR"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -14,7 +16,7 @@
             line-height: 1.5;
         }
         .container {
-            max-width: 600px;
+            max-width: 700px;
             margin: 0 auto;
             padding: 24px;
         }
@@ -100,6 +102,10 @@
             border-radius: 8px;
             margin-bottom: 12px;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+        .payment-method:hover {
+            border-color: #94A3B8;
         }
         .payment-method.selected {
             border-color: #2563EB;
@@ -108,6 +114,18 @@
         .payment-method input {
             width: 20px;
             height: 20px;
+            accent-color: #2563EB;
+        }
+        .payment-method-info {
+            flex: 1;
+        }
+        .payment-method-name {
+            font-weight: 600;
+            display: block;
+        }
+        .payment-method-desc {
+            font-size: 12px;
+            color: #64748B;
         }
         .submit-btn {
             width: 100%;
@@ -145,6 +163,57 @@
             font-size: 64px;
             margin-bottom: 16px;
         }
+        .payment-details {
+            background: #F8FAFC;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 16px;
+            display: none;
+        }
+        .payment-details.active {
+            display: block;
+        }
+        #card-element {
+            background: white;
+            padding: 12px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+        }
+        .bank-details {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px dashed #CBD5E1;
+        }
+        .bank-details p {
+            margin: 8px 0;
+            font-family: monospace;
+        }
+        .crypto-address {
+            background: #1E293B;
+            color: #E2E8F0;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+            text-align: center;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748B;
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #E2E8F0;
+            border-top-color: #2563EB;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -156,7 +225,7 @@
         
         <div id="checkout-container">
             <div class="checkout-form">
-                <div class="loading">Wird geladen...</div>
+                <div class="loading"><span class="spinner"></span>Wird geladen...</div>
             </div>
         </div>
     </div>
@@ -168,6 +237,10 @@
         let shopId = urlParams.get('shop_id') || localStorage.getItem('current_shop_id');
         let cartItems = [];
         let total = 0;
+        let paymentMethods = [];
+        let currentOrder = null;
+        let stripeInstance = null;
+        let cardElement = null;
         
         async function loadCheckout() {
             if (!shopId || !SESSION_ID) {
@@ -180,13 +253,19 @@
             }
             
             try {
-                const res = await fetch(`${API_URL}/cart?session_id=${SESSION_ID}&shop_id=${shopId}`);
-                const cart = await res.json();
+                // Load cart and payment methods in parallel
+                const [cartRes, methodsRes] = await Promise.all([
+                    fetch(`${API_URL}/cart?session_id=${SESSION_ID}&shop_id=${shopId}`),
+                    fetch(`${API_URL}/shops/${shopId}/payment-methods`)
+                ]);
+                
+                const cart = await cartRes.json();
+                paymentMethods = await methodsRes.json();
                 
                 if (!cart.items || cart.items.length === 0) {
                     document.getElementById('checkout-container').innerHTML = `
                         <div class="error-message">
-                            Ihr Warenkorb ist leer. <a href="/shop/${getShopSlug()}">Zurück zum Shop</a>
+                            Ihr Warenkorb ist leer. <a href="/shop/${localStorage.getItem('current_shop_slug') || ''}">Zurück zum Shop</a>
                         </div>
                     `;
                     return;
@@ -219,6 +298,27 @@
                     </div>
                 `;
             }).join('');
+            
+            // Build payment methods
+            const paymentMethodsHtml = paymentMethods.length > 0 
+                ? paymentMethods.map((method, index) => `
+                    <label class="payment-method ${index === 0 ? 'selected' : ''}" data-method="${method.id}">
+                        <input type="radio" name="payment" value="${method.id}" ${index === 0 ? 'checked' : ''}>
+                        <div class="payment-method-info">
+                            <span class="payment-method-name">${method.icon} ${method.name}</span>
+                            <span class="payment-method-desc">${method.description}</span>
+                        </div>
+                    </label>
+                `).join('')
+                : `
+                    <label class="payment-method selected">
+                        <input type="radio" name="payment" value="cod" checked>
+                        <div class="payment-method-info">
+                            <span class="payment-method-name">💶 Nachnahme</span>
+                            <span class="payment-method-desc">Bezahlung bei Lieferung</span>
+                        </div>
+                    </label>
+                `;
             
             document.getElementById('checkout-container').innerHTML = `
                 <div class="checkout-form">
@@ -282,23 +382,149 @@
                         
                         <h3 style="margin: 32px 0 20px;">Zahlungsmethode</h3>
                         
-                        <div class="payment-methods">
-                            <label class="payment-method selected">
-                                <input type="radio" name="payment" value="cod" checked>
-                                <span>📦 Nachnahme</span>
-                            </label>
-                            <label class="payment-method">
-                                <input type="radio" name="payment" value="banktransfer">
-                                <span>🏦 Überweisung</span>
-                            </label>
+                        <div class="payment-methods" id="payment-methods-list">
+                            ${paymentMethodsHtml}
                         </div>
                         
-                        <button type="submit" class="submit-btn">
+                        <!-- Payment Details Container -->
+                        <div id="payment-details-container" class="payment-details">
+                            <!-- Dynamically filled based on selection -->
+                        </div>
+                        
+                        <button type="submit" class="submit-btn" id="submit-btn">
                             Bestellung aufgeben (€${total.toFixed(2)})
                         </button>
                     </form>
                 </div>
             `;
+            
+            // Add payment method selection handlers
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.addEventListener('click', () => selectPaymentMethod(el.dataset.method));
+            });
+            
+            // Initialize first payment method
+            if (paymentMethods.length > 0) {
+                selectPaymentMethod(paymentMethods[0].id);
+            }
+        }
+        
+        function selectPaymentMethod(methodId) {
+            // Update UI
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.toggle('selected', el.dataset.method === methodId);
+                el.querySelector('input').checked = el.dataset.method === methodId;
+            });
+            
+            const method = paymentMethods.find(m => m.id === methodId);
+            if (!method) return;
+            
+            const detailsContainer = document.getElementById('payment-details-container');
+            detailsContainer.innerHTML = '';
+            detailsContainer.classList.remove('active');
+            
+            switch (method.type) {
+                case 'stripe':
+                    detailsContainer.innerHTML = `
+                        <h4 style="margin-bottom: 16px;">Kreditkartendaten</h4>
+                        <div id="card-element"></div>
+                        <div id="card-errors" style="color: #DC2626; margin-top: 8px; font-size: 14px;"></div>
+                    `;
+                    detailsContainer.classList.add('active');
+                    initializeStripe(method.config?.public_key);
+                    break;
+                    
+                case 'manual':
+                    if (methodId === 'banktransfer') {
+                        detailsContainer.innerHTML = `
+                            <h4 style="margin-bottom: 16px;">🏦 Banküberweisung</h4>
+                            <p style="margin-bottom: 12px; color: #64748B;">
+                                Bitte überweise den Betrag innerhalb von 7 Tagen.
+                            </p>
+                            <div class="bank-details">
+                                <p><strong>Betrag:</strong> €${total.toFixed(2)}</p>
+                                <p style="margin-top: 12px; color: #64748B; font-size: 12px;">
+                                    Die genauen Bankdaten erhältst du per E-Mail.
+                                </p>
+                            </div>
+                        `;
+                    } else if (methodId === 'sepa') {
+                        detailsContainer.innerHTML = `
+                            <h4 style="margin-bottom: 16px;">📋 SEPA-Lastschrift</h4>
+                            <div class="form-group">
+                                <label class="form-label">IBAN *</label>
+                                <input type="text" class="form-input" id="sepa-iban" placeholder="DE12 3456 7890 1234 5678 90">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Kontoinhaber *</label>
+                                <input type="text" class="form-input" id="sepa-owner" placeholder="Max Mustermann">
+                            </div>
+                            <p style="font-size: 12px; color: #64748B; margin-top: 8px;">
+                                Ich ermächtige den Händler, Zahlungen von meinem Konto einzuziehen.
+                            </p>
+                        `;
+                    } else if (methodId === 'paypal_friends') {
+                        detailsContainer.innerHTML = `
+                            <h4 style="margin-bottom: 16px;">💸 PayPal Freunde & Familie</h4>
+                            <p style="margin-bottom: 12px; color: #64748B;">
+                                Bitte sende den Betrag per PayPal als "Freunde & Familie".
+                            </p>
+                            <div class="bank-details">
+                                <p><strong>Betrag:</strong> €${total.toFixed(2)}</p>
+                                <p style="margin-top: 12px; color: #64748B; font-size: 12px;">
+                                    Die PayPal-E-Mail erhältst du nach der Bestellung.
+                                </p>
+                            </div>
+                        `;
+                    }
+                    detailsContainer.classList.add('active');
+                    break;
+                    
+                case 'crypto':
+                    detailsContainer.innerHTML = `
+                        <h4 style="margin-bottom: 16px;">₿ Kryptowährung</h4>
+                        <p style="margin-bottom: 12px; color: #64748B;">
+                            Die Zahlungsadresse wird nach Bestellung generiert.
+                        </p>
+                    `;
+                    detailsContainer.classList.add('active');
+                    break;
+                    
+                case 'paypal':
+                    detailsContainer.innerHTML = `
+                        <h4 style="margin-bottom: 16px;">🅿️ PayPal</h4>
+                        <p style="color: #64748B;">
+                            Du wirst nach der Bestellung zu PayPal weitergeleitet.
+                        </p>
+                    `;
+                    detailsContainer.classList.add('active');
+                    break;
+            }
+        }
+        
+        function initializeStripe(publicKey) {
+            if (!publicKey) {
+                document.getElementById('card-errors').textContent = 
+                    'Kreditkartenzahlung ist nicht konfiguriert.';
+                return;
+            }
+            
+            stripeInstance = Stripe(publicKey);
+            const elements = stripeInstance.elements();
+            cardElement = elements.create('card', {
+                style: {
+                    base: {
+                        fontSize: '16px',
+                        color: '#0F172A',
+                        '::placeholder': { color: '#94A3B8' }
+                    }
+                }
+            });
+            cardElement.mount('#card-element');
+            
+            cardElement.on('change', (event) => {
+                document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+            });
         }
         
         async function submitOrder(event) {
@@ -306,6 +532,7 @@
             
             const form = event.target;
             const formData = new FormData(form);
+            const paymentMethod = formData.get('payment');
             
             const orderData = {
                 session_id: SESSION_ID,
@@ -331,34 +558,93 @@
                 total_amount: total
             };
             
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Wird verarbeitet...';
+            
             try {
-                const submitBtn = form.querySelector('.submit-btn');
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Wird verarbeitet...';
-                
+                // Create order
                 const res = await fetch(`${API_URL}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData)
                 });
                 
-                if (res.ok) {
-                    const order = await res.json();
-                    showSuccess(order);
-                } else {
+                if (!res.ok) {
                     const error = await res.json();
                     throw new Error(error.error || 'Bestellung fehlgeschlagen');
                 }
+                
+                const order = await res.json();
+                currentOrder = order;
+                
+                // Handle payment based on method
+                await handlePayment(order.id, paymentMethod);
+                
             } catch (error) {
                 console.error('Submit order error:', error);
                 document.getElementById('error-container').innerHTML = `
-                    <div class="error-message">
-                        ${error.message}
-                    </div>
+                    <div class="error-message">${error.message}</div>
                 `;
-                const submitBtn = form.querySelector('.submit-btn');
                 submitBtn.disabled = false;
                 submitBtn.textContent = `Bestellung aufgeben (€${total.toFixed(2)})`;
+            }
+        }
+        
+        async function handlePayment(orderId, method) {
+            try {
+                // Initialize payment
+                const initRes = await fetch(`${API_URL}/orders/${orderId}/payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ method })
+                });
+                
+                const paymentData = await initRes.json();
+                
+                switch (method) {
+                    case 'creditcard':
+                        if (!stripeInstance || !cardElement) {
+                            throw new Error('Kreditkartenzahlung nicht verfügbar');
+                        }
+                        
+                        const { error, paymentIntent } = await stripeInstance.confirmCardPayment(
+                            paymentData.client_secret,
+                            { payment_method: { card: cardElement } }
+                        );
+                        
+                        if (error) {
+                            throw new Error(error.message);
+                        }
+                        
+                        // Confirm payment on server
+                        await fetch(`${API_URL}/orders/${orderId}/payment/confirm`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                payment_intent_id: paymentData.payment_intent_id 
+                            })
+                        });
+                        
+                        showSuccess(currentOrder);
+                        break;
+                        
+                    case 'paypal':
+                        // Redirect to PayPal
+                        window.location.href = `https://www.paypal.com/checkoutnow?token=${paymentData.order_id}`;
+                        break;
+                        
+                    default:
+                        // Manual payment methods - show success
+                        showSuccess(currentOrder);
+                        break;
+                }
+            } catch (error) {
+                document.getElementById('error-container').innerHTML = `
+                    <div class="error-message">${error.message}</div>
+                `;
+                document.getElementById('submit-btn').disabled = false;
+                document.getElementById('submit-btn').textContent = `Bestellung aufgeben (€${total.toFixed(2)})`;
             }
         }
         
@@ -371,18 +657,14 @@
                     <p style="margin-bottom: 24px;">
                         Wir haben eine Bestätigung an ${order.customer_email} gesendet.
                     </p>
-                    <a href="/shop/${getShopSlug()}" style="color: #065F46; text-decoration: underline;">
+                    <a href="/shop/${localStorage.getItem('current_shop_slug') || ''}" 
+                       style="color: #065F46; text-decoration: underline;">
                         ← Zurück zum Shop
                     </a>
                 </div>
             `;
             
-            // Clear cart session
             localStorage.removeItem('cart_session_id');
-        }
-        
-        function getShopSlug() {
-            return '';
         }
         
         // Load on page load
