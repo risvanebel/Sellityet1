@@ -411,11 +411,12 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
         }
         
         // Create product with image_urls (PostgreSQL array format)
+        const pgImageUrls = image_urls ? `{${image_urls.map(url => `"${url.replace(/"/g, '\"')}"`).join(',')}}` : null;
         const { rows: productRows } = await client.query(`
             INSERT INTO products (shop_id, category_id, name, description, price, sku, status, image_urls)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[])
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
-        `, [shop_id, category_id, name, description, price, sku, status || 'draft', image_urls || null]);
+        `, [shop_id, category_id, name, description, price, sku, status || 'draft', pgImageUrls]);
         
         const product = productRows[0];
         
