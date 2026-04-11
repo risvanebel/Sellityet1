@@ -709,6 +709,26 @@ app.get('/api/fix-db', async (req, res) => {
         await pool.query(`ALTER TABLE shops ADD COLUMN IF NOT EXISTS smtp_user VARCHAR(255)`);
         await pool.query(`ALTER TABLE shops ADD COLUMN IF NOT EXISTS smtp_pass VARCHAR(255)`);
         
+        // Create customers table if not exists
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS customers (
+                id SERIAL PRIMARY KEY,
+                shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+                email VARCHAR(255) NOT NULL,
+                name VARCHAR(255),
+                phone VARCHAR(50),
+                shipping_address JSONB,
+                total_orders INTEGER DEFAULT 0,
+                total_spent DECIMAL(10,2) DEFAULT 0,
+                last_order_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(shop_id, email)
+            )
+        `);
+        
+        // Add customer_id to orders if not exists
+        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id)`);
+        
         res.json({ success: true, message: 'Database fixed' });
     } catch (error) {
         console.error('Fix DB error:', error);
@@ -749,6 +769,21 @@ async function runMissingMigrations() {
             }
             
             console.log('🔧 All migrations completed');
+        }
+        
+        // Check if customers table exists
+        const { rows: customerRows } = await pool.query(`
+            SELECT table_name FROM information_schema.tables 
+            WHERE table_name = 'customers'
+        `);
+        
+        if (customerRows.length === 0) {
+            const customerPath = path.join(__dirname, 'migrations', '007_customers.sql');
+            if (fs.existsSync(customerPath)) {
+                const customerSql = fs.readFileSync(customerPath, 'utf8');
+                await pool.query(customerSql);
+                console.log('✅ Migration 007_customers.sql executed');
+            }
         }
     } catch (error) {
         console.error('Migration error:', error);
@@ -1442,13 +1477,30 @@ app.post('/api/orders', async (req, res) => {
         // Generate order number
         const orderNumber = 'ORD-' + Date.now();
         
+        // Create or update customer
+        const { rows: customerRows } = await client.query(`
+            INSERT INTO customers (shop_id, email, name, phone, shipping_address, total_orders, total_spent, last_order_at)
+            VALUES ($1, $2, $3, $4, $5, 1, $6, CURRENT_TIMESTAMP)
+            ON CONFLICT (shop_id, email) DO UPDATE SET
+                name = EXCLUDED.name,
+                phone = EXCLUDED.phone,
+                shipping_address = EXCLUDED.shipping_address,
+                total_orders = customers.total_orders + 1,
+                total_spent = customers.total_spent + EXCLUDED.total_spent,
+                last_order_at = CURRENT_TIMESTAMP
+            RETURNING id
+        `, [shop_id, customer_email, customer_name, customer_phone, 
+            JSON.stringify(shipping_address), total_amount]);
+        
+        const customerId = customerRows[0].id;
+        
         // Create order
         const { rows: orderRows } = await client.query(`
-            INSERT INTO orders (order_number, shop_id, customer_email, customer_name, customer_phone,
+            INSERT INTO orders (order_number, shop_id, customer_id, customer_email, customer_name, customer_phone,
                               shipping_address, total_amount, status, payment_status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', 'pending')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'pending')
             RETURNING *
-        `, [orderNumber, shop_id, customer_email, customer_name, customer_phone,
+        `, [orderNumber, shop_id, customerId, customer_email, customer_name, customer_phone,
             JSON.stringify(shipping_address), total_amount]);
         
         const order = orderRows[0];
