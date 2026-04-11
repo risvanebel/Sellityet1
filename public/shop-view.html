@@ -316,12 +316,24 @@
     <script>
         const API_URL = '/api';
         const shopSlug = window.location.pathname.split('/').pop();
+        let currentShop = null;
+        let sessionId = localStorage.getItem('cart_session_id') || generateSessionId();
+        
+        function generateSessionId() {
+            const id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('cart_session_id', id);
+            return id;
+        }
         
         async function loadShop() {
             try {
                 const res = await fetch(`${API_URL}/shops/${shopSlug}`);
                 if (!res.ok) throw new Error('Shop not found');
                 const shop = await res.json();
+                currentShop = shop;
+                
+                // Store shop ID for cart
+                localStorage.setItem('current_shop_id', shop.id);
                 
                 // Update hero with shop color
                 if (shop.primary_color) {
@@ -332,6 +344,9 @@
                     <div class="hero-content">
                         <h1>${shop.name}</h1>
                         <p>${shop.description || 'Willkommen in unserem Shop'}</p>
+                        <a href="/cart.html?shop_id=${shop.id}" class="btn" style="margin-top: 20px; display: inline-block; background: white; color: #111827; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                            🛒 Warenkorb anzeigen
+                        </a>
                     </div>
                 `;
                 
@@ -365,43 +380,15 @@
                     return;
                 }
                 
-                document.getElementById('products-container').innerHTML = `
-                    <div class="products-grid">
-                        ${products.map(p => `
-                            <div class="product-card">
-                                <div class="product-image">
-                                    ${p.image_urls && p.image_urls[0] 
-                                        ? `<img src="${p.image_urls[0]}" alt="${p.name}">` 
-                                        : '<div style="font-size: 64px;">📦</div>'}
-                                    ${p.discount_price ? '<span class="product-badge">SALE</span>' : ''}
-                                </div>
-                                <div class="product-content">
-                                    <div class="product-category">${p.category_name || 'Produkt'}</div>
-                                    <h3 class="product-name">${p.name}</h3>
-                                    <p class="product-description">${p.description || ''}</p>
-                                    <div class="product-footer">
-                                        <div class="product-price">
-                                            ${p.discount_price ? 
-                                                `<span class="price-original">€${p.price}</span>
-                                                 <span class="price-current">€${p.discount_price}</span>` : 
-                                                `<span class="price-current">€${p.price}</span>`
-                                            }
-                                            ${p.quantity <= (p.min_stock || 5) && p.quantity > 0 ? 
-                                                '<div class="stock-status stock-low">Nur noch ' + p.quantity + ' verfügbar</div>' :
-                                                p.quantity === 0 ? 
-                                                '<div class="stock-status stock-low">Ausverkauft</div>' :
-                                                '<div class="stock-status stock-ok">Auf Lager</div>'
-                                            }
-                                        </div>
-                                        <button class="btn btn-primary" ${p.quantity === 0 ? 'disabled' : ''}>
-                                            ${p.quantity === 0 ? 'Ausverkauft' : 'Kaufen'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                // Load variants for each product
+                for (let product of products) {
+                    if (product.has_variants) {
+                        const variantsRes = await fetch(`${API_URL}/shops/${shopId}/products/${product.id}/variants`);
+                        product.variants = await variantsRes.json();
+                    }
+                }
+                
+                renderProducts(products);
             } catch (error) {
                 document.getElementById('products-container').innerHTML = `
                     <div class="error-state">
@@ -409,6 +396,125 @@
                         <p>Die Produkte konnten nicht geladen werden. Bitte versuche es später erneut.</p>
                     </div>
                 `;
+            }
+        }
+        
+        function renderProducts(products) {
+            document.getElementById('products-container').innerHTML = `
+                <div class="products-grid">
+                    ${products.map(p => renderProductCard(p)).join('')}
+                </div>
+            `;
+        }
+        
+        function renderProductCard(p) {
+            const hasVariants = p.variants && p.variants.length > 0;
+            const variantSelector = hasVariants ? `
+                <div style="margin: 12px 0;">
+                    <select class="variant-select" id="variant-${p.id}" style="width: 100%; padding: 8px; border: 1px solid #E2E8F0; border-radius: 6px;" onchange="updatePrice(${p.id}, ${p.price})">
+                        ${p.variants.map(v => `
+                            <option value="${v.id}" data-price="${v.price_adjustment}" data-stock="${v.stock}">
+                                ${v.name} ${v.price_adjustment > 0 ? '(+' + v.price_adjustment + '€)' : v.price_adjustment < 0 ? '(' + v.price_adjustment + '€)' : ''}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+            ` : '';
+            
+            const currentPrice = p.discount_price || p.price;
+            
+            return `
+                <div class="product-card">
+                    <div class="product-image">
+                        ${p.image_urls && p.image_urls[0] 
+                            ? `<img src="${p.image_urls[0]}" alt="${p.name}">` 
+                            : '<div style="font-size: 64px;">📦</div>'}
+                        ${p.discount_price ? '<span class="product-badge">SALE</span>' : ''}
+                    </div>
+                    <div class="product-content">
+                        <div class="product-category">${p.category_name || 'Produkt'}</div>
+                        <h3 class="product-name">${p.name}</h3>
+                        <p class="product-description">${p.description || ''}</p>
+                        ${variantSelector}
+                        <div class="product-footer">
+                            <div class="product-price">
+                                ${p.discount_price ? 
+                                    `<span class="price-original">€${p.price}</span>
+                                     <span class="price-current" id="price-${p.id}">€${p.discount_price}</span>` : 
+                                    `<span class="price-current" id="price-${p.id}">€${p.price}</span>`
+                                }
+                                <div class="stock-status stock-ok" id="stock-${p.id}">Auf Lager</div>
+                            </div>
+                            <button class="btn btn-primary" id="btn-${p.id}" onclick="addToCart(${p.id}, ${p.price})">
+                                In den Warenkorb
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function updatePrice(productId, basePrice) {
+            const variantSelect = document.getElementById(`variant-${productId}`);
+            if (!variantSelect) return;
+            
+            const option = variantSelect.options[variantSelect.selectedIndex];
+            const priceAdjustment = parseFloat(option.dataset.price) || 0;
+            const stock = parseInt(option.dataset.stock) || 0;
+            
+            const finalPrice = basePrice + priceAdjustment;
+            document.getElementById(`price-${productId}`).textContent = '€' + finalPrice.toFixed(2);
+            
+            const stockEl = document.getElementById(`stock-${productId}`);
+            if (stock <= 5 && stock > 0) {
+                stockEl.textContent = 'Nur noch ' + stock + ' verfügbar';
+                stockEl.className = 'stock-status stock-low';
+            } else if (stock === 0) {
+                stockEl.textContent = 'Ausverkauft';
+                stockEl.className = 'stock-status stock-low';
+                document.getElementById(`btn-${productId}`).disabled = true;
+                document.getElementById(`btn-${productId}`).textContent = 'Ausverkauft';
+            } else {
+                stockEl.textContent = 'Auf Lager';
+                stockEl.className = 'stock-status stock-ok';
+                document.getElementById(`btn-${productId}`).disabled = false;
+                document.getElementById(`btn-${productId}`).textContent = 'In den Warenkorb';
+            }
+        }
+        
+        async function addToCart(productId, price) {
+            if (!currentShop) return;
+            
+            const variantSelect = document.getElementById(`variant-${productId}`);
+            const variantId = variantSelect ? variantSelect.value : null;
+            
+            try {
+                const res = await fetch(`${API_URL}/cart/items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        shop_id: currentShop.id,
+                        product_id: productId,
+                        variant_id: variantId,
+                        quantity: 1
+                    })
+                });
+                
+                if (res.ok) {
+                    const btn = document.getElementById(`btn-${productId}`);
+                    btn.textContent = '✅ Hinzugefügt!';
+                    btn.style.background = '#10B981';
+                    setTimeout(() => {
+                        btn.textContent = 'In den Warenkorb';
+                        btn.style.background = '';
+                    }, 2000);
+                } else {
+                    alert('Fehler beim Hinzufügen');
+                }
+            } catch (error) {
+                console.error('Add to cart error:', error);
+                alert('Fehler beim Hinzufügen');
             }
         }
         

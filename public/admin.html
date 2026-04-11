@@ -473,7 +473,7 @@
                 <h3 class="modal-title" id="product-modal-title">Neues Produkt</h3>
                 <button class="modal-close" onclick="closeProductModal()">&times;</button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" id="product-modal-body">
                 <div id="product-error"></div>
                 <input type="hidden" id="product-id">
                 
@@ -786,18 +786,189 @@
             renderProducts(filtered);
         }
         
+        let allOrders = [];
+        
         async function loadOrders() {
-            document.getElementById('orders-container').innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📋</div>
-                    <h3>Bestellungen</h3>
-                    <p>Bestellungen werden hier angezeigt, sobald Kunden einkaufen.</p>
+            try {
+                const res = await fetch(`${API_URL}/owner/orders`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) {
+                    document.getElementById('orders-container').innerHTML = 
+                        '<div class="error-message">Fehler beim Laden der Bestellungen</div>';
+                    return;
+                }
+                
+                allOrders = await res.json();
+                renderOrders(allOrders);
+            } catch (e) {
+                console.error('Load orders error:', e);
+                document.getElementById('orders-container').innerHTML = 
+                    '<div class="error-message">Fehler beim Laden der Bestellungen</div>';
+            }
+        }
+        
+        function renderOrders(orders) {
+            if (orders.length === 0) {
+                document.getElementById('orders-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h3>Noch keine Bestellungen</h3>
+                        <p>Bestellungen werden hier angezeigt, sobald Kunden einkaufen.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Bestellung</th>
+                                <th>Kunde</th>
+                                <th>Betrag</th>
+                                <th>Status</th>
+                                <th>Datum</th>
+                                <th style="text-align: right;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${orders.map(o => `
+                                <tr>
+                                    <td>
+                                        <strong>${o.order_number}</strong>
+                                        <div style="font-size: 12px; color: #64748B;">${o.item_count || 0} Artikel</div>
+                                    </td>
+                                    <td>
+                                        ${o.customer_name || o.customer_email || 'Gast'}
+                                    </td>
+                                    <td>€${parseFloat(o.total_amount).toFixed(2)}</td>
+                                    <td>
+                                        <span class="badge ${getOrderStatusBadge(o.status)}">
+                                            ${getOrderStatusLabel(o.status)}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(o.created_at).toLocaleDateString('de-DE')}</td>
+                                    <td style="text-align: right;">
+                                        <button class="btn btn-icon" onclick="viewOrder(${o.id})">👁️</button>
+                                        <button class="btn btn-icon" onclick="updateOrderStatus(${o.id})">📝</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
+            document.getElementById('orders-container').innerHTML = html;
+        }
+        
+        function getOrderStatusBadge(status) {
+            const badges = {
+                'pending': 'badge-neutral',
+                'paid': 'badge-success',
+                'shipped': 'badge-warning',
+                'delivered': 'badge-success',
+                'cancelled': 'badge-danger'
+            };
+            return badges[status] || 'badge-neutral';
+        }
+        
+        function getOrderStatusLabel(status) {
+            const labels = {
+                'pending': 'Offen',
+                'paid': 'Bezahlt',
+                'shipped': 'Versendet',
+                'delivered': 'Geliefert',
+                'cancelled': 'Storniert'
+            };
+            return labels[status] || status;
         }
         
         function filterOrders() {
-            // Placeholder for order filtering
+            const status = document.getElementById('order-filter-status').value;
+            
+            const filtered = allOrders.filter(o => {
+                return !status || o.status === status;
+            });
+            
+            renderOrders(filtered);
+        }
+        
+        async function viewOrder(id) {
+            try {
+                const res = await fetch(`${API_URL}/owner/orders/${id}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const order = await res.json();
+                
+                // Show order details modal
+                document.getElementById('product-modal-title').textContent = `Bestellung ${order.order_number}`;
+                document.getElementById('product-modal-body').innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Kunde</label>
+                        <p>${order.customer_name || order.customer_email || 'Gast'}</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <span class="badge ${getOrderStatusBadge(order.status)}">${getOrderStatusLabel(order.status)}</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gesamtbetrag</label>
+                        <p style="font-size: 1.5rem; font-weight: 600;">€${parseFloat(order.total_amount).toFixed(2)}</p>
+                    </div>
+                    <h4 style="margin-top: 24px; margin-bottom: 16px;">Artikel</h4>
+                    ${order.items.map(item => `
+                        <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 8px;">
+                            <strong>${item.product_name}</strong>
+                            ${item.variant_name ? `<span style="color: #64748B;"> (${item.variant_name})</span>` : ''}
+                            <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                                <span>${item.quantity} x €${parseFloat(item.unit_price).toFixed(2)}</span>
+                                <strong>€${(item.quantity * parseFloat(item.unit_price)).toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+                
+                document.getElementById('product-modal').classList.add('active');
+            } catch (e) {
+                alert('Fehler beim Laden der Bestellung');
+            }
+        }
+        
+        async function updateOrderStatus(id) {
+            const statuses = [
+                { value: 'pending', label: 'Offen' },
+                { value: 'paid', label: 'Bezahlt' },
+                { value: 'shipped', label: 'Versendet' },
+                { value: 'delivered', label: 'Geliefert' },
+                { value: 'cancelled', label: 'Storniert' }
+            ];
+            
+            const newStatus = prompt('Neuer Status:\n' + statuses.map(s => `${s.value} = ${s.label}`).join('\n'));
+            
+            if (!newStatus) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/orders/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (res.ok) {
+                    loadOrders();
+                } else {
+                    alert('Fehler beim Aktualisieren');
+                }
+            } catch (e) {
+                alert('Fehler beim Aktualisieren');
+            }
         }
         
         async function loadShop() {
@@ -916,11 +1087,83 @@
         
         function closeProductModal() {
             document.getElementById('product-modal').classList.remove('active');
+            // Reset modal content to product form
+            document.getElementById('product-modal-title').textContent = 'Neues Produkt';
+            document.getElementById('product-modal-body').innerHTML = `
+                <div id="product-error"></div>
+                <input type="hidden" id="product-id">
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label">Produktname *</label>
+                        <input type="text" class="form-input" id="product-name" placeholder="z.B. Premium Liquid">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SKU</label>
+                        <input type="text" class="form-input" id="product-sku" placeholder="EL-001">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Beschreibung</label>
+                    <textarea class="form-textarea" id="product-description" placeholder="Produktbeschreibung..."></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Kategorie</label>
+                        <select class="form-select" id="product-category">
+                            <option value="">Keine</option>
+                            <option value="E-Liquid">E-Liquid</option>
+                            <option value="Hardware">Hardware</option>
+                            <option value="Zubehör">Zubehör</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="product-status">
+                            <option value="draft">Entwurf</option>
+                            <option value="published">Veröffentlicht</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Preis (€) *</label>
+                        <input type="number" class="form-input" id="product-price" step="0.01" placeholder="19.99">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rabattpreis (optional)</label>
+                        <input type="number" class="form-input" id="product-discount" step="0.01" placeholder="14.99">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Anfangsbestand</label>
+                        <input type="number" class="form-input" id="product-stock" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mindestbestand (Warnung)</label>
+                        <input type="number" class="form-input" id="product-min-stock" value="5">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Produktbild</label>
+                    <input type="file" class="form-input" id="product-image-file" accept="image/*" onchange="previewImage(this)">
+                    <div id="image-preview" style="margin-top: 12px; max-width: 200px;"></div>
+                    <input type="hidden" id="product-image-url">
+                </div>
+                
+                <div class="form-group" id="variants-section" style="display: none;">
+                    <label class="form-label">Varianten</label>
+                    <div id="variants-list" style="margin-bottom: 12px;"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addVariantField()">+ Variante hinzufügen</button>
+                </div>
+            `;
             document.getElementById('variants-section').style.display = 'none';
-            document.getElementById('variants-list').innerHTML = '';
-            document.getElementById('image-preview').innerHTML = '';
-            document.getElementById('product-image-file').value = '';
-            document.getElementById('product-image-url').value = '';
         }
         
         function previewImage(input) {

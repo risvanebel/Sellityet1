@@ -137,6 +137,23 @@ app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res)
     }
 });
 
+// Get product variants (public)
+app.get('/api/shops/:shopId/products/:productId/variants', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT v.id, v.name, v.price_adjustment, v.stock
+            FROM product_variants v
+            JOIN products p ON v.product_id = p.id
+            WHERE p.id = $1 AND p.shop_id = $2 AND v.is_active = true AND p.status = 'published'
+            ORDER BY v.name
+        `, [req.params.productId, req.params.shopId]);
+        res.json(rows);
+    } catch (error) {
+        console.error('Get variants error:', error);
+        res.status(500).json({ error: 'Failed to fetch variants' });
+    }
+});
+
 // ========== SHOP VIEW ==========
 app.get('/shop/:slug', (req, res) => {
     res.sendFile(__dirname + '/public/shop-view.html');
@@ -570,6 +587,350 @@ app.delete('/api/owner/variants/:id', authMiddleware, requireRole('owner', 'admi
         res.json({ message: 'Variant deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete variant' });
+    }
+});
+
+// ========== ORDERS ==========
+
+// Get my orders (owner/admin)
+app.get('/api/owner/orders', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { status, limit = 50, offset = 0 } = req.query;
+        
+        let query = `
+            SELECT o.*, s.name as shop_name, 
+                   COUNT(oi.id) as item_count,
+                   u.email as customer_email
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            LEFT JOIN users u ON o.customer_id = u.id
+            WHERE s.owner_id = $1
+        `;
+        const params = [req.user.id];
+        
+        if (status) {
+            query += ` AND o.status = $${params.length + 1}`;
+            params.push(status);
+        }
+        
+        query += ` GROUP BY o.id, s.name, u.email ORDER BY o.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);
+        
+        const { rows } = await pool.query(query, params);
+        res.json(rows);
+    } catch (error) {
+        console.error('Get orders error:', error);
+        res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+});
+
+// Get order details
+app.get('/api/owner/orders/:id', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        // Get order with items
+        const { rows: orderRows } = await pool.query(`
+            SELECT o.*, s.name as shop_name, s.slug as shop_slug,
+                   u.email as customer_email
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            LEFT JOIN users u ON o.customer_id = u.id
+            WHERE o.id = $1 AND s.owner_id = $2
+        `, [req.params.id, req.user.id]);
+        
+        if (orderRows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        
+        const order = orderRows[0];
+        
+        // Get order items
+        const { rows: items } = await pool.query(`
+            SELECT oi.*, p.image_urls
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $1
+        `, [req.params.id]);
+        
+        order.items = items;
+        res.json(order);
+    } catch (error) {
+        console.error('Get order error:', error);
+        res.status(500).json({ error: 'Failed to fetch order' });
+    }
+});
+
+// Update order status
+app.put('/api/owner/orders/:id/status', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { status, tracking_number } = req.body;
+    const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+    
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    try {
+        const { rows } = await pool.query(`
+            UPDATE orders o
+            SET status = $1, tracking_number = COALESCE($2, tracking_number), updated_at = CURRENT_TIMESTAMP
+            FROM shops s
+            WHERE o.id = $3 AND o.shop_id = s.id AND s.owner_id = $4
+            RETURNING o.*
+        `, [status, tracking_number, req.params.id, req.user.id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Update order status error:', error);
+        res.status(500).json({ error: 'Failed to update order' });
+    }
+});
+
+// ========== CART (Customer) ==========
+
+// Get or create cart
+app.get('/api/cart', async (req, res) => {
+    const sessionId = req.headers['x-session-id'] || req.query.session_id;
+    const shopId = req.query.shop_id;
+    
+    if (!sessionId || !shopId) {
+        return res.status(400).json({ error: 'Session ID and Shop ID required' });
+    }
+    
+    try {
+        // Get or create cart
+        let { rows: cartRows } = await pool.query(
+            'SELECT * FROM carts WHERE session_id = $1 AND shop_id = $2',
+            [sessionId, shopId]
+        );
+        
+        let cart;
+        if (cartRows.length === 0) {
+            const { rows: newCart } = await pool.query(
+                'INSERT INTO carts (session_id, shop_id) VALUES ($1, $2) RETURNING *',
+                [sessionId, shopId]
+            );
+            cart = newCart[0];
+        } else {
+            cart = cartRows[0];
+        }
+        
+        // Get cart items with product details
+        const { rows: items } = await pool.query(`
+            SELECT ci.*, p.name as product_name, p.price as product_price, 
+                   p.image_urls, v.name as variant_name, v.price_adjustment
+            FROM cart_items ci
+            JOIN products p ON ci.product_id = p.id
+            LEFT JOIN product_variants v ON ci.variant_id = v.id
+            WHERE ci.cart_id = $1
+        `, [cart.id]);
+        
+        cart.items = items;
+        res.json(cart);
+    } catch (error) {
+        console.error('Get cart error:', error);
+        res.status(500).json({ error: 'Failed to get cart' });
+    }
+});
+
+// Add to cart
+app.post('/api/cart/items', async (req, res) => {
+    const { session_id, shop_id, product_id, variant_id, quantity } = req.body;
+    
+    if (!session_id || !shop_id || !product_id || !quantity) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // Get or create cart
+        let { rows: cartRows } = await client.query(
+            'SELECT * FROM carts WHERE session_id = $1 AND shop_id = $2',
+            [session_id, shop_id]
+        );
+        
+        let cartId;
+        if (cartRows.length === 0) {
+            const { rows: newCart } = await client.query(
+                'INSERT INTO carts (session_id, shop_id) VALUES ($1, $2) RETURNING id',
+                [session_id, shop_id]
+            );
+            cartId = newCart[0].id;
+        } else {
+            cartId = cartRows[0].id;
+        }
+        
+        // Check if item already exists
+        const { rows: existingItem } = await client.query(
+            'SELECT * FROM cart_items WHERE cart_id = $1 AND product_id = $2 AND (variant_id = $3 OR (variant_id IS NULL AND $3 IS NULL))',
+            [cartId, product_id, variant_id]
+        );
+        
+        if (existingItem.length > 0) {
+            // Update quantity
+            await client.query(
+                'UPDATE cart_items SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                [quantity, existingItem[0].id]
+            );
+        } else {
+            // Insert new item
+            await client.query(
+                'INSERT INTO cart_items (cart_id, product_id, variant_id, quantity) VALUES ($1, $2, $3, $4)',
+                [cartId, product_id, variant_id, quantity]
+            );
+        }
+        
+        await client.query('COMMIT');
+        
+        res.json({ success: true, message: 'Item added to cart' });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Add to cart error:', error);
+        res.status(500).json({ error: 'Failed to add item to cart' });
+    } finally {
+        client.release();
+    }
+});
+
+// Update cart item quantity
+app.put('/api/cart/items/:id', async (req, res) => {
+    const { quantity } = req.body;
+    
+    try {
+        if (quantity <= 0) {
+            await pool.query('DELETE FROM cart_items WHERE id = $1', [req.params.id]);
+        } else {
+            await pool.query(
+                'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                [quantity, req.params.id]
+            );
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Update cart item error:', error);
+        res.status(500).json({ error: 'Failed to update cart' });
+    }
+});
+
+// Remove from cart
+app.delete('/api/cart/items/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM cart_items WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Remove from cart error:', error);
+        res.status(500).json({ error: 'Failed to remove item' });
+    }
+});
+
+// ========== CHECKOUT ==========
+
+// Create order from cart
+app.post('/api/orders', async (req, res) => {
+    const { 
+        session_id, shop_id, 
+        customer_email, customer_name, customer_phone,
+        shipping_address, items, total_amount 
+    } = req.body;
+    
+    if (!shop_id || !customer_email || !items || !total_amount) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // Generate order number
+        const orderNumber = 'ORD-' + Date.now();
+        
+        // Create order
+        const { rows: orderRows } = await client.query(`
+            INSERT INTO orders (order_number, shop_id, customer_email, customer_name, customer_phone,
+                              shipping_address, total_amount, status, payment_status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', 'pending')
+            RETURNING *
+        `, [orderNumber, shop_id, customer_email, customer_name, customer_phone,
+            JSON.stringify(shipping_address), total_amount]);
+        
+        const order = orderRows[0];
+        
+        // Create order items
+        for (const item of items) {
+            await client.query(`
+                INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku, 
+                                        quantity, unit_price, variant_name)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `, [order.id, item.product_id, item.variant_id, item.product_name, item.sku,
+                item.quantity, item.price, item.variant_name]);
+            
+            // Update inventory
+            if (item.variant_id) {
+                await client.query(
+                    'UPDATE product_variants SET stock = stock - $1 WHERE id = $2',
+                    [item.quantity, item.variant_id]
+                );
+            } else {
+                await client.query(
+                    'UPDATE inventory SET quantity = quantity - $1 WHERE product_id = $2',
+                    [item.quantity, item.product_id]
+                );
+            }
+        }
+        
+        // Clear cart if session_id provided
+        if (session_id) {
+            await client.query(
+                'DELETE FROM carts WHERE session_id = $1 AND shop_id = $2',
+                [session_id, shop_id]
+            );
+        }
+        
+        await client.query('COMMIT');
+        
+        res.status(201).json(order);
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Create order error:', error);
+        res.status(500).json({ error: 'Failed to create order' });
+    } finally {
+        client.release();
+    }
+});
+
+// Get order (customer view)
+app.get('/api/orders/:id', async (req, res) => {
+    try {
+        const { rows: orderRows } = await pool.query(`
+            SELECT o.*, s.name as shop_name
+            FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.id = $1
+        `, [req.params.id]);
+        
+        if (orderRows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        
+        const order = orderRows[0];
+        
+        const { rows: items } = await pool.query(
+            'SELECT * FROM order_items WHERE order_id = $1',
+            [req.params.id]
+        );
+        
+        order.items = items;
+        res.json(order);
+    } catch (error) {
+        console.error('Get order error:', error);
+        res.status(500).json({ error: 'Failed to get order' });
     }
 });
 

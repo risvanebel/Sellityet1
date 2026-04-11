@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F8FAFC;
+            color: #0F172A;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: #64748B;
+        }
+        .checkout-form {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .order-summary {
+            background: #F8FAFC;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 16px;
+            border-top: 2px solid #E2E8F0;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .payment-methods {
+            margin-bottom: 24px;
+        }
+        .payment-method {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border: 2px solid #E2E8F0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .payment-method.selected {
+            border-color: #2563EB;
+            background: #EFF6FF;
+        }
+        .payment-method input {
+            width: 20px;
+            height: 20px;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: #111827;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background: #374151;
+        }
+        .submit-btn:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+        .error-message {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .success-message {
+            background: #D1FAE5;
+            color: #065F46;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 Sicherer Checkout</h1>
+            <p>Bitte füllen Sie Ihre Daten aus, um die Bestellung abzuschließen</p>
+        </div>
+        
+        <div id="checkout-container">
+            <div class="checkout-form">
+                <div class="loading">Wird geladen...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const SESSION_ID = localStorage.getItem('cart_session_id');
+        const urlParams = new URLSearchParams(window.location.search);
+        let shopId = urlParams.get('shop_id') || localStorage.getItem('current_shop_id');
+        let cartItems = [];
+        let total = 0;
+        
+        async function loadCheckout() {
+            if (!shopId || !SESSION_ID) {
+                document.getElementById('checkout-container').innerHTML = `
+                    <div class="error-message">
+                        Kein Warenkorb gefunden. Bitte fügen Sie zuerst Artikel hinzu.
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/cart?session_id=${SESSION_ID}&shop_id=${shopId}`);
+                const cart = await res.json();
+                
+                if (!cart.items || cart.items.length === 0) {
+                    document.getElementById('checkout-container').innerHTML = `
+                        <div class="error-message">
+                            Ihr Warenkorb ist leer. <a href="/shop/${getShopSlug()}">Zurück zum Shop</a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                cartItems = cart.items;
+                renderCheckout();
+            } catch (error) {
+                console.error('Load checkout error:', error);
+                document.getElementById('checkout-container').innerHTML = `
+                    <div class="error-message">
+                        Fehler beim Laden. Bitte versuchen Sie es später erneut.
+                    </div>
+                `;
+            }
+        }
+        
+        function renderCheckout() {
+            total = cartItems.reduce((sum, item) => {
+                const price = parseFloat(item.product_price) + (parseFloat(item.price_adjustment) || 0);
+                return sum + (price * item.quantity);
+            }, 0);
+            
+            const itemsHtml = cartItems.map(item => {
+                const price = parseFloat(item.product_price) + (parseFloat(item.price_adjustment) || 0);
+                return `
+                    <div class="summary-item">
+                        <span>${item.quantity}x ${item.product_name}</span>
+                        <span>€${(price * item.quantity).toFixed(2)}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('checkout-container').innerHTML = `
+                <div class="checkout-form">
+                    <div id="error-container"></div>
+                    
+                    <div class="order-summary">
+                        <div class="summary-title">Bestellübersicht</div>
+                        ${itemsHtml}
+                        <div class="summary-total">
+                            <span>Gesamtsumme</span>
+                            <span>€${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <form id="checkout-form" onsubmit="submitOrder(event)">
+                        <h3 style="margin-bottom: 20px;">Kontaktdaten</h3>
+                        
+                        <div class="form-group">
+                            <label class="form-label">E-Mail *</label>
+                            <input type="email" class="form-input" name="email" required placeholder="ihre@email.de">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Vorname *</label>
+                                <input type="text" class="form-input" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nachname *</label>
+                                <input type="text" class="form-input" name="lastName" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" class="form-input" name="phone" placeholder="+49 123 456789">
+                        </div>
+                        
+                        <h3 style="margin: 32px 0 20px;">Lieferadresse</h3>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Straße und Hausnummer *</label>
+                            <input type="text" class="form-input" name="street" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">PLZ *</label>
+                                <input type="text" class="form-input" name="zip" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Stadt *</label>
+                                <input type="text" class="form-input" name="city" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Land *</label>
+                            <input type="text" class="form-input" name="country" value="Deutschland" required>
+                        </div>
+                        
+                        <h3 style="margin: 32px 0 20px;">Zahlungsmethode</h3>
+                        
+                        <div class="payment-methods">
+                            <label class="payment-method selected">
+                                <input type="radio" name="payment" value="cod" checked>
+                                <span>📦 Nachnahme</span>
+                            </label>
+                            <label class="payment-method">
+                                <input type="radio" name="payment" value="banktransfer">
+                                <span>🏦 Überweisung</span>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="submit-btn">
+                            Bestellung aufgeben (€${total.toFixed(2)})
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+        
+        async function submitOrder(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const orderData = {
+                session_id: SESSION_ID,
+                shop_id: parseInt(shopId),
+                customer_email: formData.get('email'),
+                customer_name: `${formData.get('firstName')} ${formData.get('lastName')}`,
+                customer_phone: formData.get('phone'),
+                shipping_address: {
+                    street: formData.get('street'),
+                    zip: formData.get('zip'),
+                    city: formData.get('city'),
+                    country: formData.get('country')
+                },
+                items: cartItems.map(item => ({
+                    product_id: item.product_id,
+                    variant_id: item.variant_id,
+                    product_name: item.product_name,
+                    sku: '',
+                    variant_name: item.variant_name,
+                    quantity: item.quantity,
+                    price: parseFloat(item.product_price) + (parseFloat(item.price_adjustment) || 0)
+                })),
+                total_amount: total
+            };
+            
+            try {
+                const submitBtn = form.querySelector('.submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Wird verarbeitet...';
+                
+                const res = await fetch(`${API_URL}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (res.ok) {
+                    const order = await res.json();
+                    showSuccess(order);
+                } else {
+                    const error = await res.json();
+                    throw new Error(error.error || 'Bestellung fehlgeschlagen');
+                }
+            } catch (error) {
+                console.error('Submit order error:', error);
+                document.getElementById('error-container').innerHTML = `
+                    <div class="error-message">
+                        ${error.message}
+                    </div>
+                `;
+                const submitBtn = form.querySelector('.submit-btn');
+                submitBtn.disabled = false;
+                submitBtn.textContent = `Bestellung aufgeben (€${total.toFixed(2)})`;
+            }
+        }
+        
+        function showSuccess(order) {
+            document.getElementById('checkout-container').innerHTML = `
+                <div class="success-message">
+                    <div class="success-icon">🎉</div>
+                    <h2>Vielen Dank für Ihre Bestellung!</h2>
+                    <p style="margin: 16px 0;">Bestellnummer: <strong>${order.order_number}</strong></p>
+                    <p style="margin-bottom: 24px;">
+                        Wir haben eine Bestätigung an ${order.customer_email} gesendet.
+                    </p>
+                    <a href="/shop/${getShopSlug()}" style="color: #065F46; text-decoration: underline;">
+                        ← Zurück zum Shop
+                    </a>
+                </div>
+            `;
+            
+            // Clear cart session
+            localStorage.removeItem('cart_session_id');
+        }
+        
+        function getShopSlug() {
+            return '';
+        }
+        
+        // Load on page load
+        loadCheckout();
+    </script>
+</body>
+</html>
