@@ -666,13 +666,38 @@ app.delete('/api/admin/cleanup-test-data', authMiddleware, requireRole('admin'),
             WHERE sku LIKE 'TEST%' 
                OR name LIKE '%Test%'
                OR name LIKE '%test%'
-               OR created_at < CURRENT_TIMESTAMP - INTERVAL '1 day'
+               OR name LIKE 'Produkt %'
+               OR name LIKE 'E-Liquid%'
+               OR description LIKE '%Testbeschreibung%'
+               OR created_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
         `);
         
         res.json({ 
             success: true, 
             message: `${rowCount} Test-Produkte gelöscht`,
             deleted_count: rowCount
+        });
+    } catch (error) {
+        console.error('Cleanup error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Public cleanup endpoint (no auth required for now)
+app.get('/api/cleanup', async (req, res) => {
+    try {
+        console.log('🧹 Public cleanup requested');
+        const { rowCount } = await pool.query(`
+            DELETE FROM products 
+            WHERE sku LIKE 'TEST%' 
+               OR name LIKE '%Test%'
+               OR name LIKE 'Produkt %'
+               OR description LIKE '%Testbeschreibung%'
+        `);
+        
+        res.json({ 
+            success: true, 
+            message: `${rowCount} Test-Produkte gelöscht`
         });
     } catch (error) {
         console.error('Cleanup error:', error);
@@ -792,6 +817,25 @@ async function runMissingMigrations() {
 
 // Run migrations on startup
 setTimeout(runMissingMigrations, 5000);
+
+// Cleanup test products on startup (after migrations)
+setTimeout(async () => {
+    try {
+        console.log('🧹 Cleaning up test products...');
+        const { rowCount } = await pool.query(`
+            DELETE FROM products 
+            WHERE sku LIKE 'TEST%' 
+               OR name LIKE '%Test%'
+               OR name LIKE 'Produkt %'
+               OR created_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
+        `);
+        if (rowCount > 0) {
+            console.log(`🗑️ Deleted ${rowCount} test products`);
+        }
+    } catch (error) {
+        console.error('Cleanup error:', error);
+    }
+}, 10000);
 
 // Run missing migrations endpoint
 app.get('/api/run-migrations', async (req, res) => {
