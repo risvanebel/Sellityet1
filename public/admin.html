@@ -535,8 +535,10 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Bild-URL</label>
-                    <input type="text" class="form-input" id="product-image" placeholder="https://...">
+                    <label class="form-label">Produktbild</label>
+                    <input type="file" class="form-input" id="product-image-file" accept="image/*" onchange="previewImage(this)">
+                    <div id="image-preview" style="margin-top: 12px; max-width: 200px;"></div>
+                    <input type="hidden" id="product-image-url">
                 </div>
                 
                 <div class="form-group" id="variants-section" style="display: none;">
@@ -905,6 +907,35 @@
             document.getElementById('product-modal').classList.remove('active');
             document.getElementById('variants-section').style.display = 'none';
             document.getElementById('variants-list').innerHTML = '';
+            document.getElementById('image-preview').innerHTML = '';
+            document.getElementById('product-image-file').value = '';
+            document.getElementById('product-image-url').value = '';
+        }
+        
+        function previewImage(input) {
+            const preview = document.getElementById('image-preview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; border-radius: 8px;">`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const res = await fetch(`${API_URL}/upload`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}` },
+                body: formData
+            });
+            
+            if (!res.ok) throw new Error('Upload failed');
+            const data = await res.json();
+            return data.url;
         }
         
         let variantCount = 0;
@@ -988,11 +1019,23 @@
             const discountPrice = document.getElementById('product-discount').value;
             const stock = parseInt(document.getElementById('product-stock').value) || 0;
             const minStock = parseInt(document.getElementById('product-min-stock').value) || 5;
-            const imageUrl = document.getElementById('product-image').value;
+            const imageFile = document.getElementById('product-image-file').files[0];
             
             if (!name || !price) {
                 document.getElementById('product-error').innerHTML = '<div class="error-message">Name und Preis sind erforderlich</div>';
                 return;
+            }
+            
+            // Upload image if selected
+            let imageUrl = null;
+            if (imageFile) {
+                try {
+                    document.getElementById('product-error').innerHTML = '<div class="loading">Bild wird hochgeladen...</div>';
+                    imageUrl = await uploadImage(imageFile);
+                } catch (e) {
+                    document.getElementById('product-error').innerHTML = '<div class="error-message">Bild-Upload fehlgeschlagen</div>';
+                    return;
+                }
             }
             
             try {

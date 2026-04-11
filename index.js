@@ -4,6 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('./src/config/database');
+const { upload, uploadToCloudinary } = require('./src/config/upload');
 require('dotenv').config();
 
 const app = express();
@@ -49,6 +50,21 @@ app.get('/api/health', async (req, res) => {
         res.json({ status: 'ok', database: 'connected' });
     } catch (error) {
         res.status(500).json({ status: 'error', database: 'disconnected' });
+    }
+});
+
+// ========== UPLOAD ==========
+app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Keine Bilddatei' });
+        }
+        
+        const result = await uploadToCloudinary(req.file.buffer);
+        res.json({ url: result.secure_url, public_id: result.public_id });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ error: 'Upload fehlgeschlagen' });
     }
 });
 
@@ -202,6 +218,17 @@ app.get('/api/shops/:shopId/products', async (req, res) => {
             ORDER BY p.created_at DESC
         `, [req.params.shopId]);
         
+        // Calculate total stock from variants for each product
+        for (let product of rows) {
+            if (product.has_variants) {
+                const { rows: variants } = await pool.query(
+                    'SELECT COALESCE(SUM(stock), 0) as total FROM product_variants WHERE product_id = $1 AND is_active = true',
+                    [product.id]
+                );
+                product.quantity = parseInt(variants[0].total);
+            }
+        }
+        
         res.json(rows);
     } catch (error) {
         console.error('Get products error:', error);
@@ -271,6 +298,17 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
             WHERE s.owner_id = $1
             ORDER BY p.created_at DESC
         `, [req.user.id]);
+        
+        // Calculate total stock from variants for each product
+        for (let product of rows) {
+            if (product.has_variants) {
+                const { rows: variants } = await pool.query(
+                    'SELECT COALESCE(SUM(stock), 0) as total FROM product_variants WHERE product_id = $1 AND is_active = true',
+                    [product.id]
+                );
+                product.quantity = parseInt(variants[0].total);
+            }
+        }
         
         res.json(rows);
     } catch (error) {
