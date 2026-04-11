@@ -4,148 +4,317 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shop</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', sans-serif;
-            background: #F8FAFC;
-            color: #0F172A;
-            line-height: 1.5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFFFFF;
+            color: #111827;
+            line-height: 1.6;
         }
-        .shop-header {
-            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 60px 20px;
+            padding: 80px 24px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
-        .shop-header h1 { font-size: 2.5rem; margin-bottom: 10px; }
-        .shop-header p { font-size: 1.1rem; opacity: 0.9; }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+        
+        /* Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 24px;
         }
+        
+        /* Section Header */
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+        .section-header p {
+            color: #6B7280;
+            font-size: 1.125rem;
+        }
+        
+        /* Products Grid */
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 32px;
         }
+        
+        /* Product Card */
         .product-card {
             background: white;
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border: 1px solid #F3F4F6;
         }
         .product-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
         .product-image {
-            height: 200px;
-            background: #F1F5F9;
+            height: 240px;
+            background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 64px;
+            position: relative;
+            overflow: hidden;
         }
         .product-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+        .product-badge {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: #EF4444;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
         .product-content {
-            padding: 20px;
+            padding: 24px;
         }
         .product-category {
             font-size: 12px;
             color: #2563EB;
             text-transform: uppercase;
             font-weight: 600;
+            letter-spacing: 0.05em;
             margin-bottom: 8px;
         }
         .product-name {
-            font-size: 18px;
+            font-size: 1.25rem;
             font-weight: 600;
+            color: #111827;
             margin-bottom: 8px;
+            line-height: 1.4;
         }
         .product-description {
             font-size: 14px;
-            color: #64748B;
+            color: #6B7280;
             margin-bottom: 16px;
             line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         .product-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid #F3F4F6;
         }
         .product-price {
-            font-size: 20px;
-            font-weight: 700;
-            color: #0F172A;
+            display: flex;
+            flex-direction: column;
         }
-        .product-price .original {
-            text-decoration: line-through;
-            color: #94A3B8;
+        .price-current {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        .price-original {
             font-size: 14px;
-            margin-right: 8px;
+            color: #9CA3AF;
+            text-decoration: line-through;
         }
         .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 8px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             border: none;
-            background: #2563EB;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #111827;
             color: white;
         }
-        .btn:hover { background: #1D4ED8; }
+        .btn-primary:hover {
+            background: #374151;
+        }
         .btn:disabled {
-            background: #94A3B8;
+            background: #E5E7EB;
+            color: #9CA3AF;
             cursor: not-allowed;
         }
+        .stock-status {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .stock-low { color: #EF4444; }
+        .stock-ok { color: #10B981; }
+        
+        /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 80px 20px;
+            padding: 100px 24px;
+            background: #F9FAFB;
+            border-radius: 16px;
+            margin: 40px 0;
         }
-        .empty-state-icon { font-size: 64px; margin-bottom: 20px; }
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            background: #E5E7EB;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 40px;
+        }
+        .empty-state h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+        .empty-state p {
+            color: #6B7280;
+            font-size: 1rem;
+        }
+        
+        /* Loading */
         .loading {
             text-align: center;
-            padding: 60px;
-            color: #64748B;
+            padding: 100px 24px;
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #2563EB;
-            text-decoration: none;
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #E5E7EB;
+            border-top-color: #2563EB;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
         }
-        .stock-low { color: #DC2626; font-size: 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 100px 24px;
+        }
+        .error-state h2 {
+            font-size: 1.5rem;
+            color: #EF4444;
+            margin-bottom: 8px;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #111827;
+            color: white;
+            padding: 40px 24px;
+            text-align: center;
+            margin-top: 80px;
+        }
+        .footer p {
+            color: #9CA3AF;
+            font-size: 14px;
+        }
+        .footer-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        /* Responsive */
         @media (max-width: 640px) {
-            .shop-header h1 { font-size: 1.8rem; }
-            .products-grid { grid-template-columns: 1fr; }
+            .hero { padding: 60px 24px; }
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            .container { padding: 40px 16px; }
+            .products-grid { grid-template-columns: 1fr; gap: 24px; }
+            .product-image { height: 200px; }
         }
     </style>
 </head>
 <body>
-    <div class="shop-header" id="shop-header">
-        <h1>Lade Shop...</h1>
+    <div class="hero" id="shop-header">
+        <div class="hero-content">
+            <h1>Lade Shop...</h1>
+        </div>
     </div>
     
     <div class="container">
-        <a href="/" class="back-link">← Zurück zu allen Shops</a>
+        <div class="section-header">
+            <h2>Unsere Produkte</h2>
+            <p>Entdecke unsere Auswahl an hochwertigen Produkten</p>
+        </div>
         
         <div id="products-container">
-            <div class="loading">Lade Produkte...</div>
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Produkte werden geladen...</p>
+            </div>
         </div>
     </div>
+    
+    <footer class="footer">
+        <div class="footer-brand" id="footer-brand">Shop</div>
+        <p>Powered by Sellityet</p>
+    </footer>
 
     <script>
         const API_URL = '/api';
-        const urlParams = new URLSearchParams(window.location.search);
         const shopSlug = window.location.pathname.split('/').pop();
         
         async function loadShop() {
@@ -154,17 +323,27 @@
                 if (!res.ok) throw new Error('Shop not found');
                 const shop = await res.json();
                 
-                document.getElementById('shop-header').style.background = shop.primary_color || '#2563EB';
+                // Update hero with shop color
+                if (shop.primary_color) {
+                    document.getElementById('shop-header').style.background = shop.primary_color;
+                }
+                
                 document.getElementById('shop-header').innerHTML = `
-                    <h1>${shop.name}</h1>
-                    <p>${shop.description || 'Willkommen in unserem Shop'}</p>
+                    <div class="hero-content">
+                        <h1>${shop.name}</h1>
+                        <p>${shop.description || 'Willkommen in unserem Shop'}</p>
+                    </div>
                 `;
+                
+                document.getElementById('footer-brand').textContent = shop.name;
                 
                 loadProducts(shop.id);
             } catch (error) {
                 document.getElementById('shop-header').innerHTML = `
-                    <h1>Shop nicht gefunden</h1>
-                    <p>Dieser Shop existiert nicht oder wurde deaktiviert.</p>
+                    <div class="hero-content">
+                        <h1>Shop nicht gefunden</h1>
+                        <p>Dieser Shop existiert nicht oder wurde deaktiviert.</p>
+                    </div>
                 `;
                 document.getElementById('products-container').innerHTML = '';
             }
@@ -179,8 +358,8 @@
                     document.getElementById('products-container').innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📦</div>
-                            <h2>Noch keine Produkte</h2>
-                            <p>Dieser Shop hat noch keine Produkte im Angebot.</p>
+                            <h2>Bald verfügbar</h2>
+                            <p>Unser Sortiment wird demnächst erweitert. Schau bald wieder vorbei!</p>
                         </div>
                     `;
                     return;
@@ -193,7 +372,8 @@
                                 <div class="product-image">
                                     ${p.image_urls && p.image_urls[0] 
                                         ? `<img src="${p.image_urls[0]}" alt="${p.name}">` 
-                                        : '📦'}
+                                        : '<div style="font-size: 64px;">📦</div>'}
+                                    ${p.discount_price ? '<span class="product-badge">SALE</span>' : ''}
                                 </div>
                                 <div class="product-content">
                                     <div class="product-category">${p.category_name || 'Produkt'}</div>
@@ -201,17 +381,22 @@
                                     <p class="product-description">${p.description || ''}</p>
                                     <div class="product-footer">
                                         <div class="product-price">
-                                            ${p.discount_price 
-                                                ? `<span class="original">€${p.price}</span>€${p.discount_price}` 
-                                                : `€${p.price}`}
+                                            ${p.discount_price ? 
+                                                `<span class="price-original">€${p.price}</span>
+                                                 <span class="price-current">€${p.discount_price}</span>` : 
+                                                `<span class="price-current">€${p.price}</span>`
+                                            }
+                                            ${p.quantity <= (p.min_stock || 5) && p.quantity > 0 ? 
+                                                '<div class="stock-status stock-low">Nur noch ' + p.quantity + ' verfügbar</div>' :
+                                                p.quantity === 0 ? 
+                                                '<div class="stock-status stock-low">Ausverkauft</div>' :
+                                                '<div class="stock-status stock-ok">Auf Lager</div>'
+                                            }
                                         </div>
-                                        <button class="btn" ${p.quantity === 0 ? 'disabled' : ''}>
-                                            ${p.quantity === 0 ? 'Ausverkauft' : 'In den Warenkorb'}
+                                        <button class="btn btn-primary" ${p.quantity === 0 ? 'disabled' : ''}>
+                                            ${p.quantity === 0 ? 'Ausverkauft' : 'Kaufen'}
                                         </button>
                                     </div>
-                                    ${p.quantity <= (p.min_stock || 5) && p.quantity > 0 
-                                        ? `<div class="stock-low">Nur noch ${p.quantity} verfügbar</div>` 
-                                        : ''}
                                 </div>
                             </div>
                         `).join('')}
@@ -219,10 +404,9 @@
                 `;
             } catch (error) {
                 document.getElementById('products-container').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">⚠️</div>
-                        <h2>Fehler beim Laden</h2>
-                        <p>Die Produkte konnten nicht geladen werden.</p>
+                    <div class="error-state">
+                        <h2>⚠️ Fehler beim Laden</h2>
+                        <p>Die Produkte konnten nicht geladen werden. Bitte versuche es später erneut.</p>
                     </div>
                 `;
             }
