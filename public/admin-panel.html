@@ -400,7 +400,28 @@
                 </a>
             </div>
             <nav class="nav" id="main-nav">
-                <!-- Navigation wird dynamisch per JavaScript geladen -->
+                <!-- Fallback Navigation (wird überschrieben wenn JS läuft) -->
+                <div class="nav-section">
+                    <div class="nav-label">Hauptmenü</div>
+                    <div class="nav-item active" onclick="showSection('dashboard')">
+                        <span>📊 Dashboard</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('products')">
+                        <span>📦 Produkte</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('orders')">
+                        <span>🛒 Bestellungen</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('customers')">
+                        <span>👥 Kunden</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('coupons')">
+                        <span>🎫 Gutscheine</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('shop')">
+                        <span>⚙️ Shop-Einstellungen</span>
+                    </div>
+                </div>
             </nav>
             <div class="sidebar-footer">
                 <div class="user-menu" onclick="logout()">
@@ -750,8 +771,18 @@
                     localStorage.removeItem('token');
                     window.location.href = '/login.html';
                 } else {
-                    // Load shop data for product creation
-                    loadShop();
+                    // Load shop data for all users
+                    loadShop().then(() => {
+                        // If no shop exists, show shop creation modal
+                        if (!currentShop) {
+                            console.log('No shop found, showing creation modal');
+                            setTimeout(() => {
+                                if (document.getElementById('shop-modal')) {
+                                    openShopModal();
+                                }
+                            }, 500);
+                        }
+                    });
                 }
             }).catch(() => {
                 localStorage.removeItem('token');
@@ -1499,9 +1530,16 @@
                 const res = await fetch(`${API_URL}/owner/shops`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
+                
+                if (!res.ok) {
+                    console.error('Failed to load shop:', res.status);
+                    return null;
+                }
+                
                 const shops = await res.json();
                 
                 if (shops.length === 0) {
+                    currentShop = null;
                     document.getElementById('shop-container').innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">🏪</div>
@@ -1510,11 +1548,17 @@
                             <button class="btn btn-primary" onclick="openShopModal()" style="margin-top: 16px;">Shop erstellen</button>
                         </div>
                     `;
-                    return;
+                    return null;
                 }
                 
                 const shop = shops[0];
                 currentShop = shop;
+                
+                // Update user display
+                const userMenu = document.querySelector('.user-menu');
+                if (userMenu && userRole === 'owner') {
+                    userMenu.querySelector('.user-menu div div:first-child').textContent = 'Shop Owner';
+                }
                 
                 document.getElementById('shop-container').innerHTML = `
                     <div class="card" style="margin-bottom: 24px;">
@@ -1733,7 +1777,9 @@
             } catch (e) {
                 document.getElementById('shop-container').innerHTML = 
                     '<div class="error-message">Fehler beim Laden des Shops</div>';
+                return null;
             }
+            return currentShop;
         }
         
         async function savePaymentSettings() {
