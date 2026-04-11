@@ -38,6 +38,9 @@
                 <div class="nav-item" onclick="showSection('coupons')">
                     <span>🎫 Gutscheine</span>
                 </div>
+                <div class="nav-item" onclick="showSection('shipping')">
+                    <span>📦 Versand</span>
+                </div>
                 <div class="nav-item" onclick="showSection('shop')">
                     <span>⚙️ Shop-Einstellungen</span>
                 </div>
@@ -576,6 +579,56 @@
                     </div>
                 </div>
 
+                <!-- Shipping Settings -->
+                <div id="shipping" class="section">
+                    <div class="content-header">
+                        <h2 class="header-title">📦 Versand-Einstellungen</h2>
+                    </div>
+                    
+                    <!-- Free Shipping Settings -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h3 class="card-title">🚚 Allgemeine Versandeinstellungen</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Versandkostenfrei ab (€)</label>
+                                <input type="number" class="form-input" id="free-shipping-threshold" placeholder="z.B. 50" step="0.01">
+                                <div class="form-hint">Ab diesem Bestellwert ist der Versand kostenlos. Leer lassen für keine Versandkostenfrei-Grenze.</div>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveShippingSettings()">
+                                Einstellungen speichern
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Shipping Zones -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h3 class="card-title">🌍 Versandzonen</h3>
+                            <button class="btn btn-primary" onclick="openShippingZoneModal()">+ Neue Zone</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="shipping-zones-container">
+                                <div class="loading"><div class="spinner"></div>Lade Versandzonen...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Shipping Methods -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📮 Versandmethoden</h3>
+                            <button class="btn btn-primary" onclick="openShippingMethodModal()">+ Neue Methode</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="shipping-methods-container">
+                                <div class="loading"><div class="spinner"></div>Lade Versandmethoden...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Shop Settings -->
                 <div id="shop" class="section">
                     <div id="shop-container">
@@ -819,6 +872,7 @@
                 'orders': 'Bestellungen',
                 'customers': 'Kunden',
                 'coupons': 'Gutscheine',
+                'shipping': 'Versand-Einstellungen',
                 'shop': 'Shop-Einstellungen',
                 'admin-users': 'Alle Benutzer (Master)',
                 'admin-shops': 'Alle Shops (Master)',
@@ -832,6 +886,8 @@
                 actionsDiv.innerHTML = '<button class="btn btn-primary" onclick="openProductModal()">+ Neues Produkt</button>';
             } else if (section === 'coupons') {
                 actionsDiv.innerHTML = '<button class="btn btn-primary" onclick="openCouponModal()">+ Neuer Gutschein</button>';
+            } else if (section === 'shipping') {
+                actionsDiv.innerHTML = '<button class="btn btn-primary" onclick="openShippingZoneModal()">+ Neue Versandzone</button>';
             } else {
                 actionsDiv.innerHTML = '';
             }
@@ -842,6 +898,7 @@
             if (section === 'orders') loadOrders();
             if (section === 'customers') loadCustomers();
             if (section === 'coupons') loadCoupons();
+            if (section === 'shipping') loadShipping();
             if (section === 'shop') loadShop();
             if (section === 'admin-users' && userRole === 'admin') loadAdminUsers();
             if (section === 'admin-shops' && userRole === 'admin') loadAdminShops();
@@ -2531,6 +2588,307 @@
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/login.html';
+        }
+        
+        // ========== SHIPPING FUNCTIONS ==========
+        
+        async function loadShipping() {
+            try {
+                // Load shipping settings
+                const settingsRes = await fetch(`${API_URL}/owner/shops`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (settingsRes.ok) {
+                    const shops = await settingsRes.json();
+                    if (shops.length > 0) {
+                        const shop = shops[0];
+                        document.getElementById('free-shipping-threshold').value = shop.free_shipping_threshold || '';
+                    }
+                }
+                
+                // Load zones and methods
+                await Promise.all([loadShippingZones(), loadShippingMethods()]);
+            } catch (e) {
+                console.error('Load shipping error:', e);
+            }
+        }
+        
+        async function loadShippingZones() {
+            try {
+                const res = await fetch(`${API_URL}/owner/shipping/zones`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) {
+                    document.getElementById('shipping-zones-container').innerHTML = 
+                        '<div class="error-message">Fehler beim Laden</div>';
+                    return;
+                }
+                
+                const zones = await res.json();
+                
+                if (zones.length === 0) {
+                    document.getElementById('shipping-zones-container').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🌍</div>
+                            <h3>Keine Versandzonen</h3>
+                            <p>Erstelle deine erste Versandzone.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                document.getElementById('shipping-zones-container').innerHTML = zones.map(z => `
+                    <div style="padding: 16px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${z.name}</strong>
+                                ${z.is_default ? '<span class="badge badge-success" style="margin-left: 8px;">Standard</span>' : ''}
+                                <div style="color: #64748B; font-size: 14px; margin-top: 4px;">
+                                    Länder: ${JSON.parse(z.countries).join(', ')}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span class="badge badge-neutral">${z.method_count} Methoden</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Load shipping zones error:', e);
+            }
+        }
+        
+        async function loadShippingMethods() {
+            try {
+                const res = await fetch(`${API_URL}/owner/shipping/methods`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) {
+                    document.getElementById('shipping-methods-container').innerHTML = 
+                        '<div class="error-message">Fehler beim Laden</div>';
+                    return;
+                }
+                
+                const methods = await res.json();
+                
+                if (methods.length === 0) {
+                    document.getElementById('shipping-methods-container').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📮</div>
+                            <h3>Keine Versandmethoden</h3>
+                            <p>Erstelle deine erste Versandmethode.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                document.getElementById('shipping-methods-container').innerHTML = methods.map(m => `
+                    <div style="padding: 16px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${m.name}</strong>
+                                <div style="color: #64748B; font-size: 14px; margin-top: 4px;">
+                                    Zone: ${m.zone_name} | 
+                                    ${m.estimated_days_min && m.estimated_days_max 
+                                        ? `Lieferzeit: ${m.estimated_days_min}-${m.estimated_days_max} Tage`
+                                        : ''}
+                                    ${m.free_shipping_threshold 
+                                        ? `| Versandkostenfrei ab €${m.free_shipping_threshold}`
+                                        : ''}
+                                </div>
+                            </div>
+                            <div style="font-size: 18px; font-weight: 700; color: #059669;">
+                                €${parseFloat(m.price).toFixed(2)}
+                            </div>
+                        </div>
+                        ${m.description ? `<div style="margin-top: 8px; color: #64748B; font-size: 14px;">${m.description}</div>` : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Load shipping methods error:', e);
+            }
+        }
+        
+        async function saveShippingSettings() {
+            const threshold = document.getElementById('free-shipping-threshold').value;
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/shops/shipping-settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        free_shipping_threshold: threshold ? parseFloat(threshold) : null
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('Versandeinstellungen gespeichert!');
+                } else {
+                    alert('Fehler beim Speichern');
+                }
+            } catch (e) {
+                alert('Netzwerkfehler');
+            }
+        }
+        
+        function openShippingZoneModal() {
+            document.getElementById('product-modal-title').textContent = 'Neue Versandzone';
+            document.getElementById('product-modal-body').innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Name der Zone</label>
+                    <input type="text" class="form-input" id="zone-name" placeholder="z.B. Deutschland">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Länder (ISO-Codes, kommagetrennt)</label>
+                    <input type="text" class="form-input" id="zone-countries" placeholder="z.B. DE, AT, CH">
+                    <div class="form-hint">Zweibuchstabige Ländercodes nach ISO 3166-1</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="zone-default"> Als Standardzone verwenden
+                    </label>
+                </div>
+                <button class="btn btn-primary" onclick="saveShippingZone()">Zone erstellen</button>
+            `;
+            document.getElementById('product-modal').classList.add('active');
+        }
+        
+        function openShippingMethodModal() {
+            // First load zones for dropdown
+            fetch(`${API_URL}/owner/shipping/zones`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            })
+            .then(res => res.json())
+            .then(zones => {
+                if (zones.length === 0) {
+                    alert('Bitte erstelle zuerst eine Versandzone!');
+                    return;
+                }
+                
+                const zoneOptions = zones.map(z => `<option value="${z.id}">${z.name}</option>`).join('');
+                
+                document.getElementById('product-modal-title').textContent = 'Neue Versandmethode';
+                document.getElementById('product-modal-body').innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Versandzone</label>
+                        <select class="form-select" id="method-zone">${zoneOptions}</select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Name der Methode</label>
+                        <input type="text" class="form-input" id="method-name" placeholder="z.B. Standard Versand">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Beschreibung (optional)</label>
+                        <input type="text" class="form-input" id="method-description" placeholder="z.B. Lieferung innerhalb 2-3 Werktagen">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Preis (€)</label>
+                            <input type="number" class="form-input" id="method-price" placeholder="4.99" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Versandkostenfrei ab (€)</label>
+                            <input type="number" class="form-input" id="method-free-threshold" placeholder="50" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Lieferzeit von (Tage)</label>
+                            <input type="number" class="form-input" id="method-days-min" placeholder="2">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lieferzeit bis (Tage)</label>
+                            <input type="number" class="form-input" id="method-days-max" placeholder="4">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveShippingMethod()">Methode erstellen</button>
+                `;
+                document.getElementById('product-modal').classList.add('active');
+            });
+        }
+        
+        async function saveShippingZone() {
+            const name = document.getElementById('zone-name').value;
+            const countriesInput = document.getElementById('zone-countries').value;
+            const isDefault = document.getElementById('zone-default').checked;
+            
+            if (!name || !countriesInput) {
+                alert('Bitte Name und Länder angeben');
+                return;
+            }
+            
+            const countries = countriesInput.split(',').map(c => c.trim().toUpperCase());
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/shipping/zones`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name, countries, is_default: isDefault })
+                });
+                
+                if (res.ok) {
+                    closeProductModal();
+                    loadShippingZones();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Fehler beim Erstellen');
+                }
+            } catch (e) {
+                alert('Netzwerkfehler');
+            }
+        }
+        
+        async function saveShippingMethod() {
+            const zoneId = document.getElementById('method-zone').value;
+            const name = document.getElementById('method-name').value;
+            const description = document.getElementById('method-description').value;
+            const price = document.getElementById('method-price').value;
+            const freeThreshold = document.getElementById('method-free-threshold').value;
+            const daysMin = document.getElementById('method-days-min').value;
+            const daysMax = document.getElementById('method-days-max').value;
+            
+            if (!zoneId || !name || !price) {
+                alert('Bitte alle Pflichtfelder ausfüllen');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/shipping/methods`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        zone_id: parseInt(zoneId),
+                        name,
+                        description,
+                        price: parseFloat(price),
+                        free_shipping_threshold: freeThreshold ? parseFloat(freeThreshold) : null,
+                        estimated_days_min: daysMin ? parseInt(daysMin) : null,
+                        estimated_days_max: daysMax ? parseInt(daysMax) : null
+                    })
+                });
+                
+                if (res.ok) {
+                    closeProductModal();
+                    loadShippingMethods();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Fehler beim Erstellen');
+                }
+            } catch (e) {
+                alert('Netzwerkfehler');
+            }
         }
         
         // Initial load

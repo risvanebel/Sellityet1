@@ -2214,6 +2214,215 @@ app.post('/api/orders/:orderId/payment/paypal-capture', async (req, res) => {
   }
 });
 
+// ========== SHIPPING ==========
+
+// Get shipping zones for shop
+app.get('/api/owner/shipping/zones', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT sz.*, 
+                   (SELECT COUNT(*) FROM shipping_methods WHERE zone_id = sz.id AND is_active = true) as method_count
+            FROM shipping_zones sz
+            JOIN shops s ON sz.shop_id = s.id
+            WHERE s.owner_id = $1
+            ORDER BY sz.is_default DESC, sz.name
+        `, [req.user.id]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Get shipping zones error:', error);
+        res.status(500).json({ error: 'Failed to fetch shipping zones' });
+    }
+});
+
+// Create shipping zone
+app.post('/api/owner/shipping/zones', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { name, countries, is_default } = req.body;
+    
+    if (!name || !countries || !Array.isArray(countries)) {
+        return res.status(400).json({ error: 'Name and countries array required' });
+    }
+    
+    try {
+        // Get shop for this owner
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+            [req.user.id]
+        );
+        
+        if (shopRows.length === 0) {
+            return res.status(404).json({ error: 'No shop found' });
+        }
+        
+        const shopId = shopRows[0].id;
+        
+        // If setting as default, unset other defaults
+        if (is_default) {
+            await pool.query(
+                'UPDATE shipping_zones SET is_default = false WHERE shop_id = $1',
+                [shopId]
+            );
+        }
+        
+        const { rows } = await pool.query(`
+            INSERT INTO shipping_zones (shop_id, name, countries, is_default)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        `, [shopId, name, JSON.stringify(countries), is_default || false]);
+        
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        console.error('Create shipping zone error:', error);
+        res.status(500).json({ error: 'Failed to create shipping zone' });
+    }
+});
+
+// Get shipping methods
+app.get('/api/owner/shipping/methods', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT sm.*, sz.name as zone_name, sz.countries
+            FROM shipping_methods sm
+            JOIN shipping_zones sz ON sm.zone_id = sz.id
+            JOIN shops s ON sm.shop_id = s.id
+            WHERE s.owner_id = $1
+            ORDER BY sm.sort_order, sm.name
+        `, [req.user.id]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Get shipping methods error:', error);
+        res.status(500).json({ error: 'Failed to fetch shipping methods' });
+    }
+});
+
+// Create shipping method
+app.post('/api/owner/shipping/methods', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { zone_id, name, description, price, free_shipping_threshold, estimated_days_min, estimated_days_max } = req.body;
+    
+    if (!zone_id || !name || price === undefined) {
+        return res.status(400).json({ error: 'Zone, name and price required' });
+    }
+    
+    try {
+        // Verify zone belongs to owner's shop
+        const { rows: zoneRows } = await pool.query(`
+            SELECT sz.id, sz.shop_id 
+            FROM shipping_zones sz
+            JOIN shops s ON sz.shop_id = s.id
+            WHERE sz.id = $1 AND s.owner_id = $2
+        `, [zone_id, req.user.id]);
+        
+        if (zoneRows.length === 0) {
+            return res.status(403).json({ error: 'Zone not found or not authorized' });
+        }
+        
+        const { rows } = await pool.query(`
+            INSERT INTO shipping_methods 
+            (shop_id, zone_id, name, description, price, free_shipping_threshold, estimated_days_min, estimated_days_max)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *
+        `, [zoneRows[0].shop_id, zone_id, name, description, price, free_shipping_threshold, estimated_days_min, estimated_days_max]);
+        
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        console.error('Create shipping method error:', error);
+        res.status(500).json({ error: 'Failed to create shipping method' });
+    }
+});
+
+// Calculate shipping costs (public endpoint for checkout)
+app.post('/api/shipping/calculate', async (req, res) => {
+    const { cart_total, country, weight } = req.body;
+    
+    if (!req.shop) {
+        return res.status(400).json({ error: 'No shop context' });
+    }
+    
+    try {
+        // Find matching zone for country
+        const { rows: zoneRows } = await pool.query(`
+            SELECT id FROM shipping_zones 
+            WHERE shop_id = $1 AND countries @> $2::jsonb
+            LIMIT 1
+        `, [req.shop.id, JSON.stringify([country])]);
+        
+        let zoneId = null;
+        if (zoneRows.length > 0) {
+            zoneId = zoneRows[0].id;
+        } else {
+            // Fall back to default zone
+            const { rows: defaultZone } = await pool.query(`
+                SELECT id FROM shipping_zones 
+                WHERE shop_id = $1 AND is_default = true
+                LIMIT 1
+            `, [req.shop.id]);
+            if (defaultZone.length > 0) {
+                zoneId = defaultZone[0].id;
+            }
+        }
+        
+        if (!zoneId) {
+            return res.json({ methods: [], message: 'No shipping available' });
+        }
+        
+        // Get shipping methods for zone
+        const { rows: methods } = await pool.query(`
+            SELECT * FROM shipping_methods 
+            WHERE zone_id = $1 AND is_active = true
+            ORDER BY price
+        `, [zoneId]);
+        
+        // Calculate final price for each method
+        const methodsWithPrice = methods.map(m => {
+            let finalPrice = parseFloat(m.price);
+            
+            // Check free shipping threshold
+            if (m.free_shipping_threshold && cart_total >= m.free_shipping_threshold) {
+                finalPrice = 0;
+            }
+            
+            // Check shop-wide free shipping
+            if (req.shop.free_shipping_threshold && cart_total >= req.shop.free_shipping_threshold) {
+                finalPrice = 0;
+            }
+            
+            return {
+                ...m,
+                final_price: finalPrice
+            };
+        });
+        
+        res.json({ methods: methodsWithPrice });
+    } catch (error) {
+        console.error('Calculate shipping error:', error);
+        res.status(500).json({ error: 'Failed to calculate shipping' });
+    }
+});
+
+// Update shop shipping settings
+app.put('/api/owner/shops/shipping-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { free_shipping_threshold, default_shipping_method } = req.body;
+    
+    try {
+        const { rows } = await pool.query(`
+            UPDATE shops 
+            SET free_shipping_threshold = $1, default_shipping_method = $2
+            WHERE owner_id = $3
+            RETURNING id, free_shipping_threshold, default_shipping_method
+        `, [free_shipping_threshold || null, default_shipping_method || 'standard', req.user.id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Shop not found' });
+        }
+        
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Update shipping settings error:', error);
+        res.status(500).json({ error: 'Failed to update settings' });
+    }
+});
+
 // Update shop payment settings - SIMPLIFIED
 app.put('/api/owner/shops/payment-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
   try {
