@@ -175,11 +175,22 @@ app.get('/api/setup', async (req, res) => {
         const fs = require('fs');
         const path = require('path');
         
-        // Run variants migration
-        const sqlPath = path.join(__dirname, 'migrations/002_variants.sql');
-        if (fs.existsSync(sqlPath)) {
-            const sql = fs.readFileSync(sqlPath, 'utf8');
-            await pool.query(sql);
+        // Run all migrations in order
+        const migrations = [
+            '001_initial.sql',
+            '002_variants.sql',
+            '003_orders.sql',
+            '004_shop_email.sql',
+            '005_payments.sql'
+        ];
+        
+        for (const migration of migrations) {
+            const sqlPath = path.join(__dirname, 'migrations', migration);
+            if (fs.existsSync(sqlPath)) {
+                const sql = fs.readFileSync(sqlPath, 'utf8');
+                await pool.query(sql);
+                console.log(`✅ Migration ${migration} executed`);
+            }
         }
         
         res.json({ success: true, message: 'Setup complete' });
