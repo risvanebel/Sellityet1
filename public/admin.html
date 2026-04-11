@@ -1107,6 +1107,20 @@
                 
                 if (res.ok) {
                     const product = await res.json();
+                    const productId = product.id || id;
+                    
+                    // If editing existing product, delete old variants first
+                    if (id) {
+                        const existingVariants = document.querySelectorAll('.variant-id');
+                        for (const vid of existingVariants) {
+                            if (vid.value) {
+                                await fetch(`${API_URL}/owner/variants/${vid.value}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Authorization': `Bearer ${authToken}` }
+                                });
+                            }
+                        }
+                    }
                     
                     // Save variants
                     const variantRows = document.querySelectorAll('#variants-list > div');
@@ -1116,7 +1130,7 @@
                         const stock = row.querySelector('.variant-stock').value;
                         
                         if (name) {
-                            await fetch(`${API_URL}/owner/products/${product.id || id}/variants`, {
+                            await fetch(`${API_URL}/owner/products/${productId}/variants`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
