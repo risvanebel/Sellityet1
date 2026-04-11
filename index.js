@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('./src/config/database');
 const { upload, uploadToCloudinary } = require('./src/config/upload');
+const { sendOrderConfirmation, sendOrderNotificationToOwner, sendShippingConfirmation } = require('./src/config/email');
 require('dotenv').config();
 
 const app = express();
@@ -682,7 +683,25 @@ app.put('/api/owner/orders/:id/status', authMiddleware, requireRole('owner', 'ad
             return res.status(404).json({ error: 'Order not found' });
         }
         
-        res.json(rows[0]);
+        const order = rows[0];
+        
+        // Send shipping confirmation if status changed to shipped
+        if (status === 'shipped' && process.env.SMTP_USER) {
+            try {
+                // Get shop details
+                const { rows: shopRows } = await pool.query(
+                    'SELECT * FROM shops WHERE id = $1',
+                    [order.shop_id]
+                );
+                const shop = shopRows[0];
+                
+                sendShippingConfirmation(order.customer_email, order, shop, tracking_number).catch(console.error);
+            } catch (emailError) {
+                console.error('Shipping email error:', emailError);
+            }
+        }
+        
+        res.json(order);
     } catch (error) {
         console.error('Update order status error:', error);
         res.status(500).json({ error: 'Failed to update order' });
@@ -894,6 +913,41 @@ app.post('/api/orders', async (req, res) => {
         }
         
         await client.query('COMMIT');
+        
+        // Send confirmation emails (don't wait for response)
+        try {
+            // Get shop details
+            const { rows: shopRows } = await pool.query(
+                'SELECT * FROM shops WHERE id = $1',
+                [shop_id]
+            );
+            const shop = shopRows[0];
+            
+            // Get owner email
+            const { rows: ownerRows } = await pool.query(
+                'SELECT email FROM users WHERE id = $1',
+                [shop.owner_id]
+            );
+            const ownerEmail = ownerRows[0]?.email;
+            
+            // Get order items
+            const { rows: orderItems } = await pool.query(
+                'SELECT * FROM order_items WHERE order_id = $1',
+                [order.id]
+            );
+            order.items = orderItems;
+            
+            // Send emails
+            if (process.env.SMTP_USER) {
+                sendOrderConfirmation(customer_email, order, shop).catch(console.error);
+                if (ownerEmail) {
+                    sendOrderNotificationToOwner(order, shop, ownerEmail).catch(console.error);
+                }
+            }
+        } catch (emailError) {
+            console.error('Email sending error:', emailError);
+            // Don't fail the order if email fails
+        }
         
         res.status(201).json(order);
     } catch (error) {
