@@ -209,12 +209,18 @@ function generateInvoiceHTML(order, shop) {
     <div class="totals">
         <div class="totals-row">
             <span>Zwischensumme:</span>
-            <span>€${parseFloat(order.total_amount).toFixed(2)}</span>
+            <span>€${parseFloat(order.subtotal || order.total_amount).toFixed(2)}</span>
         </div>
+        ${order.shipping_cost > 0 ? `
         <div class="totals-row">
             <span>Versand:</span>
-            <span>€0.00</span>
-        </div>
+            <span>€${parseFloat(order.shipping_cost).toFixed(2)}</span>
+        </div>` : '<div class="totals-row"><span>Versand:</span><span>€0.00</span></div>'}
+        ${order.tax_amount > 0 ? `
+        <div class="totals-row">
+            <span>Mehrwertsteuer (${order.tax_rate || 19}%):</span>
+            <span>€${parseFloat(order.tax_amount).toFixed(2)}</span>
+        </div>` : ''}
         <div class="totals-row">
             <span>Gesamtsumme:</span>
             <span>€${parseFloat(order.total_amount).toFixed(2)}</span>
@@ -222,6 +228,8 @@ function generateInvoiceHTML(order, shop) {
     </div>
     
     <div class="footer">
+        ${shop.tax_number ? `<p><strong>Steuernummer:</strong> ${shop.tax_number}</p>` : ''}
+        ${shop.vat_id ? `<p><strong>USt-IdNr.:</strong> ${shop.vat_id}</p>` : ''}
         <p><strong>Zahlungsinformationen:</strong></p>
         <p>${getPaymentInstructions(order.payment_method, shop)}</p>
         <p style="margin-top: 12px;">Diese Rechnung wurde elektronisch erstellt und ist ohne Unterschrift gültig.</p>

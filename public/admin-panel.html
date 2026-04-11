@@ -41,6 +41,9 @@
                 <div class="nav-item" onclick="showSection('shipping')">
                     <span>📦 Versand</span>
                 </div>
+                <div class="nav-item" onclick="showSection('tax')">
+                    <span>💰 Steuern</span>
+                </div>
                 <div class="nav-item" onclick="showSection('shop')">
                     <span>⚙️ Shop-Einstellungen</span>
                 </div>
@@ -629,6 +632,59 @@
                     </div>
                 </div>
 
+                <!-- Tax Settings -->
+                <div id="tax" class="section">
+                    <div class="content-header">
+                        <h2 class="header-title">💰 Steuer-Einstellungen</h2>
+                    </div>
+                    
+                    <!-- Tax Settings -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h3 class="card-title">📋 Allgemeine Steuer-Einstellungen</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Standard MwSt-Satz (%)</label>
+                                <input type="number" class="form-input" id="default-tax-rate" placeholder="19" step="0.01">
+                                <div class="form-hint">Standard-Mehrwertsteuersatz für deinen Shop (z.B. 19 für 19%)</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="tax-included"> Preise inklusive MwSt
+                                </label>
+                                <div class="form-hint">Wenn aktiviert, sind alle angezeigten Preise bereits inklusive MwSt. Sonst wird MwSt zusätzlich berechnet.</div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Steuernummer</label>
+                                    <input type="text" class="form-input" id="tax-number" placeholder="123 456 789">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">USt-IdNr.</label>
+                                    <input type="text" class="form-input" id="vat-id" placeholder="DE123456789">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveTaxSettings()">
+                                Steuer-Einstellungen speichern
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tax Rates -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 Steuersätze</h3>
+                            <button class="btn btn-primary" onclick="openTaxRateModal()">+ Neuer Steuersatz</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="tax-rates-container">
+                                <div class="loading"><div class="spinner"></div>Lade Steuersätze...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Shop Settings -->
                 <div id="shop" class="section">
                     <div id="shop-container">
@@ -873,6 +929,7 @@
                 'customers': 'Kunden',
                 'coupons': 'Gutscheine',
                 'shipping': 'Versand-Einstellungen',
+                'tax': 'Steuer-Einstellungen',
                 'shop': 'Shop-Einstellungen',
                 'admin-users': 'Alle Benutzer (Master)',
                 'admin-shops': 'Alle Shops (Master)',
@@ -899,6 +956,7 @@
             if (section === 'customers') loadCustomers();
             if (section === 'coupons') loadCoupons();
             if (section === 'shipping') loadShipping();
+            if (section === 'tax') loadTax();
             if (section === 'shop') loadShop();
             if (section === 'admin-users' && userRole === 'admin') loadAdminUsers();
             if (section === 'admin-shops' && userRole === 'admin') loadAdminShops();
@@ -2882,6 +2940,171 @@
                 if (res.ok) {
                     closeProductModal();
                     loadShippingMethods();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Fehler beim Erstellen');
+                }
+            } catch (e) {
+                alert('Netzwerkfehler');
+            }
+        }
+        
+        // ========== TAX FUNCTIONS ==========
+        
+        async function loadTax() {
+            try {
+                // Load shop tax settings
+                const shopRes = await fetch(`${API_URL}/owner/shops`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (shopRes.ok) {
+                    const shops = await shopRes.json();
+                    if (shops.length > 0) {
+                        const shop = shops[0];
+                        document.getElementById('default-tax-rate').value = shop.default_tax_rate || 19;
+                        document.getElementById('tax-included').checked = shop.tax_included || false;
+                        document.getElementById('tax-number').value = shop.tax_number || '';
+                        document.getElementById('vat-id').value = shop.vat_id || '';
+                    }
+                }
+                
+                // Load tax rates
+                await loadTaxRates();
+            } catch (e) {
+                console.error('Load tax error:', e);
+            }
+        }
+        
+        async function loadTaxRates() {
+            try {
+                const res = await fetch(`${API_URL}/owner/tax-rates`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!res.ok) {
+                    document.getElementById('tax-rates-container').innerHTML = 
+                        '<div class="error-message">Fehler beim Laden</div>';
+                    return;
+                }
+                
+                const rates = await res.json();
+                
+                if (rates.length === 0) {
+                    document.getElementById('tax-rates-container').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <h3>Keine Steuersätze</h3>
+                            <p>Erstelle deinen ersten Steuersatz.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                document.getElementById('tax-rates-container').innerHTML = rates.map(r => `
+                    <div style="padding: 16px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${r.name}</strong>
+                                ${r.is_default ? '<span class="badge badge-success" style="margin-left: 8px;">Standard</span>' : ''}
+                                ${r.description ? `<div style="color: #64748B; font-size: 14px; margin-top: 4px;">${r.description}</div>` : ''}
+                            </div>
+                            <div style="font-size: 24px; font-weight: 700; color: #059669;">
+                                ${r.rate}%
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Load tax rates error:', e);
+            }
+        }
+        
+        async function saveTaxSettings() {
+            const defaultRate = document.getElementById('default-tax-rate').value;
+            const taxIncluded = document.getElementById('tax-included').checked;
+            const taxNumber = document.getElementById('tax-number').value;
+            const vatId = document.getElementById('vat-id').value;
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/shops/tax-settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        default_tax_rate: defaultRate ? parseFloat(defaultRate) : 19,
+                        tax_included: taxIncluded,
+                        tax_number: taxNumber || null,
+                        vat_id: vatId || null
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('Steuer-Einstellungen gespeichert!');
+                } else {
+                    alert('Fehler beim Speichern');
+                }
+            } catch (e) {
+                alert('Netzwerkfehler');
+            }
+        }
+        
+        function openTaxRateModal() {
+            document.getElementById('product-modal-title').textContent = 'Neuer Steuersatz';
+            document.getElementById('product-modal-body').innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="tax-rate-name" placeholder="z.B. Ermäßigter Satz">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Steuersatz (%)</label>
+                    <input type="number" class="form-input" id="tax-rate-value" placeholder="7" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Beschreibung (optional)</label>
+                    <input type="text" class="form-input" id="tax-rate-description" placeholder="z.B. Für Lebensmittel, Bücher">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="tax-rate-default"> Als Standard verwenden
+                    </label>
+                </div>
+                <button class="btn btn-primary" onclick="saveTaxRate()">Steuersatz erstellen</button>
+            `;
+            document.getElementById('product-modal').classList.add('active');
+        }
+        
+        async function saveTaxRate() {
+            const name = document.getElementById('tax-rate-name').value;
+            const rate = document.getElementById('tax-rate-value').value;
+            const description = document.getElementById('tax-rate-description').value;
+            const isDefault = document.getElementById('tax-rate-default').checked;
+            
+            if (!name || !rate) {
+                alert('Bitte Name und Steuersatz angeben');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/owner/tax-rates`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        name,
+                        rate: parseFloat(rate),
+                        description,
+                        is_default: isDefault
+                    })
+                });
+                
+                if (res.ok) {
+                    closeProductModal();
+                    loadTaxRates();
                 } else {
                     const err = await res.json();
                     alert(err.error || 'Fehler beim Erstellen');

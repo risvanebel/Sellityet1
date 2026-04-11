@@ -2423,6 +2423,91 @@ app.put('/api/owner/shops/shipping-settings', authMiddleware, requireRole('owner
     }
 });
 
+// ========== TAX SETTINGS ==========
+
+// Get tax rates for shop
+app.get('/api/owner/tax-rates', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT tr.*
+            FROM tax_rates tr
+            JOIN shops s ON tr.shop_id = s.id
+            WHERE s.owner_id = $1
+            ORDER BY tr.rate DESC
+        `, [req.user.id]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Get tax rates error:', error);
+        res.status(500).json({ error: 'Failed to fetch tax rates' });
+    }
+});
+
+// Create tax rate
+app.post('/api/owner/tax-rates', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { name, rate, description, is_default } = req.body;
+    
+    if (!name || rate === undefined) {
+        return res.status(400).json({ error: 'Name and rate required' });
+    }
+    
+    try {
+        // Get shop for this owner
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+            [req.user.id]
+        );
+        
+        if (shopRows.length === 0) {
+            return res.status(404).json({ error: 'No shop found' });
+        }
+        
+        const shopId = shopRows[0].id;
+        
+        // If setting as default, unset others
+        if (is_default) {
+            await pool.query(
+                'UPDATE tax_rates SET is_default = false WHERE shop_id = $1',
+                [shopId]
+            );
+        }
+        
+        const { rows } = await pool.query(`
+            INSERT INTO tax_rates (shop_id, name, rate, description, is_default)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [shopId, name, rate, description, is_default || false]);
+        
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        console.error('Create tax rate error:', error);
+        res.status(500).json({ error: 'Failed to create tax rate' });
+    }
+});
+
+// Update shop tax settings
+app.put('/api/owner/shops/tax-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    const { default_tax_rate, tax_included, tax_number, vat_id } = req.body;
+    
+    try {
+        const { rows } = await pool.query(`
+            UPDATE shops 
+            SET default_tax_rate = $1, tax_included = $2, tax_number = $3, vat_id = $4
+            WHERE owner_id = $5
+            RETURNING id, default_tax_rate, tax_included, tax_number, vat_id
+        `, [default_tax_rate || 19.00, tax_included || false, tax_number || null, vat_id || null, req.user.id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Shop not found' });
+        }
+        
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Update tax settings error:', error);
+        res.status(500).json({ error: 'Failed to update settings' });
+    }
+});
+
 // Update shop payment settings - SIMPLIFIED
 app.put('/api/owner/shops/payment-settings', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
   try {
