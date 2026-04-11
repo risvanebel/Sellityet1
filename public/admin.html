@@ -3,354 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Sellityet</title>
+    <title>Sellityet Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e;
-            color: #fff;
-            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            color: #0F172A;
         }
+        .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+        .sidebar {
+            background: white;
+            border-right: 1px solid #E2E8F0;
+            position: fixed;
+            height: 100vh;
+            width: 260px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid #E2E8F0; }
+        .logo { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 32px; height: 32px; background: #2563EB; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+        .nav { flex: 1; padding: 16px 12px; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #64748B;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+        .nav-item:hover, .nav-item.active { background: #EFF6FF; color: #2563EB; }
+        .main { margin-left: 260px; min-height: 100vh; }
         .header {
-            background: #16213e;
-            padding: 20px;
-            border-bottom: 3px solid #e94560;
+            background: white;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
+        .content { padding: 32px; max-width: 1400px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 24px;
+        }
+        .stat-label { font-size: 14px; color: #64748B; margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 700; }
+        .card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #E2E8F0;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .header h1 { font-size: 1.5em; color: #e94560; }
-        .logout-btn {
-            background: #e94560;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+        .card-title { font-size: 16px; font-weight: 600; }
+        .card-body { padding: 24px; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: #16213e;
-            padding: 25px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .stat-card h3 { color: #aaa; font-size: 0.9em; margin-bottom: 10px; }
-        .stat-card .number { font-size: 2.5em; color: #e94560; font-weight: bold; }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        .tab {
-            padding: 12px 24px;
-            background: #16213e;
             border: none;
-            border-radius: 5px;
-            color: #fff;
-            cursor: pointer;
-            font-size: 1em;
         }
-        .tab.active { background: #e94560; }
-        
-        .data-table {
-            background: #16213e;
-            border-radius: 10px;
+        .btn-primary { background: #2563EB; color: white; }
+        .btn-secondary { background: white; color: #0F172A; border: 1px solid #E2E8F0; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { padding: 12px 16px; text-align: left; font-weight: 600; color: #64748B; font-size: 12px; text-transform: uppercase; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; }
+        td { padding: 16px; border-bottom: 1px solid #E2E8F0; }
+        tr:hover td { background: #F8FAFC; }
+        .badge {
+            display: inline-flex;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #D1FAE5; color: #065F46; }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; }
+        .badge-neutral { background: #F1F5F9; color: #64748B; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-input:focus { outline: none; border-color: #2563EB; }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
             overflow: hidden;
         }
-        .table-header {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            background: #0f3460;
-            padding: 15px;
-            font-weight: bold;
-        }
-        .table-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            padding: 15px;
-            border-bottom: 1px solid #0f3460;
-            align-items: center;
-        }
-        .table-row:hover { background: #1a1a3e; }
-        
-        .btn-small {
-            padding: 5px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            margin-right: 5px;
-        }
-        .btn-view { background: #4CAF50; color: white; }
-        .btn-delete { background: #f44336; color: white; }
-        
-        .hidden { display: none; }
-        
-        .empty { padding: 50px; text-align: center; color: #aaa; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid #E2E8F0; display: flex; justify-content: space-between; }
+        .modal-body { padding: 24px; overflow-y: auto; max-height: 60vh; }
+        .modal-footer { padding: 20px 24px; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 12px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .empty-state { text-align: center; padding: 64px; color: #64748B; }
+        .loading { text-align: center; padding: 40px; color: #64748B; }
+        .error { background: #FEE2E2; color: #991B1B; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <h1>🔐 Admin Dashboard</h1>
-            <button class="logout-btn" onclick="logout()">Abmelden</button>
-        </div>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">S</div>
+                    <span>Sellityet</span>
+                </div>
+            </div>
+            <nav class="nav">
+                <div class="nav-item active" onclick="showSection('dashboard')">Dashboard</div>
+                <div class="nav-item" onclick="showSection('products')">Produkte</div>
+                <div class="nav-item" onclick="showSection('orders')">Bestellungen</div>
+                <div class="nav-item" onclick="showSection('shop')">Shop</div>
+            </nav>
+        </aside>
+
+        <main class="main">
+            <header class="header">
+                <h1 id="page-title">Dashboard</h1>
+                <button class="btn btn-primary" onclick="openProductModal()">+ Neues Produkt</button>
+            </header>
+
+            <div class="content">
+                <!-- Dashboard -->
+                <div id="dashboard" class="section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Produkte</div>
+                            <div class="stat-value" id="stat-products">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Bestellungen</div>
+                            <div class="stat-value" id="stat-orders">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Umsatz</div>
+                            <div class="stat-value" id="stat-revenue">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Kunden</div>
+                            <div class="stat-value" id="stat-customers">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products -->
+                <div id="products" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Produkte</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="products-table-container">
+                                <div class="loading">Lade Produkte...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders -->
+                <div id="orders" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Bestellungen</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="orders-table-container">
+                                <div class="loading">Lade Bestellungen...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shop Settings -->
+                <div id="shop" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Shop-Einstellungen</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="shop-settings-container">
+                                <div class="loading">Lade Shop-Daten...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-    
-    <div class="container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>👤 User</h3>
-                <div class="number" id="user-count">-</div>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Neues Produkt</h3>
+                <button onclick="closeProductModal()">&times;</button>
             </div>
-            <div class="stat-card">
-                <h3>🏪 Shops</h3>
-                <div class="number" id="shop-count">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>📦 Produkte</h3>
-                <div class="number" id="product-count">-</div>
-            </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('users')">User</button>
-            <button class="tab" onclick="showTab('shops')">Alle Shops</button>
-            <button class="tab" onclick="showTab('products')">Alle Produkte</button>
-        </div>
-        
-        <!-- Users Tab -->
-        <div id="users-tab">
-            <div class="data-table">
-                <div class="table-header">
-                    <div>ID</div>
-                    <div>Email</div>
-                    <div>Rolle</div>
-                    <div>Registriert</div>
-                    <div>Aktionen</div>
+            <div class="modal-body">
+                <div id="product-error"></div>
+                <div class="form-group">
+                    <label class="form-label">Name *</label>
+                    <input type="text" class="form-input" id="product-name" placeholder="Produktname">
                 </div>
-                <div id="users-list"></div>
-            </div>
-        </div>
-        
-        <!-- Shops Tab -->
-        <div id="shops-tab" class="hidden">
-            <div class="data-table">
-                <div class="table-header">
-                    <div>ID</div>
-                    <div>Name</div>
-                    <div>Slug</div>
-                    <div>Besitzer</div>
-                    <div>Status</div>
-                    <div>Aktionen</div>
+                <div class="form-group">
+                    <label class="form-label">Beschreibung</label>
+                    <textarea class="form-input" id="product-description" rows="3"></textarea>
                 </div>
-                <div id="shops-list"></div>
-            </div>
-        </div>
-        
-        <!-- Products Tab -->
-        <div id="products-tab" class="hidden">
-            <div class="data-table">
-                <div class="table-header">
-                    <div>ID</div>
-                    <div>Name</div>
-                    <div>Preis</div>
-                    <div>Shop</div>
-                    <div>Aktionen</div>
+                <div class="form-group">
+                    <label class="form-label">Preis (€) *</label>
+                    <input type="number" class="form-input" id="product-price" step="0.01" placeholder="19.99">
                 </div>
-                <div id="products-list"></div>
+                <div class="form-group">
+                    <label class="form-label">Kategorie</label>
+                    <select class="form-input" id="product-category">
+                        <option value="">Wähle...</option>
+                        <option value="E-Liquid">E-Liquid</option>
+                        <option value="Hardware">Hardware</option>
+                        <option value="Zubehör">Zubehör</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Anfangsbestand</label>
+                    <input type="number" class="form-input" id="product-stock" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeProductModal()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="saveProduct()">Speichern</button>
             </div>
         </div>
     </div>
 
     <script>
-        const API_URL = window.location.origin + '/api';
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        // Check admin auth
-        if (!token || user.role !== 'admin') {
-            window.location.href = 'login.html';
+        const API_URL = '/api';
+        let authToken = localStorage.getItem('token');
+        let currentShop = null;
+
+        // Check auth
+        if (!authToken) {
+            window.location.href = '/login.html';
         }
-        
-        function showTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(section).classList.add('active');
             event.target.classList.add('active');
+            document.getElementById('page-title').textContent = 
+                section === 'dashboard' ? 'Dashboard' :
+                section === 'products' ? 'Produkte' :
+                section === 'orders' ? 'Bestellungen' : 'Shop';
             
-            document.getElementById('users-tab').classList.toggle('hidden', tab !== 'users');
-            document.getElementById('shops-tab').classList.toggle('hidden', tab !== 'shops');
-            document.getElementById('products-tab').classList.toggle('hidden', tab !== 'products');
+            if (section === 'products') loadProducts();
+            if (section === 'orders') loadOrders();
+            if (section === 'shop') loadShop();
+            if (section === 'dashboard') loadStats();
         }
-        
+
         async function loadStats() {
             try {
-                const [usersRes, shopsRes, productsRes] = await Promise.all([
-                    fetch(`${API_URL}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${API_URL}/admin/shops`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${API_URL}/admin/products`, { headers: { 'Authorization': `Bearer ${token}` } })
-                ]);
-                
-                const users = await usersRes.json();
-                const shops = await shopsRes.json();
-                const products = await productsRes.json();
-                
-                document.getElementById('user-count').textContent = users.length;
-                document.getElementById('shop-count').textContent = shops.length;
-                document.getElementById('product-count').textContent = products.length;
-                
-                renderUsers(users);
-                renderShops(shops);
-                renderProducts(products);
-            } catch (error) {
-                console.error('Error loading stats:', error);
+                const res = await fetch(`${API_URL}/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                document.getElementById('stat-products').textContent = data.products;
+                document.getElementById('stat-orders').textContent = data.orders;
+                document.getElementById('stat-revenue').textContent = '€' + data.totalRevenue.toFixed(2);
+                document.getElementById('stat-customers').textContent = data.users;
+            } catch (e) {
+                console.error('Stats error:', e);
             }
         }
-        
-        function renderUsers(users) {
-            const container = document.getElementById('users-list');
-            if (users.length === 0) {
-                container.innerHTML = '<div class="empty">Keine User</div>';
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API_URL}/owner/products`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const products = await res.json();
+                
+                if (products.length === 0) {
+                    document.getElementById('products-table-container').innerHTML = 
+                        '<div class="empty-state">Noch keine Produkte. Erstelle dein erstes Produkt!</div>';
+                    return;
+                }
+
+                const html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Kategorie</th>
+                                <th>Preis</th>
+                                <th>Bestand</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${products.map(p => `
+                                <tr>
+                                    <td>${p.name}</td>
+                                    <td>${p.category_name || '-'}</td>
+                                    <td>€${p.price}</td>
+                                    <td>${p.quantity || 0}</td>
+                                    <td><span class="badge ${p.status === 'published' ? 'badge-success' : 'badge-neutral'}">${p.status}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById('products-table-container').innerHTML = html;
+            } catch (e) {
+                document.getElementById('products-table-container').innerHTML = 
+                    '<div class="error">Fehler beim Laden der Produkte</div>';
+            }
+        }
+
+        async function loadOrders() {
+            document.getElementById('orders-table-container').innerHTML = 
+                '<div class="empty-state">Bestellungs-Feature kommt bald...</div>';
+        }
+
+        async function loadShop() {
+            try {
+                const res = await fetch(`${API_URL}/owner/shops`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const shops = await res.json();
+                
+                if (shops.length === 0) {
+                    document.getElementById('shop-settings-container').innerHTML = 
+                        '<div class="empty-state">Noch kein Shop erstellt.</div>';
+                    return;
+                }
+
+                const shop = shops[0];
+                currentShop = shop;
+                
+                document.getElementById('shop-settings-container').innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Shop-Name</label>
+                        <input type="text" class="form-input" value="${shop.name}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Slug</label>
+                        <input type="text" class="form-input" value="${shop.slug}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Beschreibung</label>
+                        <textarea class="form-input" rows="3" readonly>${shop.description || ''}</textarea>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('shop-settings-container').innerHTML = 
+                    '<div class="error">Fehler beim Laden des Shops</div>';
+            }
+        }
+
+        function openProductModal() {
+            document.getElementById('product-modal').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.remove('active');
+            document.getElementById('product-error').innerHTML = '';
+        }
+
+        async function saveProduct() {
+            const name = document.getElementById('product-name').value;
+            const description = document.getElementById('product-description').value;
+            const price = document.getElementById('product-price').value;
+            const category = document.getElementById('product-category').value;
+            const stock = document.getElementById('product-stock').value;
+
+            if (!name || !price) {
+                document.getElementById('product-error').innerHTML = '<div class="error">Name und Preis sind erforderlich</div>';
                 return;
             }
-            
-            container.innerHTML = users.map(u => `
-                <div class="table-row">
-                    <div>#${u.id}</div>
-                    <div>${u.email}</div>
-                    <div>${u.role}</div>
-                    <div>${new Date(u.created_at).toLocaleDateString()}</div>
-                    <div>
-                        ${u.id !== 1 ? `<button class="btn-small btn-delete" onclick="deleteUser(${u.id})">Löschen</button>` : '<span>Admin</span>'}
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        function renderShops(shops) {
-            const container = document.getElementById('shops-list');
-            if (shops.length === 0) {
-                container.innerHTML = '<div class="empty">Keine Shops</div>';
-                return;
-            }
-            
-            container.innerHTML = shops.map(s => `
-                <div class="table-row">
-                    <div>#${s.id}</div>
-                    <div>${s.name}</div>
-                    <div>/${s.slug}</div>
-                    <div>${s.owner_email}</div>
-                    <div>${s.is_active ? '✅ Aktiv' : '❌ Inaktiv'}</div>
-                    <div>
-                        <a href="shop.html?shop=${s.slug}" target="_blank" class="btn-small btn-view">Ansehen</a>
-                        <button class="btn-small btn-delete" onclick="deleteShop(${s.id})">Löschen</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        function renderProducts(products) {
-            const container = document.getElementById('products-list');
-            if (products.length === 0) {
-                container.innerHTML = '<div class="empty">Keine Produkte</div>';
-                return;
-            }
-            
-            container.innerHTML = products.map(p => `
-                <div class="table-row">
-                    <div>#${p.id}</div>
-                    <div>${p.name}</div>
-                    <div>${p.price}€</div>
-                    <div>${p.shop_name}</div>
-                    <div>
-                        <button class="btn-small btn-delete" onclick="deleteProduct(${p.id})">Löschen</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        async function deleteUser(id) {
-            if (!confirm('User wirklich löschen?')) return;
-            
+
             try {
-                const response = await fetch(`${API_URL}/admin/users/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                // First ensure we have a shop
+                if (!currentShop) {
+                    const shopRes = await fetch(`${API_URL}/owner/shops`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const shops = await shopRes.json();
+                    if (shops.length === 0) {
+                        document.getElementById('product-error').innerHTML = '<div class="error">Erstelle zuerst einen Shop</div>';
+                        return;
+                    }
+                    currentShop = shops[0];
+                }
+
+                const res = await fetch(`${API_URL}/owner/products`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        shop_id: currentShop.id,
+                        name,
+                        description,
+                        price: parseFloat(price),
+                        category_id: category ? 1 : null, // Simplified
+                        initial_quantity: parseInt(stock)
+                    })
                 });
-                
-                if (response.ok) {
+
+                if (res.ok) {
+                    closeProductModal();
+                    loadProducts();
                     loadStats();
                 } else {
-                    alert('Fehler beim Löschen');
+                    const err = await res.json();
+                    document.getElementById('product-error').innerHTML = `<div class="error">${err.error}</div>`;
                 }
-            } catch (error) {
-                alert('Netzwerkfehler');
+            } catch (e) {
+                document.getElementById('product-error').innerHTML = '<div class="error">Netzwerkfehler</div>';
             }
         }
-        
-        async function deleteShop(id) {
-            if (!confirm('Shop wirklich löschen? Alle Produkte werden auch gelöscht!')) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/admin/shops/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (response.ok) {
-                    loadStats();
-                } else {
-                    alert('Fehler beim Löschen');
-                }
-            } catch (error) {
-                alert('Netzwerkfehler');
-            }
-        }
-        
-        async function deleteProduct(id) {
-            if (!confirm('Produkt wirklich löschen?')) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/admin/products/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (response.ok) {
-                    loadStats();
-                } else {
-                    alert('Fehler beim Löschen');
-                }
-            } catch (error) {
-                alert('Netzwerkfehler');
-            }
-        }
-        
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'index.html';
-        }
-        
+
+        // Initial load
         loadStats();
     </script>
 </body>
