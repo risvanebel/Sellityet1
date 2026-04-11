@@ -1,5 +1,4 @@
 const stripe = require('stripe');
-const paypal = require('@paypal/checkout-server-sdk');
 
 // Available payment methods
 const PAYMENT_METHODS = {
@@ -33,7 +32,7 @@ const PAYMENT_METHODS = {
   },
   paypal: {
     id: 'paypal',
-    name: 'PayPal Business',
+    name: 'PayPal',
     description: 'Sichere Zahlung per PayPal',
     icon: '🅿️',
     type: 'paypal'
@@ -71,22 +70,6 @@ function getStripeClient(shop) {
   return null;
 }
 
-// Initialize PayPal for shop
-function getPayPalClient(shop) {
-  const clientId = shop.paypal_client_id || process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = shop.paypal_client_secret || process.env.PAYPAL_CLIENT_SECRET;
-  
-  if (!clientId || !clientSecret) {
-    return null;
-  }
-  
-  const environment = shop.paypal_mode === 'live' 
-    ? new paypal.core.LiveEnvironment(clientId, clientSecret)
-    : new paypal.core.SandboxEnvironment(clientId, clientSecret);
-    
-  return new paypal.core.PayPalHttpClient(environment);
-}
-
 // Create Stripe Payment Intent
 async function createStripePaymentIntent(order, shop) {
   const stripeClient = getStripeClient(shop);
@@ -109,48 +92,106 @@ async function createStripePaymentIntent(order, shop) {
   };
 }
 
-// Create PayPal Order
+// Simple PayPal integration without SDK
 async function createPayPalOrder(order, shop) {
-  const paypalClient = getPayPalClient(shop);
-  if (!paypalClient) {
+  const clientId = shop.paypal_client_id || process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = shop.paypal_client_secret || process.env.PAYPAL_CLIENT_SECRET;
+  
+  if (!clientId || !clientSecret) {
     throw new Error('PayPal not configured');
   }
   
-  const request = new paypal.orders.OrdersCreateRequest();
-  request.requestBody({
-    intent: 'CAPTURE',
-    purchase_units: [{
-      amount: {
-        currency_code: 'EUR',
-        value: order.total_amount.toFixed(2)
-      },
-      reference_id: order.order_number
-    }]
+  const isLive = shop.paypal_mode === 'live';
+  const baseUrl = isLive 
+    ? 'https://api-m.paypal.com' 
+    : 'https://api-m.sandbox.paypal.com';
+  
+  // Get access token
+  const authResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: 'grant_type=client_credentials'
   });
   
-  const response = await paypalClient.execute(request);
+  const authData = await authResponse.json();
+  
+  if (!authResponse.ok) {
+    throw new Error('PayPal authentication failed');
+  }
+  
+  // Create order
+  const orderResponse = await fetch(`${baseUrl}/v2/checkout/orders`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${authData.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      intent: 'CAPTURE',
+      purchase_units: [{
+        amount: {
+          currency_code: 'EUR',
+          value: order.total_amount.toFixed(2)
+        },
+        reference_id: order.order_number
+      }]
+    })
+  });
+  
+  const orderData = await orderResponse.json();
+  
+  if (!orderResponse.ok) {
+    throw new Error('PayPal order creation failed');
+  }
+  
   return {
-    order_id: response.result.id
+    order_id: orderData.id
   };
 }
 
 // Capture PayPal Payment
 async function capturePayPalOrder(paypalOrderId, shop) {
-  const paypalClient = getPayPalClient(shop);
-  if (!paypalClient) {
+  const clientId = shop.paypal_client_id || process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = shop.paypal_client_secret || process.env.PAYPAL_CLIENT_SECRET;
+  
+  if (!clientId || !clientSecret) {
     throw new Error('PayPal not configured');
   }
   
-  const request = new paypal.orders.OrdersCaptureRequest(paypalOrderId);
-  request.requestBody({});
+  const isLive = shop.paypal_mode === 'live';
+  const baseUrl = isLive 
+    ? 'https://api-m.paypal.com' 
+    : 'https://api-m.sandbox.paypal.com';
   
-  const response = await paypalClient.execute(request);
-  return response.result;
+  // Get access token
+  const authResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: 'grant_type=client_credentials'
+  });
+  
+  const authData = await authResponse.json();
+  
+  // Capture order
+  const captureResponse = await fetch(`${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${authData.access_token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  return await captureResponse.json();
 }
 
-// Generate crypto payment address (simplified - in production use a service)
+// Generate crypto payment address (simplified)
 async function createCryptoPayment(order, currency = 'BTC') {
-  // This is a placeholder - in production, integrate with Coinbase Commerce, BitPay, etc.
   const addresses = {
     BTC: process.env.CRYPTO_BTC_ADDRESS,
     ETH: process.env.CRYPTO_ETH_ADDRESS
@@ -161,9 +202,9 @@ async function createCryptoPayment(order, currency = 'BTC') {
     throw new Error('Crypto address not configured');
   }
   
-  // Get current exchange rate (in production, use real API)
+  // Get current exchange rate (simplified - use real API in production)
   const rates = {
-    BTC: 0.000015, // Example: 1 EUR = 0.000015 BTC
+    BTC: 0.000015,
     ETH: 0.00028
   };
   
@@ -179,7 +220,6 @@ module.exports = {
   PAYMENT_METHODS,
   getEnabledPaymentMethods,
   getStripeClient,
-  getPayPalClient,
   createStripePaymentIntent,
   createPayPalOrder,
   capturePayPalOrder,
