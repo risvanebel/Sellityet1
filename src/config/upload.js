@@ -12,13 +12,7 @@ if (process.env.CLOUDINARY_URL) {
     secure: true
   });
 } else {
-  // Fallback to direct config (replace with env vars in production)
-  cloudinary.config({
-    cloud_name: 'dqjv09qfc',
-    api_key: '194236154687873',
-    api_secret: 'XjdGkc0-_V-Q-kst6Go6-SCQnAM',
-    secure: true
-  });
+  console.error('CLOUDINARY_URL not set');
 }
 
 // Multer configuration (memory storage)
