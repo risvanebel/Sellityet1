@@ -23,6 +23,17 @@ const { generateInvoiceHTML, generateInvoicePDF } = require('./src/utils/invoice
 const { detectTenant, requireTenant } = require('./src/middleware/tenant');
 require('dotenv').config();
 
+// Sentry Error Tracking Setup (ganz früh initialisieren)
+const Sentry = require('@sentry/node');
+const { nodeProfilingIntegration } = require('@sentry/profiling-node');
+
+Sentry.init({
+    dsn: process.env.SENTRY_DSN || '',
+    integrations: [nodeProfilingIntegration()],
+    tracesSampleRate: 1.0,
+    profilesSampleRate: 1.0
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -3653,6 +3664,9 @@ app.delete('/api/admin/users/:id', authMiddleware, requireRole('admin'), async (
 //         console.error('❌ Auto-tests failed:', error.stdout || error.message);
 //     }
 // }, 30000);
+
+// Sentry Error Handler muss NACH allen API-Routen eingefügt werden
+Sentry.setupExpressErrorHandler(app);
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
