@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sellityet Status</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 10px; }
+        .ok { color: green; }
+        .error { color: red; }
+        h1 { margin-bottom: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>📊 Sellityet Status Check</h1>
+    
+    <div class="card">
+        <h3>Server Status</h3>
+        <div id="server-status">Prüfe...</div>
+    </div>
+
+    <div class="card">
+        <h3>Datenbank</h3>
+        <div id="db-status">Prüfe...</div>
+    </div>
+
+    <div class="card">
+        <h3>Letzter Check</h3>
+        <div id="timestamp">-</div>
+    </div>
+
+    <button onclick="checkStatus()">🔄 Neu prüfen</button>
+    
+    <hr style="margin: 20px 0;">
+    
+    <div class="card">
+        <h3>🔗 Direktlinks</h3>
+        <p><a href="/login.html">Login Seite</a></p>
+        <p><a href="/owner.html">Shop Owner</a></p>
+        <p><a href="/admin-panel.html">Admin Panel</a></p>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            document.getElementById('server-status').innerHTML = 'Prüfe...';
+            document.getElementById('db-status').innerHTML = 'Prüfe...';
+            
+            try {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('server-status').innerHTML = '<span class="ok">✅ Läuft</span>';
+                    document.getElementById('db-status').innerHTML = '<span class="ok">✅ ' + data.database + '</span>';
+                } else {
+                    document.getElementById('server-status').innerHTML = '<span class="error">❌ Fehler</span>';
+                }
+            } catch (e) {
+                document.getElementById('server-status').innerHTML = '<span class="error">❌ Nicht erreichbar</span>';
+                document.getElementById('db-status').innerHTML = '<span class="error">❌ Unbekannt</span>';
+            }
+            
+            document.getElementById('timestamp').innerText = new Date().toLocaleString('de-DE');
+        }
+        
+        checkStatus();
+    </script>
+</body>
+</html>
