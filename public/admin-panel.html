@@ -1475,18 +1475,21 @@
                 try {
                     const period = document.getElementById('analytics-period')?.value || '30';
 
-                    const [statsRes, productsRes, analyticsRes] = await Promise.all([
-                        fetch(`${API_URL}/owner/stats`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+                    const [productsRes, analyticsRes] = await Promise.all([
                         fetch(`${API_URL}/owner/products`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
                         fetch(`${API_URL}/owner/analytics?period=${period}`, { headers: { 'Authorization': `Bearer ${authToken}` } })
                     ]);
 
-                    const stats = await statsRes.json();
                     const products = await productsRes.json();
+                    const analytics = await analyticsRes.json();
 
-                    document.getElementById('stat-products').textContent = stats.products;
-                    document.getElementById('stat-orders').textContent = stats.orders;
-                    document.getElementById('stat-revenue').textContent = '€' + stats.totalRevenue.toFixed(2);
+                    // Use analytics data for stats (workaround for missing /owner/stats endpoint)
+                    const totalRevenue = analytics.sales?.total_revenue || 0;
+                    const orderCount = analytics.sales?.order_count || 0;
+
+                    document.getElementById('stat-products').textContent = products.length || 0;
+                    document.getElementById('stat-orders').textContent = orderCount;
+                    document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(2);
                     document.getElementById('stat-shop-status').innerHTML = currentShop ?
                         '<span class="badge badge-success">Aktiv</span>' :
                         '<span class="badge badge-neutral">Kein Shop</span>';
@@ -3511,7 +3514,7 @@
                 }
 
                 try {
-                    const res = await fetch(`${API_URL}/owner/stats`, {
+                    const res = await fetch(`${API_URL}/admin/stats`, {
                         headers: { 'Authorization': `Bearer ${authToken}` }
                     });
 
