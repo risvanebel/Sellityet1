@@ -3877,6 +3877,41 @@ app.delete('/api/admin/users/:id', authMiddleware, requireRole('admin'), async (
 //     }
 // }, 30000);
 
+// TEMP: Create test owner endpoint
+app.post('/api/setup-test-user', async (req, res) => {
+    try {
+        const bcrypt = require('bcryptjs');
+        const passwordHash = await bcrypt.hash('Test123!', 10);
+
+        // Check if exists
+        const check = await pool.query('SELECT id FROM users WHERE email = $1', [
+            'testowner@sellityet.com'
+        ]);
+        if (check.rows.length > 0) {
+            return res.json({
+                message: 'Test user already exists',
+                email: 'testowner@sellityet.com',
+                password: 'Test123!'
+            });
+        }
+
+        const result = await pool.query(
+            'INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, $3, true) RETURNING id',
+            ['testowner@sellityet.com', passwordHash, 'owner']
+        );
+
+        res.json({
+            message: 'Test owner created',
+            id: result.rows[0].id,
+            email: 'testowner@sellityet.com',
+            password: 'Test123!'
+        });
+    } catch (error) {
+        console.error('Setup test user error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Sentry Error Handler muss NACH allen API-Routen eingefügt werden
 Sentry.setupExpressErrorHandler(app);
 
