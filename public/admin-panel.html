@@ -186,16 +186,18 @@
             display: none;
             position: fixed;
             top: 15px;
-            left: 15px;
+            right: 15px;
             z-index: 1001;
             background: #667eea;
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-radius: 5px;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        .menu-toggle.hidden { display: none !important; }
         
         /* Mobile */
         @media (max-width: 768px) {
@@ -465,13 +467,19 @@
 
         // Menu Toggle for Mobile
         function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.querySelector('.overlay').classList.toggle('active');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            const btn = document.querySelector('.menu-toggle');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+            btn.classList.toggle('hidden'); // Button ausblenden wenn Menü offen
         }
         
         function closeMenu() {
             document.getElementById('sidebar').classList.remove('open');
             document.querySelector('.overlay').classList.remove('active');
+            document.querySelector('.menu-toggle').classList.remove('hidden'); // Button wieder anzeigen
         }
         
         // Tab Navigation
