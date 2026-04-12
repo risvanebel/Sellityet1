@@ -9,6 +9,7 @@
         "migrate:up": "node-pg-migrate up",
         "test": "jest",
         "test:e2e": "playwright test tests/e2e.spec.js",
+        "typecheck": "tsc --project jsconfig.json || true",
         "prepare": "husky",
         "lint": "eslint .",
         "format": "prettier --write ."
@@ -37,7 +38,8 @@
         "jest": "^30.3.0",
         "lint-staged": "^16.4.0",
         "prettier": "^3.8.2",
-        "supertest": "^7.2.2"
+        "supertest": "^7.2.2",
+        "typescript": "^6.0.2"
     },
     "lint-staged": {
         "*.js": [

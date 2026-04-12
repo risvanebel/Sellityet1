@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "es2021",
+    "module": "Node16",
+    "lib": ["es2021", "dom"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "moduleResolution": "node16",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "src/middleware/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "public",
+    "migrations",
+    "tests",
+    "**/*.test.js",
+    "**/*.spec.js",
+    "src/utils/invoice.js",
+    "src/config/payments.js",
+    "src/config/email.js"
+  ]
+}
