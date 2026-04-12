@@ -1211,7 +1211,8 @@ app.get('/api/run-migrations', async (req, res) => {
             '010_shipping.sql',
             '011_tax_settings.sql',
             '012_product_images.sql',
-            '013_coupon_rules.sql'
+            '013_coupon_rules.sql',
+            '014_customer_phone_fix.sql'
         ];
         
         for (const migration of migrations) {
