@@ -915,6 +915,33 @@ app.get('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async 
     }
 });
 
+// Update owner shop
+app.put('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { name, description, primary_color } = req.body;
+
+        const { rows } = await pool.query(
+            `UPDATE shops SET 
+                name = COALESCE($1, name), 
+                description = COALESCE($2, description), 
+                primary_color = COALESCE($3, primary_color),
+                updated_at = CURRENT_TIMESTAMP
+             WHERE owner_id = $4 
+             RETURNING *`,
+            [name, description, primary_color, req.user.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No shop found' });
+        }
+
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Update shop error:', error);
+        res.status(500).json({ error: 'Failed to update shop' });
+    }
+});
+
 // Delete coupon
 app.delete(
     '/api/owner/coupons/:id',

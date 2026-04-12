@@ -284,6 +284,9 @@
                 <div class="nav-item" onclick="showTab('customers')">
                     <span class="nav-icon">👥</span> Kunden
                 </div>
+                <div class="nav-item" onclick="showTab('settings')">
+                    <span class="nav-icon">⚙️</span> Einstellungen
+                </div>
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333">
                     <div class="nav-item" onclick="logout()">
                         <span class="nav-icon">🚪</span> Ausloggen
@@ -369,6 +372,32 @@
                     <div class="card">
                         <div class="table-wrapper" id="customers-container">
                             <p>Lade Kunden...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-settings" class="tab-content hidden">
+                    <div class="header">
+                        <h2>⚙️ Einstellungen</h2>
+                        <button onclick="saveSettings()">💾 Speichern</button>
+                    </div>
+                    <div class="card">
+                        <h3>Shop-Einstellungen</h3>
+                        <div class="form-group">
+                            <label>Shop-Name</label>
+                            <input type="text" id="setting-name" placeholder="Dein Shop-Name" />
+                        </div>
+                        <div class="form-group">
+                            <label>Beschreibung</label>
+                            <textarea
+                                id="setting-desc"
+                                rows="3"
+                                placeholder="Shop-Beschreibung..."
+                            ></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Primäre Farbe</label>
+                            <input type="color" id="setting-color" value="#667eea" />
                         </div>
                     </div>
                 </div>
@@ -500,6 +529,7 @@
                 if (tabName === 'orders') loadOrders();
                 if (tabName === 'categories') loadCategories();
                 if (tabName === 'customers') loadCustomers();
+                if (tabName === 'settings') loadSettings();
             }
 
             async function loadDashboard() {
@@ -785,6 +815,43 @@
 
                     // Reload
                     loadCategories();
+                } catch (e) {
+                    showMessage('❌ Fehler: ' + e.message, 'error');
+                }
+            }
+
+            async function loadSettings() {
+                try {
+                    const shop = await apiCall('/owner/shop');
+                    document.getElementById('setting-name').value = shop.name || '';
+                    document.getElementById('setting-desc').value = shop.description || '';
+                    document.getElementById('setting-color').value =
+                        shop.primary_color || '#667eea';
+                } catch (e) {
+                    console.error('Settings error:', e);
+                }
+            }
+
+            async function saveSettings() {
+                const name = document.getElementById('setting-name').value.trim();
+                const description = document.getElementById('setting-desc').value.trim();
+                const color = document.getElementById('setting-color').value;
+
+                if (!name) {
+                    showMessage('❌ Shop-Name ist Pflicht!', 'error');
+                    return;
+                }
+
+                try {
+                    await apiCall('/owner/shop', {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            name: name,
+                            description: description,
+                            primary_color: color
+                        })
+                    });
+                    showMessage('✅ Einstellungen gespeichert!', 'success');
                 } catch (e) {
                     showMessage('❌ Fehler: ' + e.message, 'error');
                 }
