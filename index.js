@@ -939,8 +939,10 @@ app.get('/api/shop/products', async (req, res) => {
     try {
         const { rows } = await pool.query(
             `
-            SELECT p.*, c.name as category_name
+            SELECT p.*, i.quantity, i.reserved, i.min_stock, i.max_order_quantity,
+                   c.name as category_name
             FROM products p
+            LEFT JOIN inventory i ON p.id = i.product_id
             LEFT JOIN categories c ON p.category_id = c.id
             WHERE p.shop_id = $1 AND p.status = 'published'
             ORDER BY p.created_at DESC
@@ -948,8 +950,18 @@ app.get('/api/shop/products', async (req, res) => {
             [req.shop.id]
         );
 
-        // Load images for each product (ignore if table doesn't exist)
+        // Calculate total stock from variants and load images
         for (let product of rows) {
+            // Calculate stock from variants if product has variants
+            if (product.has_variants) {
+                const { rows: variants } = await pool.query(
+                    'SELECT COALESCE(SUM(stock), 0) as total FROM product_variants WHERE product_id = $1 AND is_active = true',
+                    [product.id]
+                );
+                product.quantity = parseInt(variants[0].total);
+            }
+
+            // Load images
             try {
                 const { rows: images } = await pool.query(
                     'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
@@ -1520,14 +1532,15 @@ app.get(
             const { rows } = await pool.query(
                 `
             SELECT p.*, c.name as category_name,
-                   COALESCE(SUM(pv.stock), p.stock) as total_stock
+                   COALESCE(SUM(pv.stock), i.quantity, 0) as total_stock
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN product_variants pv ON p.id = pv.product_id
+            LEFT JOIN inventory i ON p.id = i.product_id
             JOIN shops s ON p.shop_id = s.id
             WHERE s.owner_id = $1
-            GROUP BY p.id, c.name
-            HAVING COALESCE(SUM(pv.stock), p.stock) <= $2
+            GROUP BY p.id, c.name, i.quantity
+            HAVING COALESCE(SUM(pv.stock), i.quantity, 0) <= $2
             ORDER BY total_stock ASC
         `,
                 [req.user.id, threshold]
