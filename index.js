@@ -753,6 +753,70 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
     }
 });
 
+// Get owner categories
+app.get(
+    '/api/owner/categories',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows: shopRows } = await pool.query(
+                'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+                [req.user.id]
+            );
+
+            if (shopRows.length === 0) {
+                return res.json([]);
+            }
+
+            const shopId = shopRows[0].id;
+            const { rows } = await pool.query(
+                `SELECT c.*, COUNT(p.id) as product_count 
+             FROM categories c 
+             LEFT JOIN products p ON c.id = p.category_id 
+             WHERE c.shop_id = $1 
+             GROUP BY c.id ORDER BY c.name`,
+                [shopId]
+            );
+            res.json(rows);
+        } catch (error) {
+            console.error('Get categories error:', error);
+            res.status(500).json({ error: 'Failed to fetch categories' });
+        }
+    }
+);
+
+// Create category
+app.post(
+    '/api/owner/categories',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows: shopRows } = await pool.query(
+                'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+                [req.user.id]
+            );
+
+            if (shopRows.length === 0) {
+                return res.status(404).json({ error: 'No shop found' });
+            }
+
+            const shopId = shopRows[0].id;
+            const { name, description } = req.body;
+
+            const { rows } = await pool.query(
+                'INSERT INTO categories (shop_id, name, description) VALUES ($1, $2, $3) RETURNING *',
+                [shopId, name, description]
+            );
+            res.status(201).json(rows[0]);
+        } catch (error) {
+            console.error('Create category error:', error);
+            res.status(500).json({ error: 'Failed to create category' });
+        }
+    }
+);
+
 // Get owner stats (for dashboard) - MOVED HERE for better organization
 app.get('/api/owner/stats', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     try {
@@ -782,6 +846,72 @@ app.get('/api/owner/stats', authMiddleware, requireRole('owner', 'admin'), async
     } catch (error) {
         console.error('Get owner stats error:', error);
         res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// Get owner orders
+app.get('/api/owner/orders', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+            [req.user.id]
+        );
+
+        if (shopRows.length === 0) {
+            return res.json([]);
+        }
+
+        const shopId = shopRows[0].id;
+        const { rows } = await pool.query(
+            'SELECT * FROM orders WHERE shop_id = $1 ORDER BY created_at DESC',
+            [shopId]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Get orders error:', error);
+        res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+});
+
+// Get owner customers
+app.get('/api/owner/customers', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+            [req.user.id]
+        );
+
+        if (shopRows.length === 0) {
+            return res.json([]);
+        }
+
+        const shopId = shopRows[0].id;
+        const { rows } = await pool.query(
+            'SELECT * FROM customers WHERE shop_id = $1 ORDER BY created_at DESC',
+            [shopId]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Get customers error:', error);
+        res.status(500).json({ error: 'Failed to fetch customers' });
+    }
+});
+
+// Get owner shop
+app.get('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM shops WHERE owner_id = $1 LIMIT 1', [
+            req.user.id
+        ]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No shop found' });
+        }
+
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Get shop error:', error);
+        res.status(500).json({ error: 'Failed to fetch shop' });
     }
 });
 
