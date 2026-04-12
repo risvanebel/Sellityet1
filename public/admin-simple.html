@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Admin - Sellityet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+        .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { margin-bottom: 20px; }
+        .stat { font-size: 24px; font-weight: bold; color: #2563eb; }
+        .label { color: #666; font-size: 14px; }
+        .error { color: red; padding: 10px; background: #fee; border-radius: 5px; }
+        .success { color: green; padding: 10px; background: #efe; border-radius: 5px; }
+        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+    <h1>📊 Sellityet Dashboard (Simple)</h1>
+    
+    <div class="card">
+        <div class="label">Status</div>
+        <div id="status">Lade...</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Produkte</div>
+        <div class="stat" id="products">-</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Bestellungen</div>
+        <div class="stat" id="orders">-</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Umsatz</div>
+        <div class="stat" id="revenue">-</div>
+    </div>
+
+    <button onclick="loadData()">🔄 Daten neu laden</button>
+    <button onclick="logout()">🚪 Ausloggen</button>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadData() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = 'Lade...';
+
+            try {
+                // Ein simpler API-Call
+                const res = await fetch(`${API_URL}/owner/analytics?period=30`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    throw new Error('API Fehler: ' + res.status);
+                }
+
+                const data = await res.json();
+                
+                document.getElementById('products').textContent = data.top_products?.length || 0;
+                document.getElementById('orders').textContent = data.sales?.order_count || 0;
+                document.getElementById('revenue').textContent = '€' + (data.sales?.total_revenue || 0).toFixed(2);
+                statusEl.innerHTML = '<div class="success">✅ Daten geladen!</div>';
+
+            } catch (err) {
+                statusEl.innerHTML = `<div class="error">❌ Fehler: ${err.message}</div>`;
+                console.error(err);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // Sofort laden
+        loadData();
+    </script>
+</body>
+</html>
