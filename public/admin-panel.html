@@ -1508,11 +1508,8 @@
                         alertsDiv.innerHTML = '';
                     }
 
-                    // Load analytics
-                    if (analyticsRes.ok) {
-                        const analytics = await analyticsRes.json();
-                        renderAnalytics(analytics);
-                    }
+                    // Load analytics display
+                    renderAnalytics(analytics);
                 } catch (e) {
                     console.error('Dashboard error:', e);
                 }
