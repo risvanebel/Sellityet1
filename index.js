@@ -1660,8 +1660,14 @@ app.get('/api/admin/product-audit', authMiddleware, requireRole('admin'), async 
     });
 });
 
-// ANTI-SPAM: Block automatic product creation
-const BLOCKED_PRODUCT_NAMES = ['test', 'produkt', 'e-liquid', 'hardware', 'demo', 'sample'];
+// ANTI-SPAM: Block automatic product creation (only obvious spam/placeholder names)
+const BLOCKED_PRODUCT_NAMES = [
+    'test produkt',
+    'demo produkt',
+    'sample produkt',
+    'auto generated',
+    'placeholder'
+];
 const MAX_PRODUCTS_PER_MINUTE = 5;
 
 // Rate limiting map (in-memory, resets on restart)
