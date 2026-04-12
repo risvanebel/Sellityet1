@@ -6,88 +6,411 @@
     <title>Admin Panel - Sellityet</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; margin: -20px -20px 20px -20px; }
-        .header h1 { font-size: 24px; }
-        .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        
+        /* Layout */
+        .app { display: flex; min-height: 100vh; }
+        
+        /* Sidebar */
+        .sidebar { 
+            width: 250px; 
+            background: #1a1a2e; 
+            color: white; 
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar h1 { 
+            padding: 0 20px 20px; 
+            font-size: 20px; 
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-item:hover { background: #252542; }
+        .nav-item.active { background: #667eea; }
+        .nav-icon { font-size: 18px; }
+        
+        /* Main Content */
+        .main { 
+            margin-left: 250px; 
+            flex: 1; 
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header { 
+            background: white; 
+            padding: 15px 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header h2 { font-size: 24px; }
+        
+        /* Cards */
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        /* Stats Grid */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 20px;
+        }
+        .stat-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
         .stat-value { font-size: 32px; font-weight: bold; color: #667eea; }
         .stat-label { color: #666; margin-top: 5px; }
-        .error { background: #fee; color: #c00; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .success { background: #efe; color: #0c0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px; }
+        
+        /* Buttons */
+        button { 
+            padding: 10px 20px; 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer;
+            font-size: 14px;
+        }
         button:hover { background: #5568d3; }
-        .loading { text-align: center; padding: 40px; color: #666; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #f8f9fa; font-weight: 600; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        button.secondary { background: #6c757d; }
+        button.success { background: #28a745; }
+        button.danger { background: #dc3545; }
+        
+        /* Tables */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px;
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #eee; 
+        }
+        th { 
+            background: #f8f9fa; 
+            font-weight: 600; 
+        }
+        
+        /* Badges */
+        .badge { 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 12px; 
+            font-weight: 500;
+        }
         .badge-success { background: #d4edda; color: #155724; }
         .badge-warning { background: #fff3cd; color: #856404; }
-        .hidden { display: none; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        
+        /* Forms */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal h3 { margin-bottom: 20px; }
+        
+        /* Messages */
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        
+        /* Hidden */
+        .hidden { display: none !important; }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar { width: 200px; }
+            .main { margin-left: 200px; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🏪 Sellityet Admin Panel</h1>
+    <div class="app">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <h1>🏪 Sellityet</h1>
+            <div class="nav-item active" onclick="showTab('dashboard')">
+                <span class="nav-icon">📊</span> Dashboard
+            </div>
+            <div class="nav-item" onclick="showTab('products')">
+                <span class="nav-icon">📦</span> Produkte
+            </div>
+            <div class="nav-item" onclick="showTab('orders')">
+                <span class="nav-icon">📋</span> Bestellungen
+            </div>
+            <div class="nav-item" onclick="showTab('categories')">
+                <span class="nav-icon">🏷️</span> Kategorien
+            </div>
+            <div class="nav-item" onclick="showTab('customers')">
+                <span class="nav-icon">👥</span> Kunden
+            </div>
+            <div class="nav-item" onclick="showTab('coupons')">
+                <span class="nav-icon">🎫</span> Gutscheine
+            </div>
+            <div class="nav-item" onclick="showTab('shipping')">
+                <span class="nav-icon">🚚</span> Versand
+            </div>
+            <div class="nav-item" onclick="showTab('settings')">
+                <span class="nav-icon">⚙️</span> Einstellungen
+            </div>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+                <div class="nav-item" onclick="logout()">
+                    <span class="nav-icon">🚪</span> Ausloggen
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div id="message"></div>
+
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard" class="tab-content">
+                <div class="header">
+                    <h2>📊 Dashboard</h2>
+                    <button onclick="loadDashboard()">🔄 Neu laden</button>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="dash-products">-</div>
+                        <div class="stat-label">Produkte</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="dash-orders">-</div>
+                        <div class="stat-label">Bestellungen</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="dash-revenue">-</div>
+                        <div class="stat-label">Umsatz (€)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="dash-customers">-</div>
+                        <div class="stat-label">Kunden</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Letzte Bestellungen</h3>
+                    <div id="dash-orders-list">
+                        <p>Lade...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="tab-products" class="tab-content hidden">
+                <div class="header">
+                    <h2>📦 Produkte</h2>
+                    <button onclick="openProductModal()">➕ Neues Produkt</button>
+                </div>
+                <div class="card">
+                    <div id="products-list">
+                        <p>Lade Produkte...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="tab-orders" class="tab-content hidden">
+                <div class="header">
+                    <h2>📋 Bestellungen</h2>
+                    <button onclick="loadOrders()">🔄 Neu laden</button>
+                </div>
+                <div class="card">
+                    <div id="orders-list">
+                        <p>Lade Bestellungen...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Tab -->
+            <div id="tab-categories" class="tab-content hidden">
+                <div class="header">
+                    <h2>🏷️ Kategorien</h2>
+                    <button onclick="openCategoryModal()">➕ Neue Kategorie</button>
+                </div>
+                <div class="card">
+                    <div id="categories-list">
+                        <p>Lade Kategorien...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers Tab -->
+            <div id="tab-customers" class="tab-content hidden">
+                <div class="header">
+                    <h2>👥 Kunden</h2>
+                    <button onclick="loadCustomers()">🔄 Neu laden</button>
+                </div>
+                <div class="card">
+                    <div id="customers-list">
+                        <p>Lade Kunden...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coupons Tab -->
+            <div id="tab-coupons" class="tab-content hidden">
+                <div class="header">
+                    <h2>🎫 Gutscheine</h2>
+                    <button onclick="openCouponModal()">➕ Neuer Gutschein</button>
+                </div>
+                <div class="card">
+                    <div id="coupons-list">
+                        <p>Lade Gutscheine...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Tab -->
+            <div id="tab-shipping" class="tab-content hidden">
+                <div class="header">
+                    <h2>🚚 Versandzonen</h2>
+                    <button onclick="openShippingModal()">➕ Neue Zone</button>
+                </div>
+                <div class="card">
+                    <div id="shipping-list">
+                        <p>Lade Versandzonen...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="tab-settings" class="tab-content hidden">
+                <div class="header">
+                    <h2>⚙️ Shop Einstellungen</h2>
+                    <button onclick="saveSettings()">💾 Speichern</button>
+                </div>
+                <div class="card">
+                    <div id="settings-form">
+                        <p>Lade Einstellungen...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <div id="message"></div>
-
-    <div class="grid">
-        <div class="stat-card">
-            <div class="stat-value" id="stat-products">-</div>
-            <div class="stat-label">Produkte</div>
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal">
+            <h3>➕ Neues Produkt</h3>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="prod-name" placeholder="Produktname">
+            </div>
+            <div class="form-group">
+                <label>Beschreibung</label>
+                <textarea id="prod-desc" rows="3" placeholder="Beschreibung"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Preis (€)</label>
+                <input type="number" id="prod-price" step="0.01" placeholder="29.99">
+            </div>
+            <div class="form-group">
+                <label>Kategorie</label>
+                <select id="prod-category">
+                    <option value="">Keine Kategorie</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Anfangsbestand</label>
+                <input type="number" id="prod-stock" value="0">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveProduct()">💾 Speichern</button>
+                <button class="secondary" onclick="closeModal('product-modal')">❌ Abbrechen</button>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-value" id="stat-orders">-</div>
-            <div class="stat-label">Bestellungen</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value" id="stat-revenue">-</div>
-            <div class="stat-label">Umsatz (€)</div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>📦 Produkte</h2>
-        <div id="products-list">
-            <div class="loading">Lade Produkte...</div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>📋 Bestellungen</h2>
-        <div id="orders-list">
-            <div class="loading">Lade Bestellungen...</div>
-        </div>
-    </div>
-
-    <div style="margin-top: 20px;">
-        <button onclick="loadAll()">🔄 Alles neu laden</button>
-        <button onclick="logout()">🚪 Ausloggen</button>
     </div>
 
     <script>
         const API = window.location.origin + '/api';
         const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        let currentShop = null;
 
-        // Check auth
         if (!token) {
             window.location.href = 'login.html';
         }
 
         function showMessage(msg, isError = false) {
             const el = document.getElementById('message');
-            el.innerHTML = `<div class="${isError ? 'error' : 'success'}">${msg}</div>`;
+            el.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${msg}</div>`;
             setTimeout(() => el.innerHTML = '', 5000);
         }
 
-        async function apiCall(url) {
+        async function apiCall(url, options = {}) {
             const res = await fetch(API + url, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
             });
             if (res.status === 401 || res.status === 403) {
                 logout();
@@ -97,86 +420,275 @@
             return res.json();
         }
 
-        async function loadStats() {
+        // Tab Navigation
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            event.target.closest('.nav-item').classList.add('active');
+            
+            // Load data for tab
+            if (tabName === 'dashboard') loadDashboard();
+            if (tabName === 'products') loadProducts();
+            if (tabName === 'orders') loadOrders();
+            if (tabName === 'categories') loadCategories();
+            if (tabName === 'customers') loadCustomers();
+            if (tabName === 'coupons') loadCoupons();
+            if (tabName === 'shipping') loadShipping();
+            if (tabName === 'settings') loadSettings();
+        }
+
+        // Dashboard
+        async function loadDashboard() {
             try {
-                const data = await apiCall('/owner/analytics?period=30');
-                document.getElementById('stat-products').textContent = data.top_products?.length || 0;
-                document.getElementById('stat-orders').textContent = data.sales?.order_count || 0;
-                document.getElementById('stat-revenue').textContent = (data.sales?.total_revenue || 0).toFixed(2);
+                const [products, orders, customers, analytics] = await Promise.all([
+                    apiCall('/owner/products').catch(() => []),
+                    apiCall('/owner/orders').catch(() => []),
+                    apiCall('/owner/customers').catch(() => []),
+                    apiCall('/owner/analytics?period=30').catch(() => ({sales: {}}))
+                ]);
+                
+                document.getElementById('dash-products').textContent = products.length || 0;
+                document.getElementById('dash-orders').textContent = orders.length || 0;
+                document.getElementById('dash-revenue').textContent = (analytics.sales?.total_revenue || 0).toFixed(2);
+                document.getElementById('dash-customers').textContent = customers.length || 0;
+                
+                // Recent orders
+                const recentOrders = orders.slice(0, 5);
+                document.getElementById('dash-orders-list').innerHTML = recentOrders.length ? `
+                    <table>
+                        <tr><th>Bestellung</th><th>Kunde</th><th>Betrag</th><th>Status</th></tr>
+                        ${recentOrders.map(o => `
+                            <tr>
+                                <td>${o.order_number}</td>
+                                <td>${o.customer_email}</td>
+                                <td>€${o.total_amount}</td>
+                                <td><span class="badge ${o.status === 'completed' ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                ` : '<p>Keine Bestellungen vorhanden.</p>';
             } catch (e) {
-                console.error('Stats error:', e);
+                console.error('Dashboard error:', e);
             }
         }
 
+        // Products
         async function loadProducts() {
             try {
                 const products = await apiCall('/owner/products');
-                const container = document.getElementById('products-list');
-                
-                if (products.length === 0) {
-                    container.innerHTML = '<p>Keine Produkte vorhanden.</p>';
-                    return;
-                }
-
-                container.innerHTML = `
+                document.getElementById('products-list').innerHTML = products.length ? `
                     <table>
-                        <thead>
-                            <tr><th>Name</th><th>Preis</th><th>Bestand</th><th>Status</th></tr>
-                        </thead>
-                        <tbody>
-                            ${products.map(p => `
-                                <tr>
-                                    <td>${p.name}</td>
-                                    <td>€${p.price}</td>
-                                    <td>${p.quantity || 0}</td>
-                                    <td><span class="badge ${p.status === 'published' ? 'badge-success' : 'badge-warning'}">${p.status}</span></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
+                        <tr><th>Name</th><th>Preis</th><th>Bestand</th><th>Status</th><th>Aktionen</th></tr>
+                        ${products.map(p => `
+                            <tr>
+                                <td>${p.name}</td>
+                                <td>€${p.price}</td>
+                                <td>${p.quantity || 0}</td>
+                                <td><span class="badge ${p.status === 'published' ? 'badge-success' : 'badge-warning'}">${p.status}</span></td>
+                                <td>
+                                    <button onclick="editProduct(${p.id})">✏️</button>
+                                    <button class="danger" onclick="deleteProduct(${p.id})">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
                     </table>
-                `;
+                ` : '<p>Keine Produkte vorhanden.</p>';
             } catch (e) {
-                document.getElementById('products-list').innerHTML = '<p class="error">Fehler beim Laden.</p>';
+                document.getElementById('products-list').innerHTML = '<p class="alert alert-error">Fehler beim Laden.</p>';
             }
         }
 
+        function openProductModal() {
+            document.getElementById('product-modal').classList.add('active');
+        }
+
+        async function saveProduct() {
+            const data = {
+                name: document.getElementById('prod-name').value,
+                description: document.getElementById('prod-desc').value,
+                price: parseFloat(document.getElementById('prod-price').value),
+                category_id: document.getElementById('prod-category').value || null,
+                initial_quantity: parseInt(document.getElementById('prod-stock').value) || 0,
+                status: 'published'
+            };
+            
+            try {
+                await apiCall('/owner/products', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                closeModal('product-modal');
+                showMessage('✅ Produkt erstellt!');
+                loadProducts();
+            } catch (e) {
+                showMessage('❌ Fehler: ' + e.message, true);
+            }
+        }
+
+        // Orders
         async function loadOrders() {
             try {
-                const data = await apiCall('/owner/analytics?period=30');
-                const orders = data.recent_orders || [];
-                const container = document.getElementById('orders-list');
-                
-                if (orders.length === 0) {
-                    container.innerHTML = '<p>Keine Bestellungen vorhanden.</p>';
-                    return;
-                }
-
-                container.innerHTML = `
+                const orders = await apiCall('/owner/orders');
+                document.getElementById('orders-list').innerHTML = orders.length ? `
                     <table>
-                        <thead>
-                            <tr><th>Bestellung</th><th>Kunde</th><th>Betrag</th><th>Status</th></tr>
-                        </thead>
-                        <tbody>
-                            ${orders.map(o => `
-                                <tr>
-                                    <td>${o.order_number}</td>
-                                    <td>${o.customer_email}</td>
-                                    <td>€${o.total_amount}</td>
-                                    <td><span class="badge ${o.status === 'completed' ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
+                        <tr><th>Bestellung</th><th>Datum</th><th>Kunde</th><th>Betrag</th><th>Status</th><th>Aktionen</th></tr>
+                        ${orders.map(o => `
+                            <tr>
+                                <td>${o.order_number}</td>
+                                <td>${new Date(o.created_at).toLocaleDateString('de-DE')}</td>
+                                <td>${o.customer_email}</td>
+                                <td>€${o.total_amount}</td>
+                                <td><span class="badge ${o.status === 'completed' ? 'badge-success' : o.status === 'pending' ? 'badge-warning' : 'badge-danger'}">${o.status}</span></td>
+                                <td>
+                                    <button onclick="viewOrder(${o.id})">👁️</button>
+                                    ${o.status === 'pending' ? `<button class="success" onclick="updateOrder(${o.id}, 'completed')">✓</button>` : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
                     </table>
-                `;
+                ` : '<p>Keine Bestellungen vorhanden.</p>';
             } catch (e) {
-                document.getElementById('orders-list').innerHTML = '<p class="error">Fehler beim Laden.</p>';
+                document.getElementById('orders-list').innerHTML = '<p class="alert alert-error">Fehler beim Laden.</p>';
             }
         }
 
-        function loadAll() {
-            loadStats();
-            loadProducts();
-            loadOrders();
+        // Categories
+        async function loadCategories() {
+            try {
+                const categories = await apiCall('/owner/categories');
+                document.getElementById('categories-list').innerHTML = categories.length ? `
+                    <table>
+                        <tr><th>Name</th><th>Produkte</th><th>Aktionen</th></tr>
+                        ${categories.map(c => `
+                            <tr>
+                                <td>${c.name}</td>
+                                <td>${c.product_count || 0}</td>
+                                <td>
+                                    <button onclick="editCategory(${c.id})">✏️</button>
+                                    <button class="danger" onclick="deleteCategory(${c.id})">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                ` : '<p>Keine Kategorien vorhanden.</p>';
+                
+                // Update select in product modal
+                const select = document.getElementById('prod-category');
+                select.innerHTML = '<option value="">Keine Kategorie</option>' + 
+                    categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            } catch (e) {
+                document.getElementById('categories-list').innerHTML = '<p class="alert alert-error">Fehler beim Laden.</p>';
+            }
+        }
+
+        // Customers
+        async function loadCustomers() {
+            try {
+                const customers = await apiCall('/owner/customers');
+                document.getElementById('customers-list').innerHTML = customers.length ? `
+                    <table>
+                        <tr><th>Name</th><th>E-Mail</th><th>Bestellungen</th><th>Gesamtausgaben</th></tr>
+                        ${customers.map(c => `
+                            <tr>
+                                <td>${c.name || '-'}</td>
+                                <td>${c.email}</td>
+                                <td>${c.total_orders || 0}</td>
+                                <td>€${(c.total_spent || 0).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                ` : '<p>Keine Kunden vorhanden.</p>';
+            } catch (e) {
+                document.getElementById('customers-list').innerHTML = '<p class="alert alert-error">Fehler beim Laden.</p>';
+            }
+        }
+
+        // Coupons
+        async function loadCoupons() {
+            try {
+                const coupons = await apiCall('/owner/coupons');
+                document.getElementById('coupons-list').innerHTML = coupons.length ? `
+                    <table>
+                        <tr><th>Code</th><th>Rabatt</th><th>Gültig bis</th><th>Verwendet</th><th>Aktionen</th></tr>
+                        ${coupons.map(c => `
+                            <tr>
+                                <td><code>${c.code}</code></td>
+                                <td>${c.discount_type === 'percentage' ? c.discount_value + '%' : '€' + c.discount_value}</td>
+                                <td>${c.valid_until ? new Date(c.valid_until).toLocaleDateString('de-DE') : 'Unbegrenzt'}</td>
+                                <td>${c.usage_count || 0}/${c.usage_limit || '∞'}</td>
+                                <td>
+                                    <button class="danger" onclick="deleteCoupon(${c.id})">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                ` : '<p>Keine Gutscheine vorhanden.</p>';
+            } catch (e) {
+                document.getElementById('coupons-list').innerHTML = '<p class="alert alert-error">Fehler beim Laden.</p>';
+            }
+        }
+
+        // Shipping
+        async function loadShipping() {
+            try {
+                const zones = await apiCall('/owner/shipping-zones');
+                document.getElementById('shipping-list').innerHTML = zones.length ? `
+                    <table>
+                        <tr><th>Name</th><th>Länder</th><th>Kosten</th><th>Frei ab</th><th>Aktionen</th></tr>
+                        ${zones.map(z => `
+                            <tr>
+                                <td>${z.name}</td>
+                                <td>${z.countries?.join(', ') || 'Alle'}</td>
+                                <td>€${z.cost}</td>
+                                <td>${z.free_shipping_threshold ? '€' + z.free_shipping_threshold : '-'}</td>
+                                <td>
+                                    <button onclick="editShipping(${z.id})">✏️</button>
+                                    <button class="danger" onclick="deleteShipping(${z.id})">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                ` : '<p>Keine Versandzonen vorhanden.</p>';
+            } catch (e) {
+                document.getElementById('shipping-list').innerHTML = '<p class="alert alert-error">Fehler beim Laden.</p>';
+            }
+        }
+
+        // Settings
+        async function loadSettings() {
+            try {
+                const shop = await apiCall('/owner/shop');
+                document.getElementById('settings-form').innerHTML = `
+                    <div class="form-group">
+                        <label>Shop Name</label>
+                        <input type="text" id="setting-name" value="${shop.name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Beschreibung</label>
+                        <textarea id="setting-desc" rows="3">${shop.description || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Primäre Farbe</label>
+                        <input type="color" id="setting-color" value="${shop.primary_color || '#667eea'}">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="setting-status">
+                            <option value="active" ${shop.is_active ? 'selected' : ''}>Aktiv</option>
+                            <option value="inactive" ${!shop.is_active ? 'selected' : ''}>Inaktiv</option>
+                        </select>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('settings-form').innerHTML = '<p class="alert alert-error">Fehler beim Laden.</p>';
+            }
+        }
+
+        // Modal Helpers
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
         }
 
         function logout() {
@@ -185,8 +697,23 @@
             window.location.href = 'login.html';
         }
 
+        // Placeholder functions
+        function openCategoryModal() { showMessage('Kategorie-Funktion kommt bald!', true); }
+        function openCouponModal() { showMessage('Gutschein-Funktion kommt bald!', true); }
+        function openShippingModal() { showMessage('Versand-Funktion kommt bald!', true); }
+        function editProduct(id) { showMessage('Bearbeiten kommt bald!', true); }
+        function deleteProduct(id) { showMessage('Löschen kommt bald!', true); }
+        function viewOrder(id) { showMessage('Bestelldetails kommen bald!', true); }
+        function updateOrder(id, status) { showMessage('Status-Update kommt bald!', true); }
+        function editCategory(id) { showMessage('Bearbeiten kommt bald!', true); }
+        function deleteCategory(id) { showMessage('Löschen kommt bald!', true); }
+        function deleteCoupon(id) { showMessage('Löschen kommt bald!', true); }
+        function editShipping(id) { showMessage('Bearbeiten kommt bald!', true); }
+        function deleteShipping(id) { showMessage('Löschen kommt bald!', true); }
+        function saveSettings() { showMessage('Speichern kommt bald!', true); }
+
         // Initial load
-        loadAll();
+        loadDashboard();
     </script>
 </body>
 </html>
