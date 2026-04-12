@@ -61,6 +61,12 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                if (res.status === 401 || res.status === 403) {
+                    // Token abgelaufen - ausloggen und zum Login
+                    logout();
+                    return;
+                }
+
                 if (!res.ok) {
                     throw new Error('API Fehler: ' + res.status);
                 }
