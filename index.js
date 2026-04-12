@@ -57,6 +57,10 @@ app.use(express.json());
 const { swaggerUi, specs } = require('./src/config/swagger');
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
+app.get('/debug-sentry', function mainHandler(req, res) {
+    throw new Error('My first Sentry error!');
+});
+
 // Fix product images table (run before other routes)
 app.get('/api/fix-product-images', async (req, res) => {
     try {
