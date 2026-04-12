@@ -3631,7 +3631,45 @@ app.get('/api/admin/shops', authMiddleware, requireRole('admin'), async (req, re
     }
 });
 
-// Get stats
+// Get owner stats (for dashboard)
+app.get('/api/owner/stats', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        // Get shop ID for this owner
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+            [req.user.id]
+        );
+
+        if (shopRows.length === 0) {
+            return res.json({
+                products: 0,
+                orders: 0,
+                totalRevenue: 0
+            });
+        }
+
+        const shopId = shopRows[0].id;
+
+        const [products, orders] = await Promise.all([
+            pool.query('SELECT COUNT(*) FROM products WHERE shop_id = $1', [shopId]),
+            pool.query(
+                'SELECT COUNT(*), COALESCE(SUM(total_amount), 0) FROM orders WHERE shop_id = $1',
+                [shopId]
+            )
+        ]);
+
+        res.json({
+            products: parseInt(products.rows[0].count),
+            orders: parseInt(orders.rows[0].count),
+            totalRevenue: parseFloat(orders.rows[0].coalesce)
+        });
+    } catch (error) {
+        console.error('Get owner stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// Get admin stats (global)
 app.get('/api/admin/stats', authMiddleware, requireRole('admin'), async (req, res) => {
     try {
         const [users, shops, products, orders] = await Promise.all([
