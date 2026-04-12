@@ -1,0 +1,2 @@
+echo "🛡️ Git Safety Net aktiv: Führe pre-commit Tests aus..."
+npx lint-staged
