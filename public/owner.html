@@ -34,7 +34,6 @@
             min-height: 100vh;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 260px;
             background: var(--sidebar);
@@ -109,7 +108,6 @@
             border-top: 1px solid #333;
         }
 
-        /* Main Content */
         .main {
             flex: 1;
             margin-left: 260px;
@@ -136,7 +134,6 @@
             padding: 32px;
         }
 
-        /* Stats */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -176,7 +173,6 @@
             color: var(--accent);
         }
 
-        /* Cards */
         .card {
             background: var(--surface);
             border-radius: var(--radius);
@@ -201,7 +197,6 @@
             padding: 24px;
         }
 
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -231,7 +226,6 @@
             border: 1px solid #E1DFDD;
         }
 
-        /* Tables */
         .table {
             width: 100%;
             border-collapse: collapse;
@@ -264,7 +258,6 @@
         .status.paid { background: #E6F4EA; color: #137333; }
         .status.shipped { background: #E8F0FE; color: #1967D2; }
 
-        /* Forms */
         .form-group {
             margin-bottom: 20px;
         }
@@ -284,9 +277,16 @@
             border: 1px solid #E1DFDD;
             border-radius: var(--radius);
             font-size: 14px;
+            font-family: inherit;
         }
 
-        /* Tabs */
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
         .tabs {
             display: flex;
             gap: 8px;
@@ -318,11 +318,61 @@
             display: block;
         }
 
-        /* Grid */
         .grid-2 {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 24px;
+        }
+
+        .settings-panel {
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .section-divider {
+            margin: 32px 0;
+            border: none;
+            border-top: 1px solid #E1DFDD;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .success-message {
+            background: #E6F4EA;
+            color: #137333;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-message {
+            background: #FCE8E6;
+            color: #C5221F;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            display: none;
         }
 
         @media (max-width: 1024px) {
@@ -351,7 +401,6 @@
 </head>
 <body>
     <div class="layout">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <a href="/" class="brand">
@@ -374,7 +423,6 @@
             </div>
         </aside>
 
-        <!-- Main -->
         <main class="main">
             <header class="topbar">
                 <h1 class="page-title" id="pageTitle">Dashboard</h1>
@@ -382,7 +430,6 @@
             </header>
 
             <div class="content">
-                <!-- Dashboard Tab -->
                 <div id="dashboard" class="tab-content active">
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -452,7 +499,6 @@
                     </div>
                 </div>
 
-                <!-- Products Tab -->
                 <div id="products" class="tab-content">
                     <div class="card">
                         <div class="card-header">
@@ -467,7 +513,6 @@
                     </div>
                 </div>
 
-                <!-- Orders Tab -->
                 <div id="orders" class="tab-content">
                     <div class="card">
                         <div class="card-header">
@@ -486,7 +531,6 @@
                     </div>
                 </div>
 
-                <!-- Analytics Tab -->
                 <div id="analytics" class="tab-content">
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -519,7 +563,6 @@
                     </div>
                 </div>
 
-                <!-- Settings Tab -->
                 <div id="settings" class="tab-content">
                     <div class="tabs">
                         <button class="tab active" onclick="showSettingsTab('shop')">Shop</button>
@@ -528,19 +571,169 @@
                         <button class="tab" onclick="showSettingsTab('email')">E-Mail</button>
                     </div>
                     
-                    <div id="settings-shop" class="settings-panel">
+                    <div id="settings-shop" class="settings-panel active">
                         <div class="card">
                             <div class="card-header"><h3 class="card-title">Shop-Einstellungen</h3></div>
                             <div class="card-body">
+                                <div class="success-message" id="shopSuccess">✓ Einstellungen gespeichert</div>
                                 <div class="form-group">
-                                    <label>Shop-Name</label>
+                                    <label>Shop-Name *</label>
                                     <input type="text" id="shopNameInput" placeholder="Mein Shop">
                                 </div>
                                 <div class="form-group">
                                     <label>Beschreibung</label>
-                                    <textarea id="shopDescInput" rows="3"></textarea>
+                                    <textarea id="shopDescInput" rows="3" placeholder="Beschreibe deinen Shop..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Primäre Farbe</label>
+                                    <input type="color" id="shopColorInput" value="#0078D4" style="width: 100px; height: 40px; padding: 4px;">
                                 </div>
                                 <button class="btn btn-primary" onclick="saveShopSettings()">Speichern</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-payment" class="settings-panel">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Zahlungsmethoden</h3></div>
+                            <div class="card-body">
+                                <div class="success-message" id="paymentSuccess">✓ Zahlungseinstellungen gespeichert</div>
+                                
+                                <div class="section-title">Verfügbare Zahlungsmethoden</div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="payBank">
+                                    <label for="payBank">Banküberweisung</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="payPayPal">
+                                    <label for="payPayPal">PayPal</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="payStripe">
+                                    <label for="payStripe">Kreditkarte (Stripe)</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="payCOD">
+                                    <label for="payCOD">Nachnahme (COD)</label>
+                                </div>
+
+                                <hr class="section-divider">
+                                
+                                <div class="section-title">PayPal Einstellungen</div>
+                                <div class="form-group">
+                                    <label>Client ID</label>
+                                    <input type="text" id="paypalClientId" placeholder="Ihre PayPal Client ID">
+                                </div>
+                                <div class="form-group">
+                                    <label>Modus</label>
+                                    <select id="paypalMode">
+                                        <option value="sandbox">Sandbox (Test)</option>
+                                        <option value="live">Live (Produktion)</option>
+                                    </select>
+                                </div>
+
+                                <hr class="section-divider">
+                                
+                                <div class="section-title">Stripe Einstellungen</div>
+                                <div class="form-group">
+                                    <label>Public Key</label>
+                                    <input type="text" id="stripePublicKey" placeholder="pk_test_...">
+                                </div>
+                                <div class="form-group">
+                                    <label>Secret Key</label>
+                                    <input type="password" id="stripeSecretKey" placeholder="sk_test_...">
+                                </div>
+
+                                <hr class="section-divider">
+                                
+                                <div class="section-title">Bankverbindung</div>
+                                <div class="form-group">
+                                    <label>Kontoinhaber</label>
+                                    <input type="text" id="bankName" placeholder="Max Mustermann">
+                                </div>
+                                <div class="form-group">
+                                    <label>IBAN</label>
+                                    <input type="text" id="bankIban" placeholder="DE00 0000 0000 0000 0000 00">
+                                </div>
+                                <div class="form-group">
+                                    <label>BIC</label>
+                                    <input type="text" id="bankBic" placeholder="BANKDEFF">
+                                </div>
+
+                                <button class="btn btn-primary" onclick="savePaymentSettings()">Speichern</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-shipping" class="settings-panel">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Versand</h3></div>
+                            <div class="card-body">
+                                <div class="success-message" id="shippingSuccess">✓ Versandeinstellungen gespeichert</div>
+                                
+                                <div class="form-group">
+                                    <label>Standard-Versandkosten (€)</label>
+                                    <input type="number" id="shippingCost" step="0.01" placeholder="5.90">
+                                </div>
+                                <div class="form-group">
+                                    <label>Gratis Versand ab (€) - leer lassen für keinen Gratisversand</label>
+                                    <input type="number" id="freeShippingThreshold" step="0.01" placeholder="50.00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Lieferzeit (Werktage)</label>
+                                    <input type="text" id="deliveryTime" placeholder="3-5 Werktage">
+                                </div>
+                                <div class="form-group">
+                                    <label>Versandhinweise für Kunden</label>
+                                    <textarea id="shippingNotes" rows="3" placeholder="z.B. 'Kostenloser Versand ab 50€'"></textarea>
+                                </div>
+
+                                <button class="btn btn-primary" onclick="saveShippingSettings()">Speichern</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-email" class="settings-panel">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">E-Mail Einstellungen</h3></div>
+                            <div class="card-body">
+                                <div class="success-message" id="emailSuccess">✓ E-Mail-Einstellungen gespeichert</div>
+                                
+                                <div class="section-title">Allgemein</div>
+                                <div class="form-group">
+                                    <label>Absender E-Mail *</label>
+                                    <input type="email" id="senderEmail" placeholder="shop@beispiel.de">
+                                </div>
+                                <div class="form-group">
+                                    <label>Benachrichtigungs-E-Mail (für neue Bestellungen)</label>
+                                    <input type="email" id="notificationEmail" placeholder="admin@beispiel.de">
+                                </div>
+
+                                <hr class="section-divider">
+                                
+                                <div class="section-title">SMTP Server (für E-Mail-Versand)</div>
+                                <div class="form-group">
+                                    <label>SMTP Host</label>
+                                    <input type="text" id="smtpHost" placeholder="smtp.gmail.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>SMTP Port</label>
+                                    <input type="number" id="smtpPort" placeholder="587">
+                                </div>
+                                <div class="form-group">
+                                    <label>SMTP Benutzer</label>
+                                    <input type="text" id="smtpUser" placeholder="E-Mail-Adresse">
+                                </div>
+                                <div class="form-group">
+                                    <label>SMTP Passwort / App-Passwort</label>
+                                    <input type="password" id="smtpPass" placeholder="Passwort">
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="smtpSecure">
+                                    <label for="smtpSecure">TLS/SSL Verschlüsselung verwenden</label>
+                                </div>
+
+                                <button class="btn btn-primary" onclick="saveEmailSettings()">Speichern</button>
                             </div>
                         </div>
                     </div>
@@ -571,6 +764,14 @@
             if (tabName === 'products') loadProducts();
             if (tabName === 'orders') loadAllOrders();
             if (tabName === 'analytics') loadProfitAnalytics();
+            if (tabName === 'settings') loadSettings();
+        }
+
+        function showSettingsTab(tab) {
+            document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('#settings .tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`settings-${tab}`).classList.add('active');
+            event.target.classList.add('active');
         }
 
         async function loadDashboard() {
@@ -731,20 +932,146 @@
             }
         }
 
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/owner/shop', { headers: { 'Authorization': `Bearer ${token}` } });
+                const shop = await res.json();
+                currentShop = shop;
+                
+                document.getElementById('shopNameInput').value = shop.name || '';
+                document.getElementById('shopDescInput').value = shop.description || '';
+                document.getElementById('shopColorInput').value = shop.primary_color || '#0078D4';
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+        }
+
+        async function saveShopSettings() {
+            try {
+                const data = {
+                    name: document.getElementById('shopNameInput').value,
+                    description: document.getElementById('shopDescInput').value,
+                    primary_color: document.getElementById('shopColorInput').value
+                };
+                
+                const res = await fetch('/api/owner/shop', {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('shopSuccess').style.display = 'block';
+                    setTimeout(() => document.getElementById('shopSuccess').style.display = 'none', 3000);
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function savePaymentSettings() {
+            try {
+                const data = {
+                    payment_methods: [
+                        document.getElementById('payBank').checked ? 'bank_transfer' : null,
+                        document.getElementById('payPayPal').checked ? 'paypal' : null,
+                        document.getElementById('payStripe').checked ? 'stripe' : null,
+                        document.getElementById('payCOD').checked ? 'cod' : null
+                    ].filter(Boolean),
+                    paypal_client_id: document.getElementById('paypalClientId').value,
+                    paypal_mode: document.getElementById('paypalMode').value,
+                    stripe_public_key: document.getElementById('stripePublicKey').value,
+                    stripe_secret_key: document.getElementById('stripeSecretKey').value,
+                    bank_account_name: document.getElementById('bankName').value,
+                    bank_account_iban: document.getElementById('bankIban').value,
+                    bank_account_bic: document.getElementById('bankBic').value
+                };
+                
+                const res = await fetch('/api/owner/shops/payment-settings', {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('paymentSuccess').style.display = 'block';
+                    setTimeout(() => document.getElementById('paymentSuccess').style.display = 'none', 3000);
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function saveShippingSettings() {
+            try {
+                const data = {
+                    shipping_cost: parseFloat(document.getElementById('shippingCost').value) || 0,
+                    free_shipping_threshold: parseFloat(document.getElementById('freeShippingThreshold').value) || null,
+                    delivery_time: document.getElementById('deliveryTime').value,
+                    shipping_notes: document.getElementById('shippingNotes').value
+                };
+                
+                const res = await fetch('/api/owner/shops/shipping-settings', {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('shippingSuccess').style.display = 'block';
+                    setTimeout(() => document.getElementById('shippingSuccess').style.display = 'none', 3000);
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function saveEmailSettings() {
+            try {
+                const data = {
+                    sender_email: document.getElementById('senderEmail').value,
+                    notification_email: document.getElementById('notificationEmail').value,
+                    smtp_host: document.getElementById('smtpHost').value,
+                    smtp_port: parseInt(document.getElementById('smtpPort').value) || 587,
+                    smtp_user: document.getElementById('smtpUser').value,
+                    smtp_pass: document.getElementById('smtpPass').value,
+                    smtp_secure: document.getElementById('smtpSecure').checked
+                };
+                
+                const res = await fetch('/api/owner/shops/email-settings', {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('emailSuccess').style.display = 'block';
+                    setTimeout(() => document.getElementById('emailSuccess').style.display = 'none', 3000);
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
         function createProduct() {
             showTab('products');
             showCreateProduct();
         }
 
         function showCreateProduct() {
-            alert('Produkt-Erstellung: In Vollversion mit Formular');
-        }
-
-        function showSettingsTab(tab) {
-            document.querySelectorAll('.settings-panel').forEach(p => p.style.display = 'none');
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(`settings-${tab}`).style.display = 'block';
-            event.target.classList.add('active');
+            alert('Produkt-Erstellung: In Vollversion mit Modal/Formular');
         }
 
         function logout() {
@@ -752,7 +1079,6 @@
             window.location.href = '/login.html';
         }
 
-        // Load on start
         loadDashboard();
     </script>
 </body>

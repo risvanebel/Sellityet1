@@ -3,221 +3,331 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop Owner Login - Sellityet</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Anmelden - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --text-muted: #A19F9D;
+            --accent: #00B294;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+            --radius: 8px;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--surface-alt);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid #E1DFDD;
+            padding: 16px 32px;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: var(--radius);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 24px;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
         }
-        .login-container {
-            background: white;
-            border-radius: 16px;
-            padding: 48px;
+
+        .brand-text {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-left: 24px;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 24px;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 440px;
+            padding: 48px;
         }
-        .logo {
+
+        .login-header {
             text-align: center;
             margin-bottom: 32px;
         }
-        .logo-icon {
+
+        .login-icon {
             width: 64px;
             height: 64px;
-            background: linear-gradient(135deg, #2563EB, #7C3AED);
-            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: var(--radius);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 16px;
-            color: white;
+            margin: 0 auto 20px;
             font-size: 28px;
-            font-weight: 700;
         }
-        .logo h1 {
+
+        .login-title {
             font-size: 24px;
-            font-weight: 700;
-            color: #0F172A;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
         }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
-        .form-label {
+
+        .form-group label {
             display: block;
+            margin-bottom: 8px;
             font-size: 14px;
             font-weight: 500;
-            color: #374151;
-            margin-bottom: 6px;
+            color: var(--text-primary);
         }
-        .form-input {
+
+        .form-group input {
             width: 100%;
             padding: 12px 16px;
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.2s;
+            border: 1px solid #E1DFDD;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
         }
-        .form-input:focus {
+
+        .form-group input:focus {
             outline: none;
-            border-color: #2563EB;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+            border-color: var(--primary);
         }
-        .submit-btn {
+
+        .btn {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #2563EB, #7C3AED);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 12px 24px;
+            border-radius: var(--radius);
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
+            border: none;
             transition: all 0.2s;
         }
-        .submit-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
         }
-        .submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
         }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #E1DFDD;
+        }
+
+        .login-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
         .error-message {
-            background: #FEE2E2;
-            color: #991B1B;
+            background: #FCE8E6;
+            color: #C5221F;
             padding: 12px 16px;
-            border-radius: 8px;
+            border-radius: var(--radius);
             margin-bottom: 20px;
             font-size: 14px;
             display: none;
         }
-        .error-message.show {
-            display: block;
-        }
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 24px;
-            color: #6B7280;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        .back-link:hover {
-            color: #2563EB;
-        }
-        .role-indicator {
-            text-align: center;
-            padding: 8px 16px;
-            background: #F3F4F6;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #6B7280;
+
+        .role-selector {
+            display: flex;
+            gap: 12px;
             margin-bottom: 24px;
+        }
+
+        .role-option {
+            flex: 1;
+            padding: 16px;
+            border: 2px solid #E1DFDD;
+            border-radius: var(--radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .role-option:hover {
+            border-color: var(--primary);
+        }
+
+        .role-option.active {
+            border-color: var(--primary);
+            background: rgba(0,120,212,0.05);
+        }
+
+        .role-option .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .role-option .label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 32px 24px;
+            }
+            
+            .header {
+                padding: 16px;
+            }
+            
+            .nav-links {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">
-            <div class="logo-icon">S</div>
-            <h1>Sellityet Admin</h1>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="brand">
+                <div class="brand-logo">S</div>
+                <span class="brand-text">Sellityet</span>
+            </a>
+            <nav class="nav-links">
+                <a href="/">Startseite</a>
+                <a href="/register.html">Registrieren</a>
+            </nav>
         </div>
-        
-        <div class="role-indicator">🏪 Shop Owner Portal</div>
-        
-        <div class="error-message" id="error"></div>
-        
-        <form id="login-form" onsubmit="handleLogin(event)">
-            <div class="form-group">
-                <label class="form-label">E-Mail</label>
-                <input type="email" class="form-input" id="email" required placeholder="admin@beispiel.de">
+    </header>
+
+    <main class="main">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">🏪</div>
+                <h1 class="login-title">Shop Owner Login</h1>
+                <p class="login-subtitle">Melde dich bei deinem Shop an</p>
             </div>
-            
-            <div class="form-group">
-                <label class="form-label">Passwort</label>
-                <input type="password" class="form-input" id="password" required placeholder="••••••••">
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">E-Mail-Adresse</label>
+                    <input type="email" id="email" name="email" placeholder="name@beispiel.de" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Passwort</label>
+                    <input type="password" id="password" name="password" placeholder="Dein Passwort" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Anmelden</button>
+            </form>
+
+            <div class="login-footer">
+                <p>Noch keinen Account? <a href="/register.html">Jetzt registrieren</a></p>
+                <p style="margin-top: 12px;"><a href="/admin-login.html">→ Admin-Bereich</a></p>
             </div>
-            
-            <button type="submit" class="submit-btn" id="submit-btn">
-                Anmelden
-            </button>
-        </form>
-        
-        <a href="/" class="back-link">← Zurück zum Shop</a>
-    </div>
+        </div>
+    </main>
 
     <script>
-        const API_URL = '/api';
-        
-        // Check if already logged in
-        const token = localStorage.getItem('token');
-        if (token) {
-            window.location.href = '/admin-panel.html';
-        }
-        
-        async function handleLogin(e) {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const submitBtn = document.getElementById('submit-btn');
-            const errorDiv = document.getElementById('error');
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Anmelden...';
-            errorDiv.classList.remove('show');
+            const errorDiv = document.getElementById('errorMessage');
             
             try {
-                const res = await fetch(`${API_URL}/auth/login`, {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
-                const data = await res.json();
+                const data = await response.json();
                 
-                if (res.ok) {
-                    // Check role - this is the SHOP OWNER portal
-                    if (data.user.role === 'admin') {
-                        errorDiv.textContent = 'Master-Admins nutzen bitte /admin-login.html';
-                        errorDiv.classList.add('show');
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Anmelden';
-                        return;
-                    }
-                    
-                    if (data.user.role !== 'owner') {
-                        errorDiv.textContent = 'Zugriff verweigert. Nur Shop-Owner erlaubt.';
-                        errorDiv.classList.add('show');
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Anmelden';
-                        return;
-                    }
-                    
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    console.log('Shop Owner Login successful:', data.user);
-                    window.location.href = '/admin-panel.html';
+                if (response.ok) {
+                    localStorage.setItem('owner_token', data.token);
+                    localStorage.setItem('owner_user', JSON.stringify(data.user));
+                    window.location.href = '/owner.html';
                 } else {
-                    errorDiv.textContent = data.error || 'Anmeldung fehlgeschlagen';
-                    errorDiv.classList.add('show');
+                    errorDiv.textContent = data.error || 'Login fehlgeschlagen';
+                    errorDiv.style.display = 'block';
                 }
-            } catch (e) {
-                errorDiv.textContent = 'Verbindungsfehler. Bitte später erneut versuchen.';
-                errorDiv.classList.add('show');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Anmelden';
+            } catch (error) {
+                errorDiv.textContent = 'Netzwerkfehler. Bitte versuche es erneut.';
+                errorDiv.style.display = 'block';
             }
-        }
+        });
     </script>
 </body>
 </html>
