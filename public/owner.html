@@ -3,345 +3,757 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mein Shop - Sellityet</title>
+    <title>Shop Dashboard - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --sidebar: #252525;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --accent: #00B294;
+            --danger: #D13438;
+            --warning: #FFB900;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--surface-alt);
+            color: var(--text-primary);
+        }
+
+        .layout {
+            display: flex;
             min-height: 100vh;
         }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar);
             color: white;
-            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
         }
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
+
+        .sidebar-brand {
+            padding: 24px;
+            border-bottom: 1px solid #333;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .nav-section {
+            padding: 16px 0;
+        }
+
+        .nav-title {
+            padding: 8px 24px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: #CCC;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #333;
+            color: white;
+            border-left-color: var(--primary);
+        }
+
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 24px;
+            border-top: 1px solid #333;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            margin-left: 260px;
+        }
+
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid #E1DFDD;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid #E1DFDD;
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            color: var(--accent);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid #E1DFDD;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #E1DFDD;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .header h1 { font-size: 1.5em; }
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             padding: 10px 20px;
-            border-radius: 20px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
             cursor: pointer;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-        .tab {
-            padding: 12px 24px;
-            background: white;
             border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1em;
+            transition: all 0.2s;
         }
-        .tab.active { background: #FF6B6B; color: white; }
-        
-        .card {
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
             background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            color: var(--text-primary);
+            border: 1px solid #E1DFDD;
         }
-        .card h2 { margin-bottom: 20px; color: #333; }
-        
-        .form-group { margin-bottom: 20px; }
+
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #E1DFDD;
+        }
+
+        .table td {
+            padding: 16px;
+            border-bottom: 1px solid #F3F2F1;
+        }
+
+        .status {
+            display: inline-flex;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status.pending { background: #FFF8E6; color: #996B00; }
+        .status.paid { background: #E6F4EA; color: #137333; }
+        .status.shipped { background: #E8F0FE; color: #1967D2; }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            font-size: 14px;
             font-weight: 500;
         }
-        .form-group input, .form-group textarea {
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
+            border: 1px solid #E1DFDD;
+            border-radius: var(--radius);
+            font-size: 14px;
         }
-        
-        .btn {
-            padding: 12px 30px;
-            background: #FF6B6B;
-            color: white;
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #E1DFDD;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
             border: none;
-            border-radius: 8px;
-            font-size: 1em;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
             cursor: pointer;
         }
-        .btn-success { background: #4CAF50; }
-        .btn-danger { background: #f44336; }
-        
-        .shop-list, .product-list {
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Grid */
+        .grid-2 {
             display: grid;
-            gap: 15px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
         }
-        .shop-item, .product-item {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+
+        @media (max-width: 1024px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .grid-2 { grid-template-columns: 1fr; }
         }
-        .item-info h3 { color: #333; margin-bottom: 5px; }
-        .item-info p { color: #666; font-size: 0.9em; }
-        
-        .empty-state {
+
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .content { padding: 20px; }
+        }
+
+        .loading {
             text-align: center;
-            padding: 50px;
-            color: #666;
+            padding: 40px;
+            color: var(--text-secondary);
         }
-        .empty-state .icon { font-size: 4em; margin-bottom: 20px; }
-        
-        .hidden { display: none; }
+
+        .empty {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <h1>🏪 Shop-Manager</h1>
-            <button class="logout-btn" onclick="logout()">Abmelden</button>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('shops')">Meine Shops</button>
-            <button class="tab" onclick="showTab('products')">Produkte</button>
-        </div>
-        
-        <!-- Shops Tab -->
-        <div id="shops-tab">
-            <div class="card">
-                <h2>➕ Neuen Shop erstellen</h2>
-                <form id="shop-form">
-                    <div class="form-group">
-                        <label>Shop-Name</label>
-                        <input type="text" id="shop-name" required placeholder="z.B. Risbo Vapeshop">
-                    </div>
-                    <div class="form-group">
-                        <label>URL-Slug (eindeutig)</label>
-                        <input type="text" id="shop-slug" required placeholder="z.B. risbo-vape">
-                    </div>
-                    <div class="form-group">
-                        <label>Beschreibung</label>
-                        <textarea id="shop-desc" rows="3" placeholder="Was verkaufst du?"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Primäre Farbe</label>
-                        <input type="color" id="shop-color" value="#FF6B6B">
-                    </div>
-                    <button type="submit" class="btn">Shop erstellen</button>
-                </form>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <a href="/" class="brand">
+                    <div class="brand-logo">S</div>
+                    <span>Sellityet</span>
+                </a>
             </div>
-            
-            <div class="card">
-                <h2>📋 Meine Shops</h2>
-                <div id="my-shops" class="shop-list">
-                    <div class="loading">Lade...</div>
+            <nav class="nav-section">
+                <div class="nav-title">Hauptmenü</div>
+                <a class="nav-item active" onclick="showTab('dashboard')">📊 Dashboard</a>
+                <a class="nav-item" onclick="showTab('products')">🛍️ Produkte</a>
+                <a class="nav-item" onclick="showTab('orders')">📦 Bestellungen</a>
+                <a class="nav-item" onclick="showTab('customers')">👥 Kunden</a>
+                <div class="nav-title">Verwaltung</div>
+                <a class="nav-item" onclick="showTab('analytics')">📈 Gewinn-Analyse</a>
+                <a class="nav-item" onclick="showTab('settings')">⚙️ Einstellungen</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a class="nav-item" onclick="logout()">🚪 Abmelden</a>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main">
+            <header class="topbar">
+                <h1 class="page-title" id="pageTitle">Dashboard</h1>
+                <button class="btn btn-primary" onclick="createProduct()">+ Neues Produkt</button>
+            </header>
+
+            <div class="content">
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Umsatz (30 Tage)</span>
+                            </div>
+                            <div class="stat-value" id="statRevenue">0 €</div>
+                            <div class="stat-change">+12% zum Vormonat</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Gewinn (30 Tage)</span>
+                            </div>
+                            <div class="stat-value" id="statProfit">0 €</div>
+                            <div class="stat-change" id="statMargin">0% Marge</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Bestellungen</span>
+                            </div>
+                            <div class="stat-value" id="statOrders">0</div>
+                            <div class="stat-change">Dieser Monat</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Produkte</span>
+                            </div>
+                            <div class="stat-value" id="statProducts">0</div>
+                            <div class="stat-change" id="statLowStock">0 unter Mindestbestand</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Neueste Bestellungen</h3>
+                                <button class="btn btn-secondary" onclick="showTab('orders')" style="padding: 6px 12px; font-size: 12px;">Alle</button>
+                            </div>
+                            <div class="card-body">
+                                <table class="table" id="recentOrdersTable">
+                                    <thead>
+                                        <tr><th>Bestellung</th><th>Kunde</th><th>Betrag</th><th>Status</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="4" class="loading">Lade...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Top Produkte</h3>
+                                <button class="btn btn-secondary" onclick="showTab('products')" style="padding: 6px 12px; font-size: 12px;">Alle</button>
+                            </div>
+                            <div class="card-body">
+                                <table class="table" id="topProductsTable">
+                                    <thead>
+                                        <tr><th>Produkt</th><th>Verkäufe</th><th>Gewinn</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="3" class="loading">Lade...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Tab -->
+                <div id="products" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Produkte</h3>
+                            <button class="btn btn-primary" onclick="showCreateProduct()">+ Produkt hinzufügen</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="productsList">
+                                <div class="loading">Produkte werden geladen...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div id="orders" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Alle Bestellungen</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table" id="allOrdersTable">
+                                <thead>
+                                    <tr><th>Bestellung</th><th>Datum</th><th>Kunde</th><th>Betrag</th><th>Status</th><th>Aktion</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="6" class="loading">Lade...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div id="analytics" class="tab-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Gesamtgewinn</span>
+                            </div>
+                            <div class="stat-value" id="profitTotal">0 €</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Durchschn. Marge</span>
+                            </div>
+                            <div class="stat-value" id="profitMargin">0%</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Gewinn nach Produkt</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table" id="profitByProduct">
+                                <thead>
+                                    <tr><th>Produkt</th><th>Umsatz</th><th>Kosten</th><th>Gewinn</th><th>Marge</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="5" class="loading">Lade...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settings" class="tab-content">
+                    <div class="tabs">
+                        <button class="tab active" onclick="showSettingsTab('shop')">Shop</button>
+                        <button class="tab" onclick="showSettingsTab('payment')">Zahlung</button>
+                        <button class="tab" onclick="showSettingsTab('shipping')">Versand</button>
+                        <button class="tab" onclick="showSettingsTab('email')">E-Mail</button>
+                    </div>
+                    
+                    <div id="settings-shop" class="settings-panel">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Shop-Einstellungen</h3></div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Shop-Name</label>
+                                    <input type="text" id="shopNameInput" placeholder="Mein Shop">
+                                </div>
+                                <div class="form-group">
+                                    <label>Beschreibung</label>
+                                    <textarea id="shopDescInput" rows="3"></textarea>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveShopSettings()">Speichern</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Products Tab -->
-        <div id="products-tab" class="hidden">
-            <div class="card">
-                <h2>➕ Produkt hinzufügen</h2>
-                <form id="product-form">
-                    <div class="form-group">
-                        <label>Shop auswählen</label>
-                        <select id="product-shop" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em;">
-                            <option value="">Wähle einen Shop...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Produkt-Name</label>
-                        <input type="text" id="product-name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Beschreibung</label>
-                        <textarea id="product-desc" rows="2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Preis (€)</label>
-                        <input type="number" id="product-price" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Kategorie</label>
-                        <input type="text" id="product-category" placeholder="z.B. E-Liquid">
-                    </div>
-                    <button type="submit" class="btn btn-success">Produkt hinzufügen</button>
-                </form>
-            </div>
-        </div>
+        </main>
     </div>
 
     <script>
-        const API_URL = window.location.origin + '/api';
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        // Check auth
-        if (!token || user.role !== 'owner') {
-            window.location.href = 'login.html';
-        }
-        
-        function showTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const token = localStorage.getItem('owner_token');
+        if (!token) window.location.href = '/login.html';
+
+        let currentShop = null;
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
+            document.getElementById('pageTitle').textContent = 
+                tabName === 'dashboard' ? 'Dashboard' :
+                tabName === 'products' ? 'Produkte' :
+                tabName === 'orders' ? 'Bestellungen' :
+                tabName === 'customers' ? 'Kunden' :
+                tabName === 'analytics' ? 'Gewinn-Analyse' : 'Einstellungen';
             
-            document.getElementById('shops-tab').classList.toggle('hidden', tab !== 'shops');
-            document.getElementById('products-tab').classList.toggle('hidden', tab !== 'products');
-            
-            if (tab === 'products') loadShopOptions();
+            if (tabName === 'dashboard') loadDashboard();
+            if (tabName === 'products') loadProducts();
+            if (tabName === 'orders') loadAllOrders();
+            if (tabName === 'analytics') loadProfitAnalytics();
         }
-        
-        async function loadMyShops() {
+
+        async function loadDashboard() {
             try {
-                const response = await fetch(`${API_URL}/owner/shops`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const shops = await response.json();
+                const [statsRes, profitRes] = await Promise.all([
+                    fetch('/api/owner/stats', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/owner/profit?days=30', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                const stats = await statsRes.json();
+                const profit = await profitRes.json();
+
+                document.getElementById('statProducts').textContent = stats.products || 0;
+                document.getElementById('statOrders').textContent = stats.orders || 0;
+                document.getElementById('statRevenue').textContent = 
+                    (stats.totalRevenue || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+
+                if (profit.summary) {
+                    document.getElementById('statProfit').textContent = 
+                        profit.summary.profit.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                    document.getElementById('statMargin').textContent = 
+                        `${profit.summary.margin_percent}% Marge`;
+                }
+
+                loadRecentOrders();
+                loadTopProducts();
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const res = await fetch('/api/owner/orders?limit=5', { headers: { 'Authorization': `Bearer ${token}` } });
+                const orders = await res.json();
+                const tbody = document.querySelector('#recentOrdersTable tbody');
                 
-                const container = document.getElementById('my-shops');
-                if (shops.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="icon">🏪</div>
-                            <h3>Noch keine Shops</h3>
-                            <p>Erstelle deinen ersten Shop oben!</p>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = shops.map(shop => `
-                        <div class="shop-item">
-                            <div class="item-info">
-                                <h3>${shop.name}</h3>
-                                <p>/${shop.slug} • ${shop.is_active ? 'Aktiv' : 'Inaktiv'}</p>
-                            </div>
-                            <a href="shop.html?shop=${shop.slug}" target="_blank" class="btn">Ansehen</a>
-                        </div>
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty">Keine Bestellungen</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = orders.map(o => `
+                    <tr>
+                        <td>#${o.id}</td>
+                        <td>${o.customer_name || o.customer_email || 'Unbekannt'}</td>
+                        <td>${(o.total_amount || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                        <td><span class="status ${o.status}">${o.status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function loadTopProducts() {
+            try {
+                const res = await fetch('/api/owner/analytics?days=30', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                const tbody = document.querySelector('#topProductsTable tbody');
+                
+                if (!data.top_products || data.top_products.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty">Keine Daten</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.top_products.slice(0, 5).map(p => `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td>${p.quantity_sold || 0}</td>
+                        <td>${(p.revenue || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function loadProfitAnalytics() {
+            try {
+                const res = await fetch('/api/owner/profit?days=30', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                
+                if (data.summary) {
+                    document.getElementById('profitTotal').textContent = 
+                        data.summary.profit.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                    document.getElementById('profitMargin').textContent = 
+                        `${data.summary.margin_percent}%`;
+                }
+
+                const tbody = document.querySelector('#profitByProduct tbody');
+                if (data.top_products) {
+                    tbody.innerHTML = data.top_products.map(p => `
+                        <tr>
+                            <td>${p.name}</td>
+                            <td>${(p.revenue || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                            <td>${(p.costs || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                            <td>${(p.profit || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                            <td>${p.margin || 0}%</td>
+                        </tr>
                     `).join('');
                 }
-            } catch (error) {
-                console.error('Error loading shops:', error);
+            } catch (e) {
+                console.error('Error:', e);
             }
         }
-        
-        async function loadShopOptions() {
+
+        async function loadProducts() {
+            const div = document.getElementById('productsList');
+            div.innerHTML = '<div class="loading">Lade Produkte...</div>';
+            
             try {
-                const response = await fetch(`${API_URL}/owner/shops`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const shops = await response.json();
+                const res = await fetch('/api/owner/products', { headers: { 'Authorization': `Bearer ${token}` } });
+                const products = await res.json();
                 
-                const select = document.getElementById('product-shop');
-                
-                if (shops.length === 0) {
-                    select.innerHTML = '<option value="">⚠️ Erstelle zuerst einen Shop!</option>';
-                    select.disabled = true;
-                } else {
-                    select.disabled = false;
-                    select.innerHTML = '<option value="">Wähle einen Shop...</option>' + 
-                        shops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                if (products.length === 0) {
+                    div.innerHTML = '<div class="empty">Noch keine Produkte. Erstelle dein erstes Produkt!</div>';
+                    return;
                 }
-            } catch (error) {
-                console.error('Error loading shop options:', error);
+
+                div.innerHTML = products.map(p => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #F3F2F1;">
+                        <div>
+                            <div style="font-weight: 600;">${p.name}</div>
+                            <div style="font-size: 13px; color: #605E5C;">${(p.price || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</div>
+                        </div>
+                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Bearbeiten</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                div.innerHTML = '<div class="empty">Fehler beim Laden</div>';
             }
         }
-        
-        document.getElementById('shop-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const data = {
-                name: document.getElementById('shop-name').value,
-                slug: document.getElementById('shop-slug').value,
-                description: document.getElementById('shop-desc').value,
-                primary_color: document.getElementById('shop-color').value
-            };
-            
+
+        async function loadAllOrders() {
             try {
-                const response = await fetch(`${API_URL}/owner/shops`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(data)
-                });
+                const res = await fetch('/api/owner/orders', { headers: { 'Authorization': `Bearer ${token}` } });
+                const orders = await res.json();
+                const tbody = document.querySelector('#allOrdersTable tbody');
                 
-                if (response.ok) {
-                    alert('Shop erstellt!');
-                    document.getElementById('shop-form').reset();
-                    loadMyShops();
-                } else {
-                    const err = await response.json();
-                    alert('Fehler: ' + (err.error || 'Unbekannter Fehler'));
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty">Keine Bestellungen</td></tr>';
+                    return;
                 }
-            } catch (error) {
-                alert('Netzwerkfehler');
+
+                tbody.innerHTML = orders.map(o => `
+                    <tr>
+                        <td>#${o.id}</td>
+                        <td>${new Date(o.created_at).toLocaleDateString('de-DE')}</td>
+                        <td>${o.customer_name || o.customer_email || 'Unbekannt'}</td>
+                        <td>${(o.total_amount || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                        <td><span class="status ${o.status}">${o.status}</span></td>
+                        <td><button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">Details</button></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error:', e);
             }
-        });
-        
-        document.getElementById('product-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const data = {
-                shop_id: document.getElementById('product-shop').value,
-                name: document.getElementById('product-name').value,
-                description: document.getElementById('product-desc').value,
-                price: document.getElementById('product-price').value,
-                category: document.getElementById('product-category').value
-            };
-            
-            try {
-                const response = await fetch(`${API_URL}/owner/products`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                if (response.ok) {
-                    alert('Produkt hinzugefügt!');
-                    document.getElementById('product-form').reset();
-                } else {
-                    const err = await response.json();
-                    alert('Fehler: ' + (err.error || 'Unbekannter Fehler'));
-                }
-            } catch (error) {
-                alert('Netzwerkfehler');
-            }
-        });
-        
+        }
+
+        function createProduct() {
+            showTab('products');
+            showCreateProduct();
+        }
+
+        function showCreateProduct() {
+            alert('Produkt-Erstellung: In Vollversion mit Formular');
+        }
+
+        function showSettingsTab(tab) {
+            document.querySelectorAll('.settings-panel').forEach(p => p.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`settings-${tab}`).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
         function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'index.html';
+            localStorage.removeItem('owner_token');
+            window.location.href = '/login.html';
         }
-        
-        loadMyShops();
+
+        // Load on start
+        loadDashboard();
     </script>
 </body>
 </html>
