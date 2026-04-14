@@ -3,133 +3,693 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sellityet - Entdecke Shops</title>
+    <title>Sellityet - Deine Produkte. Dein Shop. Deine Marke.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --text-muted: #A19F9D;
+            --accent: #00B294;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--surface);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+
+        /* Header */
+        .site-header {
+            background: var(--surface);
+            border-bottom: 1px solid #E1DFDD;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            background: rgba(255,255,255,0.95);
         }
-        .header h1 { color: #333; font-size: 2.5em; margin-bottom: 10px; }
-        .header p { color: #666; font-size: 1.2em; }
-        .nav-buttons {
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 32px;
+            height: 64px;
             display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
         }
-        .btn {
-            padding: 12px 30px;
-            border-radius: 25px;
-            border: none;
-            cursor: pointer;
-            font-size: 1em;
-            transition: transform 0.2s;
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             text-decoration: none;
-            display: inline-block;
         }
-        .btn:hover { transform: translateY(-2px); }
-        .btn-primary { background: #FF6B6B; color: white; }
-        .btn-secondary { background: white; color: #667eea; border: 2px solid #667eea; }
-        .btn-admin { background: #333; color: white; }
-        
-        .shops-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 25px;
-        }
-        .shop-card {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-            cursor: pointer;
-        }
-        .shop-card:hover { transform: translateY(-5px); }
-        .shop-header {
-            height: 150px;
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3em;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
         }
-        .shop-body { padding: 25px; }
-        .shop-body h3 { color: #333; margin-bottom: 10px; font-size: 1.4em; }
-        .shop-body p { color: #666; line-height: 1.6; }
-        .loading {
+
+        .brand-text {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            background: rgba(0,120,212,0.08);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid #E1DFDD;
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-alt);
+            border-color: var(--text-muted);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(180deg, #F8F9FA 0%, #FFFFFF 100%);
+            padding: 80px 32px;
+            text-align: center;
+            border-bottom: 1px solid #E1DFDD;
+        }
+
+        .hero-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(0,120,212,0.1);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 20px;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 22px;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin: 0 auto 40px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-large {
+            padding: 16px 32px;
+            font-size: 16px;
+            border-radius: var(--radius-md);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-header h2 {
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid #E1DFDD;
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            margin-bottom: 24px;
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Shops Section */
+        .shops-section {
+            background: var(--surface-alt);
+            padding: 80px 32px;
+            border-top: 1px solid #E1DFDD;
+        }
+
+        .shops-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .shop-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid #E1DFDD;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .shop-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .shop-banner {
+            height: 120px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+        }
+
+        .shop-banner::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.3));
+        }
+
+        .shop-logo {
+            width: 72px;
+            height: 72px;
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: -36px auto 0;
+            position: relative;
+            z-index: 1;
+            border: 4px solid var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .shop-info {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .shop-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .shop-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .shop-stats {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            padding: 16px 20px;
+            border-top: 1px solid #E1DFDD;
+            background: var(--surface-alt);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 100px 32px;
             text-align: center;
             color: white;
-            font-size: 1.2em;
-            padding: 50px;
+        }
+
+        .cta-section h2 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-white {
+            background: white;
+            color: var(--primary);
+            padding: 16px 40px;
+            font-size: 16px;
+            border-radius: var(--radius-md);
+        }
+
+        .btn-white:hover {
+            background: #F8F9FA;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        /* Footer */
+        .site-footer {
+            background: #1A1A1A;
+            color: white;
+            padding: 60px 32px 32px;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-col h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-col a {
+            display: block;
+            color: #A0A0A0;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 0;
+            transition: color 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #333;
+            padding-top: 24px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 20px;
+            }
+
+            .nav-actions {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero-subtitle {
+                font-size: 18px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .shop-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-section h2 {
+                font-size: 28px;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🛍️ Sellityet</h1>
-            <p>Entdecke einzigartige Shops und Produkte</p>
-            <div class="nav-buttons">
-                <a href="register.html" class="btn btn-primary">Registrieren</a>
-                <a href="/login.html" class="btn btn-secondary">Shop Owner Login</a>
-                <!-- Master Admin: /admin-login.html (not publicly linked) -->
+    <!-- Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/" class="brand">
+                <div class="brand-logo">S</div>
+                <span class="brand-text">Sellityet</span>
+            </a>
+            <nav class="nav-actions">
+                <a href="#features" class="nav-link">Funktionen</a>
+                <a href="#shops" class="nav-link">Shops</a>
+                <a href="/owner.html" class="nav-link">Dashboard</a>
+                <a href="/login.html" class="btn btn-secondary">Anmelden</a>
+                <a href="/register.html" class="btn btn-primary">Shop eröffnen</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-badge">
+                <span>Neu</span>
+                <span>Jetzt mit Gewinn-Analyse</span>
+            </div>
+            <h1>Deine Produkte.<br>Dein <span>Shop.</span><br>Deine Marke.</h1>
+            <p class="hero-subtitle">
+                Erstelle in Minuten deinen eigenen Online-Shop. Professionell, 
+                skalierbar und mit allem, was du zum Verkaufen brauchst.
+            </p>
+            <div class="hero-actions">
+                <a href="/register.html" class="btn btn-primary btn-large">Kostenlos starten</a>
+                <a href="#shops" class="btn btn-secondary btn-large">Shops entdecken</a>
             </div>
         </div>
-        
-        <div id="shops-container" class="shops-grid">
-            <div class="loading">Lade Shops...</div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <h2>Alles, was du brauchst</h2>
+            <p>Professionelle Tools für deinen Online-Handel</p>
         </div>
-    </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🛍️</div>
+                <h3>Eigener Shop</h3>
+                <p>Deine eigene Domain, dein Branding, deine Regeln. Vollständige Kontrolle über deinen Onlineshop.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Gewinn-Analyse</h3>
+                <p>Behalte deine Einnahmen, Ausgaben und Margen im Blick. Mit Einkaufspreis-Tracking.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3>Modernes Design</h3>
+                <p>Hochwertige, responsive Themes die auf allen Geräten perfekt aussehen.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💳</div>
+                <h3>Zahlungen</h3>
+                <p>7 Zahlungsmethoden inklusive PayPal, Kreditkarte, Banküberweisung und mehr.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📦</div>
+                <h3>Lagerverwaltung</h3>
+                <p>Produktvarianten, Mindestbestand, automatische Benachrichtigungen.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📧</div>
+                <h3>E-Mail Marketing</h3>
+                <p>Automatische Bestellbestätigungen und Kundenansprache.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shops -->
+    <section class="shops-section" id="shops">
+        <div class="shops-container">
+            <div class="section-header">
+                <h2>Entdecke Shops</h2>
+                <p>Finde einzigartige Produkte von unabhängigen Verkäufern</p>
+            </div>
+            <div class="shop-grid" id="shopGrid">
+                <div class="loading">Shops werden geladen...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2>Bereit, zu starten?</h2>
+        <p>Erstelle deinen Shop in weniger als 5 Minuten. Keine Kreditkarte erforderlich.</p>
+        <a href="/register.html" class="btn btn-white">Jetzt Shop eröffnen</a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>Plattform</h4>
+                    <a href="#features">Funktionen</a>
+                    <a href="#shops">Shops</a>
+                    <a href="/register.html">Preise</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Für Shop-Betreiber</h4>
+                    <a href="/owner.html">Dashboard</a>
+                    <a href="/login.html">Anmelden</a>
+                    <a href="/register.html">Registrieren</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <a href="#">Hilfe-Center</a>
+                    <a href="#">Kontakt</a>
+                    <a href="#">Status</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Rechtliches</h4>
+                    <a href="#">Datenschutz</a>
+                    <a href="#">AGB</a>
+                    <a href="#">Impressum</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sellityet. Alle Rechte vorbehalten.</p>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        const API_URL = window.location.origin + '/api';
-        
+        // Lade Shops
         async function loadShops() {
             try {
-                const response = await fetch(`${API_URL}/shops`);
+                const response = await fetch('/api/shops/public');
                 const shops = await response.json();
                 
-                const container = document.getElementById('shops-container');
+                const grid = document.getElementById('shopGrid');
                 
                 if (shops.length === 0) {
-                    container.innerHTML = '<div class="loading">Noch keine Shops vorhanden. Werde der Erste!</div>';
+                    grid.innerHTML = '<p style="text-align:center;color:#666;">Noch keine Shops vorhanden. Sei der Erste!</p>';
                     return;
                 }
                 
-                container.innerHTML = shops.map(shop => `
-                    <div class="shop-card" onclick="viewShop('${shop.slug}')">
-                        <div class="shop-header" style="background: ${shop.primary_color || '#FF6B6B'};">
-                            🏪
+                grid.innerHTML = shops.slice(0, 6).map(shop => `
+                    <a href="/${shop.slug || shop.id}" class="shop-card">
+                        <div class="shop-banner"></div>
+                        <div class="shop-logo">${(shop.name || 'S').charAt(0)}</div>
+                        <div class="shop-info">
+                            <div class="shop-name">${shop.name || 'Unnamed Shop'}</div>
+                            <div class="shop-meta">${shop.description || 'Entdecke Produkte'}</div>
                         </div>
-                        <div class="shop-body">
-                            <h3>${shop.name}</h3>
-                            <p>${shop.description || 'Keine Beschreibung'}</p>
+                        <div class="shop-stats">
+                            <div class="stat">
+                                <div class="stat-value">${shop.product_count || 0}</div>
+                                <div class="stat-label">Produkte</div>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 `).join('');
             } catch (error) {
                 console.error('Error loading shops:', error);
-                document.getElementById('shops-container').innerHTML = 
-                    '<div class="loading">Fehler beim Laden der Shops</div>';
+                document.getElementById('shopGrid').innerHTML = 
+                    '<p style="text-align:center;color:#666;">Shops konnten nicht geladen werden</p>';
             }
         }
-        
-        function viewShop(slug) {
-            window.location.href = `shop.html?shop=${slug}`;
-        }
-        
+
         loadShops();
     </script>
 </body>

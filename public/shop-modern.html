@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0078D4;
+            --surface: #FFFFFF;
+            --surface-alt: #F8F9FA;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        .shop-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .shop-logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 20px;
+        }
+
+        .shop-name {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .shop-description {
+            font-size: 16px;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 280px;
+            padding: 12px 16px;
+            border: 1px solid #E1DFDD;
+            border-radius: var(--radius);
+            font-size: 14px;
+        }
+
+        .category-select {
+            padding: 12px 16px;
+            border: 1px solid #E1DFDD;
+            border-radius: var(--radius);
+            font-size: 14px;
+            background: white;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .product-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid #E1DFDD;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+
+        .product-image {
+            height: 200px;
+            background: var(--surface-alt);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .product-price {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #106EBE;
+        }
+
+        .cart-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            text-decoration: none;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 24px;
+            height: 24px;
+            background: #D13438;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 640px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+            
+            .shop-name {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="shop-header">
+        <div class="shop-logo" id="shopLogo">🏪</div>
+        <h1 class="shop-name" id="shopName">Lädt...</h1>
+        <p class="shop-description" id="shopDescription">...</p>
+    </header>
+
+    <div class="container">
+        <div class="filters">
+            <input type="text" class="search-input" id="searchInput" placeholder="Produkte suchen...">
+            <select class="category-select" id="categorySelect">
+                <option value="">Alle Kategorien</option>
+            </select>
+        </div>
+
+        <div class="product-grid" id="productGrid">
+            <div class="loading">Produkte werden geladen...</div>
+        </div>
+    </div>
+
+    <a href="/cart.html" class="cart-float">
+        🛒
+        <span class="cart-count" id="cartCount" style="display: none;">0</span>
+    </a>
+
+    <script>
+        const API_URL = '/api';
+        let shopId = null;
+        let products = [];
+        let categories = [];
+
+        async function init() {
+            // Get shop from subdomain or path
+            const hostname = window.location.hostname;
+            const pathParts = window.location.pathname.split('/');
+            
+            // Try to get shop slug from subdomain (shopname.sellityet.store)
+            // Or from path (/shopname)
+            let shopSlug = pathParts[1] || hostname.split('.')[0];
+            
+            if (shopSlug && shopSlug !== '' && shopSlug !== 'shop-modern.html') {
+                await loadShop(shopSlug);
+            } else {
+                // Demo mode - load first available shop
+                await loadDemoShop();
+            }
+        }
+
+        async function loadShop(slug) {
+            try {
+                const res = await fetch(`${API_URL}/shops/${slug}`);
+                if (!res.ok) throw new Error('Shop not found');
+                
+                const shop = await res.json();
+                shopId = shop.id;
+                
+                document.getElementById('shopName').textContent = shop.name || 'Unnamed Shop';
+                document.getElementById('shopDescription').textContent = shop.description || '';
+                document.getElementById('shopLogo').textContent = (shop.name || 'S').charAt(0);
+                
+                await Promise.all([
+                    loadProducts(shopId),
+                    loadCategories(shopId)
+                ]);
+            } catch (error) {
+                console.error('Error loading shop:', error);
+                document.getElementById('shopName').textContent = 'Shop nicht gefunden';
+            }
+        }
+
+        async function loadDemoShop() {
+            try {
+                const res = await fetch(`${API_URL}/shops`);
+                const shops = await res.json();
+                
+                if (shops.length > 0) {
+                    await loadShop(shops[0].slug || shops[0].id);
+                } else {
+                    document.getElementById('productGrid').innerHTML = 
+                        '<div class="empty">Keine Shops verfügbar</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadProducts(shopId) {
+            try {
+                const res = await fetch(`${API_URL}/shops/${shopId}/products`);
+                products = await res.json();
+                renderProducts(products);
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        async function loadCategories(shopId) {
+            try {
+                const res = await fetch(`${API_URL}/shops/${shopId}/categories`);
+                categories = await res.json();
+                
+                const select = document.getElementById('categorySelect');
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        function renderProducts(productsToRender) {
+            const grid = document.getElementById('productGrid');
+            
+            if (productsToRender.length === 0) {
+                grid.innerHTML = '<div class="empty">Keine Produkte gefunden</div>';
+                return;
+            }
+            
+            grid.innerHTML = productsToRender.map(product => `
+                <div class="product-card" onclick="viewProduct(${product.id})">
+                    <div class="product-image">${product.image_urls?.[0] ? '📷' : '📦'}</div>
+                    <div class="product-info">
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-price">${(product.price || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</div>
+                        <button class="btn" onclick="event.stopPropagation(); addToCart(${product.id})">
+                            In den Warenkorb
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewProduct(productId) {
+            window.location.href = `/product.html?id=${productId}&shop=${shopId}`;
+        }
+
+        function addToCart(productId) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const existing = cart.find(item => item.productId === productId);
+            
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({ productId, quantity: 1, shopId });
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            
+            // Show feedback
+            const btn = event.target;
+            btn.textContent = '✓ Hinzugefügt';
+            setTimeout(() => btn.textContent = 'In den Warenkorb', 1500);
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const badge = document.getElementById('cartCount');
+            
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Search and filter
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(term) ||
+                (p.description || '').toLowerCase().includes(term)
+            );
+            renderProducts(filtered);
+        });
+
+        document.getElementById('categorySelect').addEventListener('change', (e) => {
+            const categoryId = e.target.value;
+            if (!categoryId) {
+                renderProducts(products);
+            } else {
+                const filtered = products.filter(p => p.category_id == categoryId);
+                renderProducts(filtered);
+            }
+        });
+
+        // Init
+        init();
+        updateCartCount();
+    </script>
+</body>
+</html>

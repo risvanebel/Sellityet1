@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --sidebar: #252525;
+            --sidebar-hover: #333333;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --text-muted: #A19F9D;
+            --accent: #00B294;
+            --danger: #D13438;
+            --warning: #FFB900;
+            --success: #107C10;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--surface-alt);
+            color: var(--text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid #333;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .brand-text {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .shop-info {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--sidebar-hover);
+            border-radius: var(--radius-md);
+        }
+
+        .shop-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .shop-url {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .nav-section {
+            padding: 16px 0;
+        }
+
+        .nav-title {
+            padding: 8px 24px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: #CCC;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--sidebar-hover);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--sidebar-hover);
+            color: white;
+            border-left-color: var(--primary);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 24px;
+            border-top: 1px solid #333;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--radius-md);
+            transition: background 0.2s;
+        }
+
+        .user-menu:hover {
+            background: var(--sidebar-hover);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: var(--surface);
+            border-bottom: 1px solid #E1DFDD;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding: 10px 16px 10px 40px;
+            border: 1px solid #E1DFDD;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            width: 280px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid #E1DFDD;
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-alt);
+        }
+
+        /* Content Area */
+        .content-area {
+            padding: 32px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            border: 1px solid #E1DFDD;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-icon.blue { background: rgba(0,120,212,0.1); }
+        .stat-icon.green { background: rgba(16,124,16,0.1); }
+        .stat-icon.orange { background: rgba(255,185,0,0.1); }
+        .stat-icon.red { background: rgba(209,52,56,0.1); }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .stat-change.positive { color: var(--success); }
+        .stat-change.negative { color: var(--danger); }
+
+        /* Content Cards */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid #E1DFDD;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #E1DFDD;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #E1DFDD;
+        }
+
+        .data-table td {
+            padding: 16px;
+            border-bottom: 1px solid #F3F2F1;
+            font-size: 14px;
+        }
+
+        .data-table tr:hover td {
+            background: var(--surface-alt);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.pending {
+            background: #FFF8E6;
+            color: #996B00;
+        }
+
+        .status-badge.paid {
+            background: #E6F4EA;
+            color: #137333;
+        }
+
+        .status-badge.shipped {
+            background: #E8F0FE;
+            color: #1967D2;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #E1DFDD;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mobile */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content-area {
+                padding: 20px;
+            }
+
+            .top-bar {
+                padding: 12px 20px;
+            }
+
+            .search-box input {
+                width: 160px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="brand">
+                    <div class="brand-logo">S</div>
+                    <span class="brand-text">Sellityet</span>
+                </a>
+                <div class="shop-info">
+                    <div class="shop-name" id="shopName">Lädt...</div>
+                    <div class="shop-url" id="shopUrl">...</div>
+                </div>
+            </div>
+            
+            <nav class="nav-section">
+                <div class="nav-title">Hauptmenü</div>
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">📊</span>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item" data-page="products">
+                    <span class="nav-icon">🛍️</span>
+                    Produkte
+                </a>
+                <a href="#" class="nav-item" data-page="orders">
+                    <span class="nav-icon">📦</span>
+                    Bestellungen
+                </a>
+                <a href="#" class="nav-item" data-page="customers">
+                    <span class="nav-icon">👥</span>
+                    Kunden
+                </a>
+                
+                <div class="nav-title">Verwaltung</div>
+                <a href="#" class="nav-item" data-page="analytics">
+                    <span class="nav-icon">📈</span>
+                    Gewinn-Analyse
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <span class="nav-icon">⚙️</span>
+                    Einstellungen
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-menu" onclick="logout()">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role">Abmelden</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <h1 class="page-title">Dashboard</h1>
+                <div class="top-actions">
+                    <div class="search-box">
+                        <input type="text" placeholder="Suchen...">
+                    </div>
+                    <a href="/owner.html" class="btn btn-secondary">Alt-Version</a>
+                    <button class="btn btn-primary" onclick="createProduct()">
+                        <span>+</span> Neues Produkt
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="content-area">
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Umsatz (30 Tage)</span>
+                            <div class="stat-icon blue">💰</div>
+                        </div>
+                        <div class="stat-value" id="statRevenue">0,00 €</div>
+                        <div class="stat-change positive">+12% zum Vormonat</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Gewinn (30 Tage)</span>
+                            <div class="stat-icon green">📈</div>
+                        </div>
+                        <div class="stat-value" id="statProfit">0,00 €</div>
+                        <div class="stat-change positive" id="statMargin">0% Marge</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Bestellungen</span>
+                            <div class="stat-icon orange">📦</div>
+                        </div>
+                        <div class="stat-value" id="statOrders">0</div>
+                        <div class="stat-change">Dieser Monat</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Produkte</span>
+                            <div class="stat-icon red">🛍️</div>
+                        </div>
+                        <div class="stat-value" id="statProducts">0</div>
+                        <div class="stat-change" id="statLowStock">0 unter Mindestbestand</div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="content-grid">
+                    <!-- Recent Orders -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Neueste Bestellungen</h3>
+                            <a href="#" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Alle anzeigen</a>
+                        </div>
+                        <div class="card-body">
+                            <table class="data-table" id="ordersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Bestellung</th>
+                                        <th>Kunde</th>
+                                        <th>Betrag</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" class="empty-state">
+                                            <div class="loading-spinner" style="margin: 0 auto;"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Top Products -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Top Produkte</h3>
+                            <a href="#" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Alle Produkte</a>
+                        </div>
+                        <div class="card-body">
+                            <table class="data-table" id="productsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Produkt</th>
+                                        <th>Verkäufe</th>
+                                        <th>Gewinn</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="empty-state">
+                                            <div class="loading-spinner" style="margin: 0 auto;"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Auth Check
+        const token = localStorage.getItem('owner_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        // Load Dashboard Data
+        async function loadDashboard() {
+            try {
+                // Load stats
+                const statsRes = await fetch('/api/owner/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const stats = await statsRes.json();
+                
+                document.getElementById('statProducts').textContent = stats.products || 0;
+                document.getElementById('statOrders').textContent = stats.orders || 0;
+                document.getElementById('statRevenue').textContent = 
+                    (stats.totalRevenue || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+
+                // Load profit
+                const profitRes = await fetch('/api/owner/profit?days=30', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const profit = await profitRes.json();
+                
+                if (profit.summary) {
+                    document.getElementById('statProfit').textContent = 
+                        profit.summary.profit.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                    document.getElementById('statMargin').textContent = 
+                        `${profit.summary.margin_percent}% Marge`;
+                }
+
+                // Load user info
+                const userRes = await fetch('/api/owner/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const user = await userRes.json();
+                
+                document.getElementById('userName').textContent = user.name || user.email || 'Shop Owner';
+                document.getElementById('userAvatar').textContent = (user.name || user.email || 'U').charAt(0).toUpperCase();
+                
+                // Load shop info
+                const shopRes = await fetch('/api/owner/shop', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const shop = await shopRes.json();
+                
+                document.getElementById('shopName').textContent = shop.name || 'Mein Shop';
+                document.getElementById('shopUrl').textContent = shop.slug || shop.id || 'shop';
+
+                // Load recent orders
+                loadRecentOrders();
+                
+                // Load top products
+                loadTopProducts();
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                if (error.message.includes('401')) {
+                    logout();
+                }
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const res = await fetch('/api/owner/orders?limit=5', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const orders = await res.json();
+                
+                const tbody = document.querySelector('#ordersTable tbody');
+                if (orders.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <div class="empty-icon">📦</div>
+                                <div class="empty-title">Noch keine Bestellungen</div>
+                                <div class="empty-text">Deine ersten Bestellungen erscheinen hier</div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = orders.map(order => `
+                    <tr>
+                        <td>#${order.id}</td>
+                        <td>${order.customer_name || order.customer_email || 'Unbekannt'}</td>
+                        <td>${(order.total_amount || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                        <td><span class="status-badge ${order.status}">${order.status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+
+        async function loadTopProducts() {
+            try {
+                const res = await fetch('/api/owner/analytics?days=30', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const tbody = document.querySelector('#productsTable tbody');
+                if (!data.top_products || data.top_products.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="empty-state">
+                                <div class="empty-icon">🛍️</div>
+                                <div class="empty-title">Noch keine Verkäufe</div>
+                                <div class="empty-text">Deine meistverkauften Produkte erscheinen hier</div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = data.top_products.slice(0, 5).map(product => `
+                    <tr>
+                        <td>${product.name}</td>
+                        <td>${product.quantity_sold || 0}</td>
+                        <td>${(product.revenue || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        function createProduct() {
+            window.location.href = '/owner.html#products';
+        }
+
+        function logout() {
+            localStorage.removeItem('owner_token');
+            window.location.href = '/login.html';
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = item.dataset.page;
+                
+                if (page === 'products' || page === 'orders' || page === 'customers' || page === 'settings' || page === 'analytics') {
+                    window.location.href = `/owner.html#${page}`;
+                }
+            });
+        });
+
+        // Load on startup
+        loadDashboard();
+    </script>
+</body>
+</html>
