@@ -753,6 +753,123 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
     }
 });
 
+// ========== PROFIT ANALYTICS ==========
+/**
+ * @swagger
+ * /api/owner/profit:
+ *   get:
+ *     summary: Gewinn-Analyse für Zeitraum
+ *     description: Berechnet Gewinn basierend auf Einkaufspreisen und Verkäufen
+ *     tags: [Analytics]
+ */
+app.get('/api/owner/profit', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { days = 30 } = req.query;
+        const period = parseInt(days) || 30;
+
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE owner_id = $1 LIMIT 1',
+            [req.user.id]
+        );
+
+        if (shopRows.length === 0) {
+            return res.json({ profit: 0, revenue: 0, costs: 0, margin_percent: 0 });
+        }
+
+        const shopId = shopRows[0].id;
+
+        // Berechne Gewinn basierend auf Bestellungen und Produkt-Einkaufspreisen
+        const { rows: profitData } = await pool.query(
+            `
+            SELECT 
+                SUM(o.total_amount) as total_revenue,
+                SUM(
+                    (SELECT SUM(oi.quantity * COALESCE(p.cost_price, 0))
+                     FROM order_items oi
+                     JOIN products p ON oi.product_id = p.id
+                     WHERE oi.order_id = o.id)
+                ) as total_costs,
+                COUNT(*) as order_count
+            FROM orders o
+            WHERE o.shop_id = $1 
+              AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND o.status NOT IN ('cancelled', 'refunded')
+            `,
+            [shopId]
+        );
+
+        const revenue = parseFloat(profitData[0].total_revenue || 0);
+        const costs = parseFloat(profitData[0].total_costs || 0);
+        const profit = revenue - costs;
+        const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(2) : 0;
+
+        // Top profit products
+        const { rows: topProfitProducts } = await pool.query(
+            `
+            SELECT 
+                p.name,
+                SUM(oi.quantity) as units_sold,
+                SUM(oi.quantity * oi.unit_price) as revenue,
+                SUM(oi.quantity * COALESCE(p.cost_price, 0)) as costs,
+                SUM(oi.quantity * (oi.unit_price - COALESCE(p.cost_price, 0))) as profit
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            JOIN orders o ON oi.order_id = o.id
+            WHERE p.shop_id = $1 
+              AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND o.status NOT IN ('cancelled', 'refunded')
+            GROUP BY p.id, p.name
+            ORDER BY profit DESC
+            LIMIT 10
+            `,
+            [shopId]
+        );
+
+        // Daily profit trend
+        const { rows: dailyProfit } = await pool.query(
+            `
+            SELECT 
+                DATE(o.created_at) as date,
+                SUM(o.total_amount) as revenue,
+                SUM(
+                    (SELECT SUM(oi.quantity * COALESCE(p.cost_price, 0))
+                     FROM order_items oi
+                     JOIN products p ON oi.product_id = p.id
+                     WHERE oi.order_id = o.id)
+                ) as costs
+            FROM orders o
+            WHERE o.shop_id = $1 
+              AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
+              AND o.status NOT IN ('cancelled', 'refunded')
+            GROUP BY DATE(o.created_at)
+            ORDER BY date
+            `,
+            [shopId]
+        );
+
+        res.json({
+            period: `${period} days`,
+            summary: {
+                revenue: revenue,
+                costs: costs,
+                profit: profit,
+                margin_percent: parseFloat(margin),
+                order_count: parseInt(profitData[0].order_count || 0)
+            },
+            top_products: topProfitProducts,
+            daily_trend: dailyProfit.map((d) => ({
+                date: d.date,
+                revenue: parseFloat(d.revenue || 0),
+                costs: parseFloat(d.costs || 0),
+                profit: parseFloat(d.revenue || 0) - parseFloat(d.costs || 0)
+            }))
+        });
+    } catch (error) {
+        console.error('Get profit analytics error:', error);
+        res.status(500).json({ error: 'Failed to fetch profit data: ' + error.message });
+    }
+});
+
 // Get owner categories
 app.get(
     '/api/owner/categories',
@@ -894,6 +1011,25 @@ app.get('/api/owner/customers', authMiddleware, requireRole('owner', 'admin'), a
     } catch (error) {
         console.error('Get customers error:', error);
         res.status(500).json({ error: 'Failed to fetch customers' });
+    }
+});
+
+// Get owner profile
+app.get('/api/owner/profile', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, name, email, role, created_at FROM users WHERE id = $1',
+            [req.user.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Get profile error:', error);
+        res.status(500).json({ error: 'Failed to fetch profile' });
     }
 });
 
@@ -1883,6 +2019,7 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
         name,
         description,
         price,
+        cost_price,
         category_id,
         sku,
         status,
@@ -1916,11 +2053,21 @@ app.post('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), a
             : null;
         const { rows: productRows } = await client.query(
             `
-            INSERT INTO products (shop_id, category_id, name, description, price, sku, status, image_urls)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO products (shop_id, category_id, name, description, price, cost_price, sku, status, image_urls)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
         `,
-            [shop_id, category_id, name, description, price, sku, status || 'draft', pgImageUrls]
+            [
+                shop_id,
+                category_id,
+                name,
+                description,
+                price,
+                cost_price || 0,
+                sku,
+                status || 'draft',
+                pgImageUrls
+            ]
         );
 
         const product = productRows[0];
@@ -1955,7 +2102,8 @@ app.put(
     authMiddleware,
     requireRole('owner', 'admin'),
     async (req, res) => {
-        const { name, description, price, category_id, sku, status, image_urls } = req.body;
+        const { name, description, price, cost_price, category_id, sku, status, image_urls } =
+            req.body;
         const productId = req.params.id;
 
         try {
@@ -1964,13 +2112,14 @@ app.put(
                 'name = $1',
                 'description = $2',
                 'price = $3',
-                'category_id = $4',
-                'sku = $5',
-                'status = $6',
+                'cost_price = $4',
+                'category_id = $5',
+                'sku = $6',
+                'status = $7',
                 'updated_at = CURRENT_TIMESTAMP'
             ];
-            let params = [name, description, price, category_id, sku, status];
-            let paramIndex = 7;
+            let params = [name, description, price, cost_price || 0, category_id, sku, status];
+            let paramIndex = 8;
 
             if (image_urls !== undefined) {
                 updateFields.push(`image_urls = $${paramIndex}::text[]`);
@@ -2503,6 +2652,27 @@ app.post(
         } catch (error) {
             console.error('Add note error:', error);
             res.status(500).json({ error: 'Failed to add note' });
+        }
+    }
+);
+
+// Get shop email settings
+app.get(
+    '/api/owner/shops/email-settings',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows } = await pool.query(
+                `SELECT email_enabled, notification_email, sender_email, smtp_host, smtp_port, smtp_user 
+             FROM shops WHERE owner_id = $1 LIMIT 1`,
+                [req.user.id]
+            );
+            if (rows.length === 0) return res.status(404).json({ error: 'No shop found' });
+            res.json(rows[0]);
+        } catch (error) {
+            console.error('Get email settings error:', error);
+            res.status(500).json({ error: 'Failed to fetch email settings' });
         }
     }
 );
@@ -3543,6 +3713,26 @@ app.post('/api/shipping/calculate', async (req, res) => {
     }
 });
 
+// Get shop shipping settings
+app.get(
+    '/api/owner/shops/shipping-settings',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows } = await pool.query(
+                'SELECT free_shipping_threshold, default_shipping_method FROM shops WHERE owner_id = $1 LIMIT 1',
+                [req.user.id]
+            );
+            if (rows.length === 0) return res.status(404).json({ error: 'Shop not found' });
+            res.json(rows[0]);
+        } catch (error) {
+            console.error('Get shipping settings error:', error);
+            res.status(500).json({ error: 'Failed to fetch shipping settings' });
+        }
+    }
+);
+
 // Update shop shipping settings
 app.put(
     '/api/owner/shops/shipping-settings',
@@ -3650,6 +3840,26 @@ app.post(
     }
 );
 
+// Get shop tax settings
+app.get(
+    '/api/owner/shops/tax-settings',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows } = await pool.query(
+                'SELECT default_tax_rate, tax_included, tax_number, vat_id FROM shops WHERE owner_id = $1 LIMIT 1',
+                [req.user.id]
+            );
+            if (rows.length === 0) return res.status(404).json({ error: 'Shop not found' });
+            res.json(rows[0]);
+        } catch (error) {
+            console.error('Get tax settings error:', error);
+            res.status(500).json({ error: 'Failed to fetch tax settings' });
+        }
+    }
+);
+
 // Update shop tax settings
 app.put(
     '/api/owner/shops/tax-settings',
@@ -3683,6 +3893,28 @@ app.put(
         } catch (error) {
             console.error('Update tax settings error:', error);
             res.status(500).json({ error: 'Failed to update settings' });
+        }
+    }
+);
+
+// Get shop payment settings
+app.get(
+    '/api/owner/shops/payment-settings',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows } = await pool.query(
+                `SELECT payment_methods, stripe_public_key, paypal_client_id, paypal_mode, 
+                    bank_account_name, bank_account_iban, bank_transfer_instructions 
+             FROM shops WHERE owner_id = $1 LIMIT 1`,
+                [req.user.id]
+            );
+            if (rows.length === 0) return res.status(404).json({ error: 'Shop not found' });
+            res.json(rows[0]);
+        } catch (error) {
+            console.error('Get payment settings error:', error);
+            res.status(500).json({ error: 'Failed to fetch payment settings' });
         }
     }
 );
