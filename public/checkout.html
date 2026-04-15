@@ -448,6 +448,7 @@
             };
 
             try {
+                console.log('Sending order:', orderData);
                 const response = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -455,6 +456,7 @@
                 });
 
                 const data = await response.json();
+                console.log('Response:', data);
 
                 if (response.ok) {
                     // Clear cart
@@ -462,7 +464,8 @@
                     // Redirect to order confirmation
                     window.location.href = `/order-confirmation.html?order=${data.order_number}`;
                 } else {
-                    alert(data.error || 'Fehler bei der Bestellung');
+                    console.error('Order failed:', data);
+                    alert('Fehler: ' + (data.error || 'Bestellung konnte nicht erstellt werden'));
                 }
             } catch (error) {
                 console.error('Order error:', error);

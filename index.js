@@ -87,6 +87,32 @@ app.get('/api/fix-product-images', async (req, res) => {
     }
 });
 
+// Fix order_items table
+app.get('/api/fix-order-items', async (req, res) => {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS order_items (
+                id SERIAL PRIMARY KEY,
+                order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+                product_id INTEGER REFERENCES products(id),
+                variant_id INTEGER REFERENCES product_variants(id),
+                product_name VARCHAR(255) NOT NULL,
+                product_sku VARCHAR(100),
+                quantity INTEGER NOT NULL DEFAULT 1,
+                unit_price DECIMAL(10,2) NOT NULL,
+                variant_name VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        await pool.query(
+            `CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`
+        );
+        res.json({ success: true, message: 'Order items table created' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Fix cost_price column
 app.get('/api/fix-cost-price', async (req, res) => {
     try {
@@ -2999,8 +3025,31 @@ app.post('/api/orders', async (req, res) => {
         total_amount
     } = req.body;
 
+    // Debug logging
+    console.log('Order request received:', {
+        shop_id,
+        customer_email: customer_email?.substring(0, 5) + '...',
+        customer_name,
+        items_count: items?.length,
+        total_amount
+    });
+
     if (!shop_id || !customer_email || !items || !total_amount) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        console.error('Missing fields:', {
+            shop_id,
+            customer_email,
+            items_count: items?.length,
+            total_amount
+        });
+        return res.status(400).json({
+            error: 'Missing required fields',
+            missing: {
+                shop_id: !shop_id,
+                customer_email: !customer_email,
+                items: !items,
+                total_amount: !total_amount
+            }
+        });
     }
 
     const client = await pool.connect();
@@ -3011,31 +3060,36 @@ app.post('/api/orders', async (req, res) => {
         // Generate order number
         const orderNumber = 'ORD-' + Date.now();
 
-        // Create or update customer
-        const { rows: customerRows } = await client.query(
-            `
-            INSERT INTO customers (shop_id, email, name, phone, shipping_address, total_orders, total_spent, last_order_at)
-            VALUES ($1, $2, $3, $4, $5, 1, $6, CURRENT_TIMESTAMP)
-            ON CONFLICT (shop_id, email) DO UPDATE SET
-                name = EXCLUDED.name,
-                phone = EXCLUDED.phone,
-                shipping_address = EXCLUDED.shipping_address,
-                total_orders = customers.total_orders + 1,
-                total_spent = customers.total_spent + EXCLUDED.total_spent,
-                last_order_at = CURRENT_TIMESTAMP
-            RETURNING id
-        `,
-            [
-                shop_id,
-                customer_email,
-                customer_name,
-                customer_phone,
-                JSON.stringify(shipping_address),
-                total_amount
-            ]
-        );
-
-        const customerId = customerRows[0].id;
+        // Create or update customer (handle errors gracefully)
+        let customerId = null;
+        try {
+            const { rows: customerRows } = await client.query(
+                `
+                INSERT INTO customers (shop_id, email, name, phone, shipping_address, total_orders, total_spent, last_order_at)
+                VALUES ($1, $2, $3, $4, $5, 1, $6, CURRENT_TIMESTAMP)
+                ON CONFLICT (shop_id, email) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    phone = EXCLUDED.phone,
+                    shipping_address = EXCLUDED.shipping_address,
+                    total_orders = customers.total_orders + 1,
+                    total_spent = customers.total_spent + EXCLUDED.total_spent,
+                    last_order_at = CURRENT_TIMESTAMP
+                RETURNING id
+            `,
+                [
+                    shop_id,
+                    customer_email,
+                    customer_name,
+                    customer_phone || '',
+                    JSON.stringify(shipping_address),
+                    total_amount
+                ]
+            );
+            customerId = customerRows[0]?.id;
+        } catch (customerError) {
+            console.error('Customer creation error:', customerError);
+            // Continue without customer ID - order can still be created
+        }
 
         // Create order
         const { rows: orderRows } = await client.query(
@@ -3061,35 +3115,44 @@ app.post('/api/orders', async (req, res) => {
 
         // Create order items
         for (const item of items) {
-            await client.query(
-                `
-                INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku, 
-                                        quantity, unit_price, variant_name)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            `,
-                [
-                    order.id,
-                    item.product_id,
-                    item.variant_id || null,
-                    item.product_name || 'Product',
-                    item.sku || item.product_sku || null,
-                    item.quantity,
-                    item.unit_price || item.price || 0,
-                    item.variant_name || null
-                ]
-            );
-
-            // Update inventory
-            if (item.variant_id) {
-                await client.query('UPDATE product_variants SET stock = stock - $1 WHERE id = $2', [
-                    item.quantity,
-                    item.variant_id
-                ]);
-            } else {
+            try {
                 await client.query(
-                    'UPDATE inventory SET quantity = quantity - $1 WHERE product_id = $2',
-                    [item.quantity, item.product_id]
+                    `
+                    INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku, 
+                                            quantity, unit_price, variant_name)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `,
+                    [
+                        order.id,
+                        item.product_id,
+                        item.variant_id || null,
+                        item.product_name || 'Product',
+                        item.sku || item.product_sku || null,
+                        item.quantity,
+                        item.unit_price || item.price || 0,
+                        item.variant_name || ''
+                    ]
                 );
+            } catch (itemError) {
+                console.error('Error creating order item:', itemError);
+                throw new Error('Failed to create order item: ' + itemError.message);
+            }
+
+            // Update inventory (optional - don't fail if inventory doesn't exist)
+            try {
+                if (item.variant_id) {
+                    await client.query(
+                        'UPDATE product_variants SET stock = stock - $1 WHERE id = $2',
+                        [item.quantity, item.variant_id]
+                    );
+                } else {
+                    await client.query(
+                        'UPDATE inventory SET quantity = quantity - $1 WHERE product_id = $2',
+                        [item.quantity, item.product_id]
+                    );
+                }
+            } catch (invError) {
+                console.log('Inventory update skipped:', invError.message);
             }
         }
 
