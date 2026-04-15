@@ -479,6 +479,176 @@
             transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
+
+        /* Product Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            background: var(--surface-alt);
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--border);
+        }
+
+        .modal-image {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+        }
+
+        .modal-content {
+            padding: 24px;
+        }
+
+        .modal-category {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .modal-description {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .variant-section {
+            margin-bottom: 24px;
+        }
+
+        .variant-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .variant-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .variant-option {
+            padding: 10px 20px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .variant-option:hover {
+            border-color: var(--accent);
+        }
+
+        .variant-option.selected {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: white;
+        }
+
+        .modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .modal-price {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .btn-primary {
+            flex: 1;
+            padding: 16px 32px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -516,29 +686,8 @@
 
         <div class="products-grid" id="productsGrid"></div>
 
-        <!-- Features -->
-        <div class="features">
-            <div class="feature">
-                <div class="feature-icon">🚚</div>
-                <h3>Schneller Versand</h3>
-                <p>1-3 Werktage</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🔒</div>
-                <h3>Sicher bezahlen</h3>
-                <p>SSL-verschlüsselt</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">↩️</div>
-                <h3>30 Tage Rückgabe</h3>
-                <p>Geld-zurück-Garantie</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">💬</div>
-                <h3>Kundenservice</h3>
-                <p>Wir helfen gerne</p>
-            </div>
-        </div>
+        <!-- Features (Configurable by Shop Owner) -->
+        <div class="features" id="featuresContainer"></div>
     </main>
 
     <!-- Footer -->
@@ -554,7 +703,60 @@
         ✅ Zum Warenkorb hinzugefügt
     </div>
 
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div class="modal-image" id="modalImage">👕</div>
+            <div class="modal-content">
+                <div class="modal-category" id="modalCategory">Bekleidung</div>
+                <h2 class="modal-title" id="modalTitle">Produktname</h2>
+                <p class="modal-description" id="modalDescription">Beschreibung</p>
+                
+                <div class="variant-section" id="sizeSection">
+                    <label class="variant-label">Größe wählen:</label>
+                    <div class="variant-options" id="sizeOptions">
+                        <button class="variant-option" data-type="size" data-value="S">S</button>
+                        <button class="variant-option" data-type="size" data-value="M">M</button>
+                        <button class="variant-option" data-type="size" data-value="L">L</button>
+                        <button class="variant-option" data-type="size" data-value="XL">XL</button>
+                    </div>
+                </div>
+
+                <div class="variant-section" id="colorSection">
+                    <label class="variant-label">Farbe wählen:</label>
+                    <div class="variant-options" id="colorOptions">
+                        <button class="variant-option" data-type="color" data-value="Schwarz">Schwarz</button>
+                        <button class="variant-option" data-type="color" data-value="Weiß">Weiß</button>
+                        <button class="variant-option" data-type="color" data-value="Blau">Blau</button>
+                        <button class="variant-option" data-type="color" data-value="Grau">Grau</button>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="modal-price" id="modalPrice">29,99 €</div>
+                    <button class="btn-primary" id="modalAddBtn" onclick="addToCartFromModal()">
+                        In den Warenkorb
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Shop Owner Configuration
+        const shopConfig = {
+            features: {
+                fastShipping: true,      // 🚚 Schneller Versand
+                securePayment: true,     // 🔒 Sicher bezahlen
+                returns: false,          // ↩️ 30 Tage Rückgabe - OFF by default!
+                customerService: true    // 💬 Kundenservice
+            }
+        };
+
+        let currentProduct = null;
+        let selectedVariants = { size: null, color: null };
+
         const products = [
             {
                 id: 1,
@@ -594,10 +796,52 @@
             }
         ];
 
+        function renderFeatures() {
+            const container = document.getElementById('featuresContainer');
+            const features = [];
+            
+            if (shopConfig.features.fastShipping) {
+                features.push({
+                    icon: '🚚',
+                    title: 'Schneller Versand',
+                    desc: '1-3 Werktage'
+                });
+            }
+            if (shopConfig.features.securePayment) {
+                features.push({
+                    icon: '🔒',
+                    title: 'Sicher bezahlen',
+                    desc: 'SSL-verschlüsselt'
+                });
+            }
+            if (shopConfig.features.returns) {
+                features.push({
+                    icon: '↩️',
+                    title: '30 Tage Rückgabe',
+                    desc: 'Geld-zurück-Garantie'
+                });
+            }
+            if (shopConfig.features.customerService) {
+                features.push({
+                    icon: '💬',
+                    title: 'Kundenservice',
+                    desc: 'Wir helfen gerne'
+                });
+            }
+            
+            container.innerHTML = features.map(f => `
+                <div class="feature">
+                    <div class="feature-icon">${f.icon}</div>
+                    <h3>${f.title}</h3>
+                    <p>${f.desc}</p>
+                </div>
+            `).join('');
+        }
+
         function renderProducts() {
             const grid = document.getElementById('productsGrid');
             grid.innerHTML = products.map(p => `
-                <div class="product-card">
+                <div class="product-card" onclick="openProductModal(${p.id})">
                     <div class="product-image">
                         ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ''}
                         ${p.emoji}
@@ -610,13 +854,126 @@
                             <div class="product-price">
                                 ${p.price.toFixed(2).replace('.', ',')} <span class="currency">€</span>
                             </div>
-                            <button class="btn-add" id="btn-${p.id}" onclick="addToCart(${p.id})">
+                            <button class="btn-add" id="btn-${p.id}" onclick="event.stopPropagation(); quickAddToCart(${p.id})">
                                 <span>In den</span> 🛒
                             </button>
                         </div>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function openProductModal(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            currentProduct = product;
+            selectedVariants = { size: null, color: null };
+            
+            document.getElementById('modalImage').textContent = product.emoji;
+            document.getElementById('modalCategory').textContent = product.category;
+            document.getElementById('modalTitle').textContent = product.name;
+            document.getElementById('modalDescription').textContent = product.description;
+            document.getElementById('modalPrice').textContent = product.price.toFixed(2).replace('.', ',') + ' €';
+            
+            // Show/hide variant sections based on product
+            const hasClothingVariants = product.category === 'Bekleidung';
+            document.getElementById('sizeSection').style.display = hasClothingVariants ? 'block' : 'none';
+            document.getElementById('colorSection').style.display = hasClothingVariants ? 'block' : 'none';
+            
+            // Reset selections
+            document.querySelectorAll('.variant-option').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            updateAddButton();
+            document.getElementById('productModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('productModal').classList.remove('active');
+            document.body.style.overflow = '';
+            currentProduct = null;
+        }
+
+        // Variant selection
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('variant-option')) {
+                const type = e.target.dataset.type;
+                const value = e.target.dataset.value;
+                
+                // Remove selected from same type
+                document.querySelectorAll(`.variant-option[data-type="${type}"]`).forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                
+                // Add selected to clicked
+                e.target.classList.add('selected');
+                selectedVariants[type] = value;
+                
+                updateAddButton();
+            }
+        });
+
+        function updateAddButton() {
+            const btn = document.getElementById('modalAddBtn');
+            const hasClothingVariants = currentProduct && currentProduct.category === 'Bekleidung';
+            
+            if (hasClothingVariants) {
+                const canAdd = selectedVariants.size && selectedVariants.color;
+                btn.disabled = !canAdd;
+                btn.textContent = canAdd ? 'In den Warenkorb' : 'Bitte Varianten wählen';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'In den Warenkorb';
+            }
+        }
+
+        function addToCartFromModal() {
+            if (!currentProduct) return;
+            
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            const cartItem = {
+                ...currentProduct,
+                shop_id: 4,
+                quantity: 1,
+                variant: selectedVariants.size && selectedVariants.color 
+                    ? `${selectedVariants.size} / ${selectedVariants.color}`
+                    : ''
+            };
+            
+            cart.push(cartItem);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            
+            updateCartCount();
+            closeModal();
+            showToast(`✅ ${currentProduct.name} ${cartItem.variant ? '(' + cartItem.variant + ')' : ''} hinzugefügt`);
+        }
+
+        function quickAddToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            // For clothing, open modal to select variants
+            if (product.category === 'Bekleidung') {
+                openProductModal(productId);
+                return;
+            }
+            
+            // For accessories, add directly
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart.push({
+                ...product,
+                shop_id: 4,
+                quantity: 1,
+                variant: ''
+            });
+            localStorage.setItem('cart', JSON.stringify(cart));
+            
+            updateCartCount();
+            showToast(`✅ ${product.name} hinzugefügt`);
         }
 
         function addToCart(productId) {
@@ -663,8 +1020,16 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            renderFeatures();
             renderProducts();
             updateCartCount();
+        });
+
+        // Close modal on overlay click
+        document.getElementById('productModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
         });
     </script>
 </body>
