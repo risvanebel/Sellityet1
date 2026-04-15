@@ -45,7 +45,7 @@
 name: CI/CD Pipeline (Disabled)
 
 on:
-    workflow_dispatch:  # Nur manuell startbar
+    workflow_dispatch: # Nur manuell startbar
 
 jobs:
     test:

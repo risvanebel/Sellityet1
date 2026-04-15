@@ -531,6 +531,24 @@
                     </div>
                 </div>
 
+                <div id="customers" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Kunden</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table" id="customersTable">
+                                <thead>
+                                    <tr><th>Name</th><th>E-Mail</th><th>Bestellungen</th><th>Letzte Bestellung</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="4" class="loading">Lade...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="analytics" class="tab-content">
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -752,7 +770,13 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            
+            // Find nav-item by onclick attribute and add active class
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(`'${tabName}'`)) {
+                    item.classList.add('active');
+                }
+            });
             document.getElementById('pageTitle').textContent = 
                 tabName === 'dashboard' ? 'Dashboard' :
                 tabName === 'products' ? 'Produkte' :
@@ -763,6 +787,7 @@
             if (tabName === 'dashboard') loadDashboard();
             if (tabName === 'products') loadProducts();
             if (tabName === 'orders') loadAllOrders();
+            if (tabName === 'customers') loadCustomers();
             if (tabName === 'analytics') loadProfitAnalytics();
             if (tabName === 'settings') loadSettings();
         }
@@ -929,6 +954,30 @@
                 `).join('');
             } catch (e) {
                 console.error('Error:', e);
+            }
+        }
+
+        async function loadCustomers() {
+            try {
+                const res = await fetch('/api/owner/customers', { headers: { 'Authorization': `Bearer ${token}` } });
+                const customers = await res.json();
+                const tbody = document.querySelector('#customersTable tbody');
+                
+                if (customers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty">Keine Kunden vorhanden</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = customers.map(c => `
+                    <tr>
+                        <td>${c.name || 'Unbekannt'}</td>
+                        <td>${c.email || '-'}</td>
+                        <td>${c.order_count || 0}</td>
+                        <td>${c.last_order_date ? new Date(c.last_order_date).toLocaleDateString('de-DE') : '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading customers:', e);
             }
         }
 

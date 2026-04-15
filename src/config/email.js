@@ -2,70 +2,72 @@ const nodemailer = require('nodemailer');
 
 // Create transporter with shop-specific or default settings
 function createTransporter(shop) {
-  // Use shop-specific SMTP if available and enabled
-  if (shop?.email_enabled && shop?.smtp_host && shop?.smtp_user) {
-    return nodemailer.createTransporter({
-      host: shop.smtp_host,
-      port: shop.smtp_port || 587,
-      secure: false,
-      auth: {
-        user: shop.smtp_user,
-        pass: shop.smtp_pass
-      }
-    });
-  }
-  
-  // Fallback to environment variables
-  if (process.env.SMTP_USER) {
-    return nodemailer.createTransporter({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-  }
-  
-  return null;
+    // Use shop-specific SMTP if available and enabled
+    if (shop?.email_enabled && shop?.smtp_host && shop?.smtp_user) {
+        return nodemailer.createTransporter({
+            host: shop.smtp_host,
+            port: shop.smtp_port || 587,
+            secure: false,
+            auth: {
+                user: shop.smtp_user,
+                pass: shop.smtp_pass
+            }
+        });
+    }
+
+    // Fallback to environment variables
+    if (process.env.SMTP_USER) {
+        return nodemailer.createTransporter({
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.SMTP_PORT) || 587,
+            secure: false,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+    }
+
+    return null;
 }
 
 // Get sender email address
 function getSenderEmail(shop) {
-  if (shop?.sender_email) {
-    return shop.sender_email;
-  }
-  return process.env.SMTP_USER || 'noreply@sellityet.com';
+    if (shop?.sender_email) {
+        return shop.sender_email;
+    }
+    return process.env.SMTP_USER || 'noreply@sellityet.com';
 }
 
 // Get notification email (owner email)
 function getNotificationEmail(shop, fallbackOwnerEmail) {
-  if (shop?.notification_email) {
-    return shop.notification_email;
-  }
-  return fallbackOwnerEmail;
+    if (shop?.notification_email) {
+        return shop.notification_email;
+    }
+    return fallbackOwnerEmail;
 }
 
 // Check if emails are enabled
 function isEmailEnabled(shop) {
-  // If shop has explicit settings, use them
-  if (shop?.email_enabled !== undefined) {
-    return shop.email_enabled;
-  }
-  // Otherwise check if global SMTP is configured
-  return !!process.env.SMTP_USER;
+    // If shop has explicit settings, use them
+    if (shop?.email_enabled !== undefined) {
+        return shop.email_enabled;
+    }
+    // Otherwise check if global SMTP is configured
+    return !!process.env.SMTP_USER;
 }
 
 async function sendOrderConfirmation(to, order, shop) {
-  const transporter = createTransporter(shop);
-  if (!transporter || !isEmailEnabled(shop)) {
-    console.log('Email not sent: Not configured');
-    return;
-  }
-  
-  const senderEmail = getSenderEmail(shop);
-  const itemsHtml = order.items.map(item => `
+    const transporter = createTransporter(shop);
+    if (!transporter || !isEmailEnabled(shop)) {
+        console.log('Email not sent: Not configured');
+        return;
+    }
+
+    const senderEmail = getSenderEmail(shop);
+    const itemsHtml = order.items
+        .map(
+            (item) => `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">
         ${item.product_name}
@@ -75,17 +77,20 @@ async function sendOrderConfirmation(to, order, shop) {
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">€${parseFloat(item.unit_price).toFixed(2)}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">€${(item.quantity * parseFloat(item.unit_price)).toFixed(2)}</td>
     </tr>
-  `).join('');
+  `
+        )
+        .join('');
 
-  const shippingAddress = typeof order.shipping_address === 'string' 
-    ? JSON.parse(order.shipping_address) 
-    : order.shipping_address;
+    const shippingAddress =
+        typeof order.shipping_address === 'string'
+            ? JSON.parse(order.shipping_address)
+            : order.shipping_address;
 
-  const mailOptions = {
-    from: `"${shop.name}" <${senderEmail}>`,
-    to: to,
-    subject: `Bestellbestätigung ${order.order_number}`,
-    html: `
+    const mailOptions = {
+        from: `"${shop.name}" <${senderEmail}>`,
+        to: to,
+        subject: `Bestellbestätigung ${order.order_number}`,
+        html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #2563EB; color: white; padding: 30px; text-align: center;">
           <h1 style="margin: 0;">${shop.name}</h1>
@@ -147,33 +152,37 @@ async function sendOrderConfirmation(to, order, shop) {
         </div>
       </div>
     `
-  };
+    };
 
-  return transporter.sendMail(mailOptions);
+    return transporter.sendMail(mailOptions);
 }
 
 async function sendOrderNotificationToOwner(order, shop, ownerEmail) {
-  const transporter = createTransporter(shop);
-  if (!transporter || !isEmailEnabled(shop)) {
-    console.log('Owner notification not sent: Not configured');
-    return;
-  }
-  
-  const senderEmail = getSenderEmail(shop);
-  const notificationEmail = getNotificationEmail(shop, ownerEmail);
-  
-  const itemsHtml = order.items.map(item => `
+    const transporter = createTransporter(shop);
+    if (!transporter || !isEmailEnabled(shop)) {
+        console.log('Owner notification not sent: Not configured');
+        return;
+    }
+
+    const senderEmail = getSenderEmail(shop);
+    const notificationEmail = getNotificationEmail(shop, ownerEmail);
+
+    const itemsHtml = order.items
+        .map(
+            (item) => `
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.product_name}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
     </tr>
-  `).join('');
+  `
+        )
+        .join('');
 
-  const mailOptions = {
-    from: `"${shop.name}" <${senderEmail}>`,
-    to: notificationEmail,
-    subject: `🛒 Neue Bestellung ${order.order_number}`,
-    html: `
+    const mailOptions = {
+        from: `"${shop.name}" <${senderEmail}>`,
+        to: notificationEmail,
+        subject: `🛒 Neue Bestellung ${order.order_number}`,
+        html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563EB;">Neue Bestellung eingegangen!</h2>
         <p><strong>Bestellnummer:</strong> ${order.order_number}</p>
@@ -195,28 +204,28 @@ async function sendOrderNotificationToOwner(order, shop, ownerEmail) {
         </p>
       </div>
     `
-  };
+    };
 
-  return transporter.sendMail(mailOptions);
+    return transporter.sendMail(mailOptions);
 }
 
 async function sendShippingConfirmation(to, order, shop, trackingNumber) {
-  const transporter = createTransporter(shop);
-  if (!transporter || !isEmailEnabled(shop)) {
-    console.log('Shipping confirmation not sent: Not configured');
-    return;
-  }
-  
-  const senderEmail = getSenderEmail(shop);
-  const trackingInfo = trackingNumber 
-    ? `<p><strong>Tracking-Nummer:</strong> ${trackingNumber}</p>` 
-    : '';
+    const transporter = createTransporter(shop);
+    if (!transporter || !isEmailEnabled(shop)) {
+        console.log('Shipping confirmation not sent: Not configured');
+        return;
+    }
 
-  const mailOptions = {
-    from: `"${shop.name}" <${senderEmail}>`,
-    to: to,
-    subject: `Ihre Bestellung ${order.order_number} wurde versendet`,
-    html: `
+    const senderEmail = getSenderEmail(shop);
+    const trackingInfo = trackingNumber
+        ? `<p><strong>Tracking-Nummer:</strong> ${trackingNumber}</p>`
+        : '';
+
+    const mailOptions = {
+        from: `"${shop.name}" <${senderEmail}>`,
+        to: to,
+        subject: `Ihre Bestellung ${order.order_number} wurde versendet`,
+        html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #10B981; color: white; padding: 30px; text-align: center;">
           <h1 style="margin: 0;">📦 Versandbestätigung</h1>
@@ -234,13 +243,13 @@ async function sendShippingConfirmation(to, order, shop, trackingNumber) {
         </div>
       </div>
     `
-  };
+    };
 
-  return transporter.sendMail(mailOptions);
+    return transporter.sendMail(mailOptions);
 }
 
 module.exports = {
-  sendOrderConfirmation,
-  sendOrderNotificationToOwner,
-  sendShippingConfirmation
+    sendOrderConfirmation,
+    sendOrderNotificationToOwner,
+    sendShippingConfirmation
 };

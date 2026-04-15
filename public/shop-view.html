@@ -1,346 +1,383 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #FFFFFF;
-            color: #111827;
-            line-height: 1.6;
-        }
-        
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 80px 24px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .hero h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -0.02em;
-        }
-        .hero p {
-            font-size: 1.25rem;
-            opacity: 0.95;
-            font-weight: 400;
-        }
-        
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 24px;
-        }
-        
-        /* Section Header */
-        .section-header {
-            text-align: center;
-            margin-bottom: 48px;
-        }
-        .section-header h2 {
-            font-size: 2rem;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 8px;
-        }
-        .section-header p {
-            color: #6B7280;
-            font-size: 1.125rem;
-        }
-        
-        /* Products Grid */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 32px;
-        }
-        
-        /* Product Card */
-        .product-card {
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
-            border: 1px solid #F3F4F6;
-        }
-        .product-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        .product-image {
-            height: 240px;
-            background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        .product-card:hover .product-image img {
-            transform: scale(1.05);
-        }
-        .product-badge {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            background: #EF4444;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .product-content {
-            padding: 24px;
-        }
-        .product-category {
-            font-size: 12px;
-            color: #2563EB;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
-        }
-        .product-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-        .product-description {
-            font-size: 14px;
-            color: #6B7280;
-            margin-bottom: 16px;
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .product-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 16px;
-            border-top: 1px solid #F3F4F6;
-        }
-        .product-price {
-            display: flex;
-            flex-direction: column;
-        }
-        .price-current {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #111827;
-        }
-        .price-original {
-            font-size: 14px;
-            color: #9CA3AF;
-            text-decoration: line-through;
-        }
-        .btn {
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-        }
-        .btn-primary {
-            background: #111827;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #374151;
-        }
-        .btn:disabled {
-            background: #E5E7EB;
-            color: #9CA3AF;
-            cursor: not-allowed;
-        }
-        .stock-status {
-            font-size: 12px;
-            font-weight: 500;
-            margin-top: 4px;
-        }
-        .stock-low { color: #EF4444; }
-        .stock-ok { color: #10B981; }
-        
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 100px 24px;
-            background: #F9FAFB;
-            border-radius: 16px;
-            margin: 40px 0;
-        }
-        .empty-state-icon {
-            width: 80px;
-            height: 80px;
-            background: #E5E7EB;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 40px;
-        }
-        .empty-state h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 8px;
-        }
-        .empty-state p {
-            color: #6B7280;
-            font-size: 1rem;
-        }
-        
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 100px 24px;
-        }
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid #E5E7EB;
-            border-top-color: #2563EB;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 24px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* Error State */
-        .error-state {
-            text-align: center;
-            padding: 100px 24px;
-        }
-        .error-state h2 {
-            font-size: 1.5rem;
-            color: #EF4444;
-            margin-bottom: 8px;
-        }
-        
-        /* Footer */
-        .footer {
-            background: #111827;
-            color: white;
-            padding: 40px 24px;
-            text-align: center;
-            margin-top: 80px;
-        }
-        .footer p {
-            color: #9CA3AF;
-            font-size: 14px;
-        }
-        .footer-brand {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        /* Responsive */
-        @media (max-width: 640px) {
-            .hero { padding: 60px 24px; }
-            .hero h1 { font-size: 2rem; }
-            .hero p { font-size: 1rem; }
-            .container { padding: 40px 16px; }
-            .products-grid { grid-template-columns: 1fr; gap: 24px; }
-            .product-image { height: 200px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="hero" id="shop-header">
-        <div class="hero-content">
-            <h1>Lade Shop...</h1>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div class="section-header">
-            <h2>Unsere Produkte</h2>
-            <p>Entdecke unsere Auswahl an hochwertigen Produkten</p>
-        </div>
-        
-        <div id="products-container">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Produkte werden geladen...</p>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Shop</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family:
+                    'Inter',
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                background: #ffffff;
+                color: #111827;
+                line-height: 1.6;
+            }
+
+            /* Hero Section */
+            .hero {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 80px 24px;
+                text-align: center;
+                position: relative;
+                overflow: hidden;
+            }
+            .hero::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            }
+            .hero-content {
+                position: relative;
+                z-index: 1;
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            .hero h1 {
+                font-size: 3rem;
+                font-weight: 700;
+                margin-bottom: 16px;
+                letter-spacing: -0.02em;
+            }
+            .hero p {
+                font-size: 1.25rem;
+                opacity: 0.95;
+                font-weight: 400;
+            }
+
+            /* Container */
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 60px 24px;
+            }
+
+            /* Section Header */
+            .section-header {
+                text-align: center;
+                margin-bottom: 48px;
+            }
+            .section-header h2 {
+                font-size: 2rem;
+                font-weight: 600;
+                color: #111827;
+                margin-bottom: 8px;
+            }
+            .section-header p {
+                color: #6b7280;
+                font-size: 1.125rem;
+            }
+
+            /* Products Grid */
+            .products-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 32px;
+            }
+
+            /* Product Card */
+            .product-card {
+                background: white;
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow:
+                    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                transition: all 0.3s ease;
+                border: 1px solid #f3f4f6;
+            }
+            .product-card:hover {
+                transform: translateY(-8px);
+                box-shadow:
+                    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .product-image {
+                height: 240px;
+                background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                overflow: hidden;
+            }
+            .product-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+            }
+            .product-card:hover .product-image img {
+                transform: scale(1.05);
+            }
+            .product-badge {
+                position: absolute;
+                top: 16px;
+                left: 16px;
+                background: #ef4444;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            .product-content {
+                padding: 24px;
+            }
+            .product-category {
+                font-size: 12px;
+                color: #2563eb;
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.05em;
+                margin-bottom: 8px;
+            }
+            .product-name {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #111827;
+                margin-bottom: 8px;
+                line-height: 1.4;
+            }
+            .product-description {
+                font-size: 14px;
+                color: #6b7280;
+                margin-bottom: 16px;
+                line-height: 1.5;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+            .product-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding-top: 16px;
+                border-top: 1px solid #f3f4f6;
+            }
+            .product-price {
+                display: flex;
+                flex-direction: column;
+            }
+            .price-current {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #111827;
+            }
+            .price-original {
+                font-size: 14px;
+                color: #9ca3af;
+                text-decoration: line-through;
+            }
+            .btn {
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                transition: all 0.2s;
+            }
+            .btn-primary {
+                background: #111827;
+                color: white;
+            }
+            .btn-primary:hover {
+                background: #374151;
+            }
+            .btn:disabled {
+                background: #e5e7eb;
+                color: #9ca3af;
+                cursor: not-allowed;
+            }
+            .stock-status {
+                font-size: 12px;
+                font-weight: 500;
+                margin-top: 4px;
+            }
+            .stock-low {
+                color: #ef4444;
+            }
+            .stock-ok {
+                color: #10b981;
+            }
+
+            /* Empty State */
+            .empty-state {
+                text-align: center;
+                padding: 100px 24px;
+                background: #f9fafb;
+                border-radius: 16px;
+                margin: 40px 0;
+            }
+            .empty-state-icon {
+                width: 80px;
+                height: 80px;
+                background: #e5e7eb;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 24px;
+                font-size: 40px;
+            }
+            .empty-state h2 {
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: #111827;
+                margin-bottom: 8px;
+            }
+            .empty-state p {
+                color: #6b7280;
+                font-size: 1rem;
+            }
+
+            /* Loading */
+            .loading {
+                text-align: center;
+                padding: 100px 24px;
+            }
+            .spinner {
+                width: 48px;
+                height: 48px;
+                border: 3px solid #e5e7eb;
+                border-top-color: #2563eb;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 24px;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* Error State */
+            .error-state {
+                text-align: center;
+                padding: 100px 24px;
+            }
+            .error-state h2 {
+                font-size: 1.5rem;
+                color: #ef4444;
+                margin-bottom: 8px;
+            }
+
+            /* Footer */
+            .footer {
+                background: #111827;
+                color: white;
+                padding: 40px 24px;
+                text-align: center;
+                margin-top: 80px;
+            }
+            .footer p {
+                color: #9ca3af;
+                font-size: 14px;
+            }
+            .footer-brand {
+                font-size: 1.25rem;
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
+
+            /* Responsive */
+            @media (max-width: 640px) {
+                .hero {
+                    padding: 60px 24px;
+                }
+                .hero h1 {
+                    font-size: 2rem;
+                }
+                .hero p {
+                    font-size: 1rem;
+                }
+                .container {
+                    padding: 40px 16px;
+                }
+                .products-grid {
+                    grid-template-columns: 1fr;
+                    gap: 24px;
+                }
+                .product-image {
+                    height: 200px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="hero" id="shop-header">
+            <div class="hero-content">
+                <h1>Lade Shop...</h1>
             </div>
         </div>
-    </div>
-    
-    <footer class="footer">
-        <div class="footer-brand" id="footer-brand">Shop</div>
-        <p>Powered by Sellityet</p>
-    </footer>
 
-    <script>
-        const API_URL = '/api';
-        const shopSlug = window.location.pathname.split('/').pop();
-        let currentShop = null;
-        let sessionId = localStorage.getItem('cart_session_id') || generateSessionId();
-        
-        function generateSessionId() {
-            const id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('cart_session_id', id);
-            return id;
-        }
-        
-        async function loadShop() {
-            try {
-                const res = await fetch(`${API_URL}/shops/${shopSlug}`);
-                if (!res.ok) throw new Error('Shop not found');
-                const shop = await res.json();
-                currentShop = shop;
-                
-                // Store shop ID for cart
-                localStorage.setItem('current_shop_id', shop.id);
-                
-                // Update hero with shop color
-                if (shop.primary_color) {
-                    document.getElementById('shop-header').style.background = shop.primary_color;
-                }
-                
-                document.getElementById('shop-header').innerHTML = `
+        <div class="container">
+            <div class="section-header">
+                <h2>Unsere Produkte</h2>
+                <p>Entdecke unsere Auswahl an hochwertigen Produkten</p>
+            </div>
+
+            <div id="products-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Produkte werden geladen...</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-brand" id="footer-brand">Shop</div>
+            <p>Powered by Sellityet</p>
+        </footer>
+
+        <script>
+            const API_URL = '/api';
+            const shopSlug = window.location.pathname.split('/').pop();
+            let currentShop = null;
+            let sessionId = localStorage.getItem('cart_session_id') || generateSessionId();
+
+            function generateSessionId() {
+                const id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('cart_session_id', id);
+                return id;
+            }
+
+            async function loadShop() {
+                try {
+                    const res = await fetch(`${API_URL}/shops/${shopSlug}`);
+                    if (!res.ok) throw new Error('Shop not found');
+                    const shop = await res.json();
+                    currentShop = shop;
+
+                    // Store shop ID for cart
+                    localStorage.setItem('current_shop_id', shop.id);
+
+                    // Update hero with shop color
+                    if (shop.primary_color) {
+                        document.getElementById('shop-header').style.background =
+                            shop.primary_color;
+                    }
+
+                    document.getElementById('shop-header').innerHTML = `
                     <div class="hero-content">
                         <h1>${shop.name}</h1>
                         <p>${shop.description || 'Willkommen in unserem Shop'}</p>
@@ -349,86 +386,96 @@
                         </a>
                     </div>
                 `;
-                
-                document.getElementById('footer-brand').textContent = shop.name;
-                
-                loadProducts(shop.id);
-            } catch (error) {
-                document.getElementById('shop-header').innerHTML = `
+
+                    document.getElementById('footer-brand').textContent = shop.name;
+
+                    loadProducts(shop.id);
+                } catch (error) {
+                    document.getElementById('shop-header').innerHTML = `
                     <div class="hero-content">
                         <h1>Shop nicht gefunden</h1>
                         <p>Dieser Shop existiert nicht oder wurde deaktiviert.</p>
                     </div>
                 `;
-                document.getElementById('products-container').innerHTML = '';
+                    document.getElementById('products-container').innerHTML = '';
+                }
             }
-        }
-        
-        async function loadProducts(shopId) {
-            try {
-                const res = await fetch(`${API_URL}/shops/${shopId}/products`);
-                const products = await res.json();
-                
-                if (products.length === 0) {
-                    document.getElementById('products-container').innerHTML = `
+
+            async function loadProducts(shopId) {
+                try {
+                    const res = await fetch(`${API_URL}/shops/${shopId}/products`);
+                    const products = await res.json();
+
+                    if (products.length === 0) {
+                        document.getElementById('products-container').innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📦</div>
                             <h2>Bald verfügbar</h2>
                             <p>Unser Sortiment wird demnächst erweitert. Schau bald wieder vorbei!</p>
                         </div>
                     `;
-                    return;
-                }
-                
-                // Load variants for each product
-                for (let product of products) {
-                    if (product.has_variants) {
-                        const variantsRes = await fetch(`${API_URL}/shops/${shopId}/products/${product.id}/variants`);
-                        product.variants = await variantsRes.json();
+                        return;
                     }
-                }
-                
-                renderProducts(products);
-            } catch (error) {
-                document.getElementById('products-container').innerHTML = `
+
+                    // Load variants for each product
+                    for (let product of products) {
+                        if (product.has_variants) {
+                            const variantsRes = await fetch(
+                                `${API_URL}/shops/${shopId}/products/${product.id}/variants`
+                            );
+                            product.variants = await variantsRes.json();
+                        }
+                    }
+
+                    renderProducts(products);
+                } catch (error) {
+                    document.getElementById('products-container').innerHTML = `
                     <div class="error-state">
                         <h2>⚠️ Fehler beim Laden</h2>
                         <p>Die Produkte konnten nicht geladen werden. Bitte versuche es später erneut.</p>
                     </div>
                 `;
+                }
             }
-        }
-        
-        function renderProducts(products) {
-            document.getElementById('products-container').innerHTML = `
+
+            function renderProducts(products) {
+                document.getElementById('products-container').innerHTML = `
                 <div class="products-grid">
-                    ${products.map(p => renderProductCard(p)).join('')}
+                    ${products.map((p) => renderProductCard(p)).join('')}
                 </div>
             `;
-        }
-        
-        function renderProductCard(p) {
-            const hasVariants = p.variants && p.variants.length > 0;
-            const variantSelector = hasVariants ? `
+            }
+
+            function renderProductCard(p) {
+                const hasVariants = p.variants && p.variants.length > 0;
+                const variantSelector = hasVariants
+                    ? `
                 <div style="margin: 12px 0;">
                     <select class="variant-select" id="variant-${p.id}" style="width: 100%; padding: 8px; border: 1px solid #E2E8F0; border-radius: 6px;" onchange="updatePrice(${p.id}, ${p.price})">
-                        ${p.variants.map(v => `
+                        ${p.variants
+                            .map(
+                                (v) => `
                             <option value="${v.id}" data-price="${v.price_adjustment}" data-stock="${v.stock}">
                                 ${v.name} ${v.price_adjustment > 0 ? '(+' + v.price_adjustment + '€)' : v.price_adjustment < 0 ? '(' + v.price_adjustment + '€)' : ''}
                             </option>
-                        `).join('')}
+                        `
+                            )
+                            .join('')}
                     </select>
                 </div>
-            ` : '';
-            
-            const currentPrice = p.discount_price || p.price;
-            
-            return `
+            `
+                    : '';
+
+                const currentPrice = p.discount_price || p.price;
+
+                return `
                 <div class="product-card">
                     <div class="product-image">
-                        ${p.image_urls && p.image_urls[0] 
-                            ? `<img src="${p.image_urls[0]}" alt="${p.name}">` 
-                            : '<div style="font-size: 64px;">📦</div>'}
+                        ${
+                            p.image_urls && p.image_urls[0]
+                                ? `<img src="${p.image_urls[0]}" alt="${p.name}">`
+                                : '<div style="font-size: 64px;">📦</div>'
+                        }
                         ${p.discount_price ? '<span class="product-badge">SALE</span>' : ''}
                     </div>
                     <div class="product-content">
@@ -438,10 +485,11 @@
                         ${variantSelector}
                         <div class="product-footer">
                             <div class="product-price">
-                                ${p.discount_price ? 
-                                    `<span class="price-original">€${p.price}</span>
-                                     <span class="price-current" id="price-${p.id}">€${p.discount_price}</span>` : 
-                                    `<span class="price-current" id="price-${p.id}">€${p.price}</span>`
+                                ${
+                                    p.discount_price
+                                        ? `<span class="price-original">€${p.price}</span>
+                                     <span class="price-current" id="price-${p.id}">€${p.discount_price}</span>`
+                                        : `<span class="price-current" id="price-${p.id}">€${p.price}</span>`
                                 }
                                 <div class="stock-status stock-ok" id="stock-${p.id}">Auf Lager</div>
                             </div>
@@ -452,73 +500,74 @@
                     </div>
                 </div>
             `;
-        }
-        
-        function updatePrice(productId, basePrice) {
-            const variantSelect = document.getElementById(`variant-${productId}`);
-            if (!variantSelect) return;
-            
-            const option = variantSelect.options[variantSelect.selectedIndex];
-            const priceAdjustment = parseFloat(option.dataset.price) || 0;
-            const stock = parseInt(option.dataset.stock) || 0;
-            
-            const finalPrice = basePrice + priceAdjustment;
-            document.getElementById(`price-${productId}`).textContent = '€' + finalPrice.toFixed(2);
-            
-            const stockEl = document.getElementById(`stock-${productId}`);
-            if (stock <= 5 && stock > 0) {
-                stockEl.textContent = 'Nur noch ' + stock + ' verfügbar';
-                stockEl.className = 'stock-status stock-low';
-            } else if (stock === 0) {
-                stockEl.textContent = 'Ausverkauft';
-                stockEl.className = 'stock-status stock-low';
-                document.getElementById(`btn-${productId}`).disabled = true;
-                document.getElementById(`btn-${productId}`).textContent = 'Ausverkauft';
-            } else {
-                stockEl.textContent = 'Auf Lager';
-                stockEl.className = 'stock-status stock-ok';
-                document.getElementById(`btn-${productId}`).disabled = false;
-                document.getElementById(`btn-${productId}`).textContent = 'In den Warenkorb';
             }
-        }
-        
-        async function addToCart(productId, price) {
-            if (!currentShop) return;
-            
-            const variantSelect = document.getElementById(`variant-${productId}`);
-            const variantId = variantSelect ? variantSelect.value : null;
-            
-            try {
-                const res = await fetch(`${API_URL}/cart/items`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        session_id: sessionId,
-                        shop_id: currentShop.id,
-                        product_id: productId,
-                        variant_id: variantId,
-                        quantity: 1
-                    })
-                });
-                
-                if (res.ok) {
-                    const btn = document.getElementById(`btn-${productId}`);
-                    btn.textContent = '✅ Hinzugefügt!';
-                    btn.style.background = '#10B981';
-                    setTimeout(() => {
-                        btn.textContent = 'In den Warenkorb';
-                        btn.style.background = '';
-                    }, 2000);
+
+            function updatePrice(productId, basePrice) {
+                const variantSelect = document.getElementById(`variant-${productId}`);
+                if (!variantSelect) return;
+
+                const option = variantSelect.options[variantSelect.selectedIndex];
+                const priceAdjustment = parseFloat(option.dataset.price) || 0;
+                const stock = parseInt(option.dataset.stock) || 0;
+
+                const finalPrice = basePrice + priceAdjustment;
+                document.getElementById(`price-${productId}`).textContent =
+                    '€' + finalPrice.toFixed(2);
+
+                const stockEl = document.getElementById(`stock-${productId}`);
+                if (stock <= 5 && stock > 0) {
+                    stockEl.textContent = 'Nur noch ' + stock + ' verfügbar';
+                    stockEl.className = 'stock-status stock-low';
+                } else if (stock === 0) {
+                    stockEl.textContent = 'Ausverkauft';
+                    stockEl.className = 'stock-status stock-low';
+                    document.getElementById(`btn-${productId}`).disabled = true;
+                    document.getElementById(`btn-${productId}`).textContent = 'Ausverkauft';
                 } else {
+                    stockEl.textContent = 'Auf Lager';
+                    stockEl.className = 'stock-status stock-ok';
+                    document.getElementById(`btn-${productId}`).disabled = false;
+                    document.getElementById(`btn-${productId}`).textContent = 'In den Warenkorb';
+                }
+            }
+
+            async function addToCart(productId, price) {
+                if (!currentShop) return;
+
+                const variantSelect = document.getElementById(`variant-${productId}`);
+                const variantId = variantSelect ? variantSelect.value : null;
+
+                try {
+                    const res = await fetch(`${API_URL}/cart/items`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: sessionId,
+                            shop_id: currentShop.id,
+                            product_id: productId,
+                            variant_id: variantId,
+                            quantity: 1
+                        })
+                    });
+
+                    if (res.ok) {
+                        const btn = document.getElementById(`btn-${productId}`);
+                        btn.textContent = '✅ Hinzugefügt!';
+                        btn.style.background = '#10B981';
+                        setTimeout(() => {
+                            btn.textContent = 'In den Warenkorb';
+                            btn.style.background = '';
+                        }, 2000);
+                    } else {
+                        alert('Fehler beim Hinzufügen');
+                    }
+                } catch (error) {
+                    console.error('Add to cart error:', error);
                     alert('Fehler beim Hinzufügen');
                 }
-            } catch (error) {
-                console.error('Add to cart error:', error);
-                alert('Fehler beim Hinzufügen');
             }
-        }
-        
-        loadShop();
-    </script>
-</body>
+
+            loadShop();
+        </script>
+    </body>
 </html>

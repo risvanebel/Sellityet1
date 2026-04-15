@@ -1,1201 +1,1464 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sellityet Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #2563EB;
-            --primary-dark: #1D4ED8;
-            --primary-light: #EFF6FF;
-            --bg: #F8FAFC;
-            --surface: #FFFFFF;
-            --text: #0F172A;
-            --text-muted: #64748B;
-            --border: #E2E8F0;
-            --success: #10B981;
-            --warning: #F59E0B;
-            --danger: #EF4444;
-            --radius: 8px;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* Layout */
-        .app {
-            display: grid;
-            grid-template-columns: 260px 1fr;
-            min-height: 100vh;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            position: fixed;
-            height: 100vh;
-            width: 260px;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-        }
-
-        .sidebar-header {
-            padding: 24px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--primary);
-            border-radius: var(--radius);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-        }
-
-        .nav {
-            flex: 1;
-            padding: 16px 12px;
-            overflow-y: auto;
-        }
-
-        .nav-section {
-            margin-bottom: 24px;
-        }
-
-        .nav-label {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            padding: 0 12px;
-            margin-bottom: 8px;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: var(--radius);
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.15s;
-            cursor: pointer;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-        }
-
-        .nav-item:hover {
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        .nav-item.active {
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-
-        .nav-icon {
-            width: 20px;
-            height: 20px;
-            opacity: 0.7;
-        }
-
-        .nav-item.active .nav-icon {
-            opacity: 1;
-        }
-
-        .sidebar-footer {
-            padding: 16px;
-            border-top: 1px solid var(--border);
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px;
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-
-        .user-menu:hover {
-            background: var(--bg);
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--primary-light);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .user-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .user-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-role {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        /* Main Content */
-        .main {
-            margin-left: 260px;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 0 32px;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-        }
-
-        .header-title {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .search-box {
-            position: relative;
-            width: 320px;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 8px 12px 8px 36px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 14px;
-            background: var(--bg);
-            transition: all 0.15s;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: var(--surface);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            width: 16px;
-            height: 16px;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: var(--radius);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s;
-            border: none;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn-secondary {
-            background: var(--surface);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg);
-        }
-
-        .btn-icon {
-            padding: 8px;
-            background: transparent;
-            color: var(--text-muted);
-        }
-
-        .btn-icon:hover {
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        /* Content Area */
-        .content {
-            padding: 32px;
-            max-width: 1400px;
-        }
-
-        /* Page Header */
-        .page-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-        }
-
-        .page-title {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        @media (max-width: 1200px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sellityet Admin</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --primary: #2563eb;
+                --primary-dark: #1d4ed8;
+                --primary-light: #eff6ff;
+                --bg: #f8fafc;
+                --surface: #ffffff;
+                --text: #0f172a;
+                --text-muted: #64748b;
+                --border: #e2e8f0;
+                --success: #10b981;
+                --warning: #f59e0b;
+                --danger: #ef4444;
+                --radius: 8px;
+                --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+                --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+                --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             }
-        }
 
-        .stat-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-        }
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-        .stat-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
+            body {
+                font-family:
+                    'Inter',
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+            }
 
-        .stat-label {
-            font-size: 14px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
+            /* Layout */
+            .app {
+                display: grid;
+                grid-template-columns: 260px 1fr;
+                min-height: 100vh;
+            }
 
-        .stat-icon {
-            width: 20px;
-            height: 20px;
-            color: var(--text-muted);
-        }
+            /* Sidebar */
+            .sidebar {
+                background: var(--surface);
+                border-right: 1px solid var(--border);
+                position: fixed;
+                height: 100vh;
+                width: 260px;
+                display: flex;
+                flex-direction: column;
+                z-index: 100;
+            }
 
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
+            .sidebar-header {
+                padding: 24px;
+                border-bottom: 1px solid var(--border);
+            }
 
-        .stat-change {
-            font-size: 13px;
-            color: var(--success);
-            font-weight: 500;
-        }
+            .logo {
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--text);
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
 
-        .stat-change.negative {
-            color: var(--danger);
-        }
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                background: var(--primary);
+                border-radius: var(--radius);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+            }
 
-        /* Cards */
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            margin-bottom: 24px;
-        }
+            .nav {
+                flex: 1;
+                padding: 16px 12px;
+                overflow-y: auto;
+            }
 
-        .card-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+            .nav-section {
+                margin-bottom: 24px;
+            }
 
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
+            .nav-label {
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--text-muted);
+                padding: 0 12px;
+                margin-bottom: 8px;
+            }
 
-        .card-body {
-            padding: 24px;
-        }
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                border-radius: var(--radius);
+                color: var(--text-muted);
+                text-decoration: none;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.15s;
+                cursor: pointer;
+                border: none;
+                background: none;
+                width: 100%;
+                text-align: left;
+            }
 
-        /* Tables */
-        .table-container {
-            overflow-x: auto;
-        }
+            .nav-item:hover {
+                background: var(--bg);
+                color: var(--text);
+            }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
+            .nav-item.active {
+                background: var(--primary-light);
+                color: var(--primary);
+            }
 
-        thead {
-            background: var(--bg);
-        }
+            .nav-icon {
+                width: 20px;
+                height: 20px;
+                opacity: 0.7;
+            }
 
-        th {
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--text-muted);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid var(--border);
-        }
+            .nav-item.active .nav-icon {
+                opacity: 1;
+            }
 
-        td {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            vertical-align: middle;
-        }
+            .sidebar-footer {
+                padding: 16px;
+                border-top: 1px solid var(--border);
+            }
 
-        tr:hover td {
-            background: var(--bg);
-        }
+            .user-menu {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px;
+                border-radius: var(--radius);
+                cursor: pointer;
+                transition: background 0.15s;
+            }
 
-        /* Badges */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 10px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
+            .user-menu:hover {
+                background: var(--bg);
+            }
 
-        .badge-success {
-            background: #D1FAE5;
-            color: #065F46;
-        }
+            .user-avatar {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: var(--primary-light);
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 14px;
+            }
 
-        .badge-warning {
-            background: #FEF3C7;
-            color: #92400E;
-        }
+            .user-info {
+                flex: 1;
+                min-width: 0;
+            }
 
-        .badge-danger {
-            background: #FEE2E2;
-            color: #991B1B;
-        }
+            .user-name {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-        .badge-neutral {
-            background: var(--bg);
-            color: var(--text-muted);
-        }
+            .user-role {
+                font-size: 12px;
+                color: var(--text-muted);
+            }
 
-        /* Product Cell */
-        .product-cell {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+            /* Main Content */
+            .main {
+                margin-left: 260px;
+                min-height: 100vh;
+            }
 
-        .product-thumb {
-            width: 48px;
-            height: 48px;
-            border-radius: var(--radius);
-            background: var(--bg);
-            object-fit: cover;
-        }
+            .header {
+                background: var(--surface);
+                border-bottom: 1px solid var(--border);
+                padding: 0 32px;
+                height: 64px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: sticky;
+                top: 0;
+                z-index: 50;
+            }
 
-        .product-info h4 {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 24px;
+            }
 
-        .product-info span {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
+            .header-title {
+                font-size: 20px;
+                font-weight: 600;
+            }
 
-        /* Forms */
-        .form-group {
-            margin-bottom: 20px;
-        }
+            .search-box {
+                position: relative;
+                width: 320px;
+            }
 
-        .form-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 6px;
-            color: var(--text);
-        }
+            .search-input {
+                width: 100%;
+                padding: 8px 12px 8px 36px;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                font-size: 14px;
+                background: var(--bg);
+                transition: all 0.15s;
+            }
 
-        .form-hint {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
+            .search-input:focus {
+                outline: none;
+                border-color: var(--primary);
+                background: var(--surface);
+            }
 
-        .form-input,
-        .form-select,
-        .form-textarea {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 14px;
-            font-family: inherit;
-            background: var(--surface);
-            transition: all 0.15s;
-        }
+            .search-icon {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--text-muted);
+                width: 16px;
+                height: 16px;
+            }
 
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-light);
-        }
+            .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
 
-        .form-textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border-radius: var(--radius);
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.15s;
+                border: none;
+                text-decoration: none;
+            }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
+            .btn-primary {
+                background: var(--primary);
+                color: white;
+            }
 
-        /* Alerts */
-        .alert {
-            padding: 16px;
-            border-radius: var(--radius);
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+            .btn-primary:hover {
+                background: var(--primary-dark);
+            }
 
-        .alert-warning {
-            background: #FEF3C7;
-            border: 1px solid #FDE68A;
-            color: #92400E;
-        }
+            .btn-secondary {
+                background: var(--surface);
+                color: var(--text);
+                border: 1px solid var(--border);
+            }
 
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 64px 24px;
-        }
+            .btn-secondary:hover {
+                background: var(--bg);
+            }
 
-        .empty-icon {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 16px;
-            background: var(--bg);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-        }
+            .btn-icon {
+                padding: 8px;
+                background: transparent;
+                color: var(--text-muted);
+            }
 
-        .empty-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
+            .btn-icon:hover {
+                background: var(--bg);
+                color: var(--text);
+            }
 
-        .empty-desc {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 16px;
-        }
+            /* Content Area */
+            .content {
+                padding: 32px;
+                max-width: 1400px;
+            }
 
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-            padding: 24px;
-        }
+            /* Page Header */
+            .page-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 24px;
+            }
 
-        .modal-overlay.active {
-            display: flex;
-        }
+            .page-title {
+                font-size: 24px;
+                font-weight: 700;
+            }
 
-        .modal {
-            background: var(--surface);
-            border-radius: var(--radius);
-            width: 100%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+            /* Stats Grid */
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 24px;
+                margin-bottom: 32px;
+            }
 
-        .modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+            @media (max-width: 1200px) {
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
 
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
+            .stat-card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 24px;
+            }
 
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 0;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: var(--radius);
-        }
+            .stat-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+            }
 
-        .modal-close:hover {
-            background: var(--bg);
-            color: var(--text);
-        }
+            .stat-label {
+                font-size: 14px;
+                color: var(--text-muted);
+                font-weight: 500;
+            }
 
-        .modal-body {
-            padding: 24px;
-            overflow-y: auto;
-            flex: 1;
-        }
+            .stat-icon {
+                width: 20px;
+                height: 20px;
+                color: var(--text-muted);
+            }
 
-        .modal-footer {
-            padding: 20px 24px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
+            .stat-value {
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--text);
+                margin-bottom: 4px;
+            }
 
-        /* Hide/Show sections */
-        .section {
-            display: none;
-        }
+            .stat-change {
+                font-size: 13px;
+                color: var(--success);
+                font-weight: 500;
+            }
 
-        .section.active {
-            display: block;
-        }
-    </style>
-</head>
-<body>
-    <div class="app">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <a href="#" class="logo">
-                    <div class="logo-icon">S</div>
-                    <span>Sellityet</span>
-                </a>
-            </div>
-            
-            <nav class="nav">
-                <div class="nav-section">
-                    <div class="nav-label">Hauptmenü</div>
-                    <button class="nav-item active" onclick="showSection('dashboard')">
-                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                        </svg>
-                        Dashboard
-                    </button>
-                    <button class="nav-item" onclick="showSection('products')">
-                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                        </svg>
-                        Produkte
-                    </button>
-                    <button class="nav-item" onclick="showSection('orders')">
-                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                        </svg>
-                        Bestellungen
-                    </button>
+            .stat-change.negative {
+                color: var(--danger);
+            }
+
+            /* Cards */
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                margin-bottom: 24px;
+            }
+
+            .card-header {
+                padding: 20px 24px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .card-title {
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .card-body {
+                padding: 24px;
+            }
+
+            /* Tables */
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+
+            thead {
+                background: var(--bg);
+            }
+
+            th {
+                padding: 12px 16px;
+                text-align: left;
+                font-weight: 600;
+                color: var(--text-muted);
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                border-bottom: 1px solid var(--border);
+            }
+
+            td {
+                padding: 16px;
+                border-bottom: 1px solid var(--border);
+                vertical-align: middle;
+            }
+
+            tr:hover td {
+                background: var(--bg);
+            }
+
+            /* Badges */
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 4px 10px;
+                border-radius: 9999px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .badge-success {
+                background: #d1fae5;
+                color: #065f46;
+            }
+
+            .badge-warning {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .badge-danger {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .badge-neutral {
+                background: var(--bg);
+                color: var(--text-muted);
+            }
+
+            /* Product Cell */
+            .product-cell {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .product-thumb {
+                width: 48px;
+                height: 48px;
+                border-radius: var(--radius);
+                background: var(--bg);
+                object-fit: cover;
+            }
+
+            .product-info h4 {
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 2px;
+            }
+
+            .product-info span {
+                font-size: 13px;
+                color: var(--text-muted);
+            }
+
+            /* Forms */
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-label {
+                display: block;
+                font-size: 14px;
+                font-weight: 500;
+                margin-bottom: 6px;
+                color: var(--text);
+            }
+
+            .form-hint {
+                font-size: 13px;
+                color: var(--text-muted);
+                margin-top: 4px;
+            }
+
+            .form-input,
+            .form-select,
+            .form-textarea {
+                width: 100%;
+                padding: 10px 14px;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                font-size: 14px;
+                font-family: inherit;
+                background: var(--surface);
+                transition: all 0.15s;
+            }
+
+            .form-input:focus,
+            .form-select:focus,
+            .form-textarea:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px var(--primary-light);
+            }
+
+            .form-textarea {
+                resize: vertical;
+                min-height: 100px;
+            }
+
+            .form-row {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+
+            /* Alerts */
+            .alert {
+                padding: 16px;
+                border-radius: var(--radius);
+                margin-bottom: 24px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .alert-warning {
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+                color: #92400e;
+            }
+
+            /* Empty State */
+            .empty-state {
+                text-align: center;
+                padding: 64px 24px;
+            }
+
+            .empty-icon {
+                width: 64px;
+                height: 64px;
+                margin: 0 auto 16px;
+                background: var(--bg);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--text-muted);
+            }
+
+            .empty-title {
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            .empty-desc {
+                font-size: 14px;
+                color: var(--text-muted);
+                margin-bottom: 16px;
+            }
+
+            /* Modal */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 200;
+                padding: 24px;
+            }
+
+            .modal-overlay.active {
+                display: flex;
+            }
+
+            .modal {
+                background: var(--surface);
+                border-radius: var(--radius);
+                width: 100%;
+                max-width: 600px;
+                max-height: 90vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .modal-header {
+                padding: 20px 24px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .modal-title {
+                font-size: 18px;
+                font-weight: 600;
+            }
+
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 24px;
+                color: var(--text-muted);
+                cursor: pointer;
+                padding: 0;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: var(--radius);
+            }
+
+            .modal-close:hover {
+                background: var(--bg);
+                color: var(--text);
+            }
+
+            .modal-body {
+                padding: 24px;
+                overflow-y: auto;
+                flex: 1;
+            }
+
+            .modal-footer {
+                padding: 20px 24px;
+                border-top: 1px solid var(--border);
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }
+
+            /* Hide/Show sections */
+            .section {
+                display: none;
+            }
+
+            .section.active {
+                display: block;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <a href="#" class="logo">
+                        <div class="logo-icon">S</div>
+                        <span>Sellityet</span>
+                    </a>
                 </div>
-                
-                <div class="nav-section">
-                    <div class="nav-label">Einstellungen</div>
-                    <button class="nav-item" onclick="showSection('shop')">
-                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
-                        Shop-Profil
-                    </button>
-                </div>
-            </nav>
-            
-            <div class="sidebar-footer">
-                <div class="user-menu">
-                    <div class="user-avatar">R</div>
-                    <div class="user-info">
-                        <div class="user-name">Risbo Vapeshop</div>
-                        <div class="user-role">Administrator</div>
+
+                <nav class="nav">
+                    <div class="nav-section">
+                        <div class="nav-label">Hauptmenü</div>
+                        <button class="nav-item active" onclick="showSection('dashboard')">
+                            <svg
+                                class="nav-icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                                />
+                            </svg>
+                            Dashboard
+                        </button>
+                        <button class="nav-item" onclick="showSection('products')">
+                            <svg
+                                class="nav-icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                />
+                            </svg>
+                            Produkte
+                        </button>
+                        <button class="nav-item" onclick="showSection('orders')">
+                            <svg
+                                class="nav-icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                                />
+                            </svg>
+                            Bestellungen
+                        </button>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-label">Einstellungen</div>
+                        <button class="nav-item" onclick="showSection('shop')">
+                            <svg
+                                class="nav-icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                />
+                            </svg>
+                            Shop-Profil
+                        </button>
+                    </div>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="user-menu">
+                        <div class="user-avatar">R</div>
+                        <div class="user-info">
+                            <div class="user-name">Risbo Vapeshop</div>
+                            <div class="user-role">Administrator</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </aside>
+            </aside>
 
-        <!-- Main Content -->
-        <main class="main">
-            <header class="header">
-                <div class="header-left">
-                    <h1 class="header-title" id="page-title">Dashboard</h1>
-                    <div class="search-box">
-                        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        <input type="text" class="search-input" placeholder="Suchen...">
+            <!-- Main Content -->
+            <main class="main">
+                <header class="header">
+                    <div class="header-left">
+                        <h1 class="header-title" id="page-title">Dashboard</h1>
+                        <div class="search-box">
+                            <svg
+                                class="search-icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                            </svg>
+                            <input type="text" class="search-input" placeholder="Suchen..." />
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openProductModal()">
+                            <svg
+                                width="16"
+                                height="16"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4v16m8-8H4"
+                                />
+                            </svg>
+                            Neues Produkt
+                        </button>
+                    </div>
+                </header>
+
+                <div class="content">
+                    <!-- Dashboard Section -->
+                    <div id="dashboard" class="section active">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <span class="stat-label">Gesamtumsatz</span>
+                                    <svg
+                                        class="stat-icon"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                    </svg>
+                                </div>
+                                <div class="stat-value">€12.450</div>
+                                <div class="stat-change">+12% zum Vormonat</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <span class="stat-label">Bestellungen</span>
+                                    <svg
+                                        class="stat-icon"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                                        />
+                                    </svg>
+                                </div>
+                                <div class="stat-value">142</div>
+                                <div class="stat-change">+8% zum Vormonat</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <span class="stat-label">Produkte</span>
+                                    <svg
+                                        class="stat-icon"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                        />
+                                    </svg>
+                                </div>
+                                <div class="stat-value">48</div>
+                                <div class="stat-change">3 neu diesen Monat</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <span class="stat-label">Kunden</span>
+                                    <svg
+                                        class="stat-icon"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                        />
+                                    </svg>
+                                </div>
+                                <div class="stat-value">89</div>
+                                <div class="stat-change">+5% zum Vormonat</div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <svg
+                                width="20"
+                                height="20"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                            </svg>
+                            <span>3 Produkte haben niedrigen Bestand (unter Mindestbestand)</span>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Letzte Bestellungen</h3>
+                                <button class="btn btn-secondary" onclick="showSection('orders')">
+                                    Alle anzeigen
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Bestellung</th>
+                                                <th>Kunde</th>
+                                                <th>Datum</th>
+                                                <th>Betrag</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>#ORD-2024-001</td>
+                                                <td>Max Mustermann</td>
+                                                <td>10.04.2024</td>
+                                                <td>€149.99</td>
+                                                <td>
+                                                    <span class="badge badge-success">Bezahlt</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>#ORD-2024-002</td>
+                                                <td>Anna Schmidt</td>
+                                                <td>10.04.2024</td>
+                                                <td>€89.50</td>
+                                                <td>
+                                                    <span class="badge badge-warning">Offen</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>#ORD-2024-003</td>
+                                                <td>Thomas Weber</td>
+                                                <td>09.04.2024</td>
+                                                <td>€245.00</td>
+                                                <td>
+                                                    <span class="badge badge-success"
+                                                        >Versendet</span
+                                                    >
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Products Section -->
+                    <div id="products" class="section">
+                        <div class="page-header">
+                            <h2 class="page-title">Produkte</h2>
+                            <div style="display: flex; gap: 12px">
+                                <select class="form-select" style="width: 160px">
+                                    <option>Alle Kategorien</option>
+                                    <option>E-Liquid</option>
+                                    <option>Hardware</option>
+                                    <option>Zubehör</option>
+                                </select>
+                                <select class="form-select" style="width: 140px">
+                                    <option>Alle Status</option>
+                                    <option>Veröffentlicht</option>
+                                    <option>Entwurf</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body" style="padding: 0">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Produkt</th>
+                                                <th>Kategorie</th>
+                                                <th>Preis</th>
+                                                <th>Bestand</th>
+                                                <th>Status</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="product-table-body">
+                                            <tr>
+                                                <td>
+                                                    <div class="product-cell">
+                                                        <div
+                                                            class="product-thumb"
+                                                            style="
+                                                                background: #f3f4f6;
+                                                                display: flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                            "
+                                                        >
+                                                            📦
+                                                        </div>
+                                                        <div class="product-info">
+                                                            <h4>Premium Liquid Erdbeere</h4>
+                                                            <span>SKU: EL-001</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>E-Liquid</td>
+                                                <td>€19.99</td>
+                                                <td>45 Stück</td>
+                                                <td>
+                                                    <span class="badge badge-success"
+                                                        >Veröffentlicht</span
+                                                    >
+                                                </td>
+                                                <td>
+                                                    <button
+                                                        class="btn btn-icon"
+                                                        onclick="editProduct(1)"
+                                                    >
+                                                        <svg
+                                                            width="16"
+                                                            height="16"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        class="btn btn-icon"
+                                                        style="color: var(--danger)"
+                                                    >
+                                                        <svg
+                                                            width="16"
+                                                            height="16"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <div class="product-cell">
+                                                        <div
+                                                            class="product-thumb"
+                                                            style="
+                                                                background: #f3f4f6;
+                                                                display: flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                            "
+                                                        >
+                                                            📦
+                                                        </div>
+                                                        <div class="product-info">
+                                                            <h4>Vape Pen Pro</h4>
+                                                            <span>SKU: HW-001</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>Hardware</td>
+                                                <td>€89.99</td>
+                                                <td style="color: var(--danger); font-weight: 600">
+                                                    3 Stück
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-success"
+                                                        >Veröffentlicht</span
+                                                    >
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-icon">
+                                                        <svg
+                                                            width="16"
+                                                            height="16"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        class="btn btn-icon"
+                                                        style="color: var(--danger)"
+                                                    >
+                                                        <svg
+                                                            width="16"
+                                                            height="16"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Orders Section -->
+                    <div id="orders" class="section">
+                        <div class="page-header">
+                            <h2 class="page-title">Bestellungen</h2>
+                            <select class="form-select" style="width: 160px">
+                                <option>Alle Status</option>
+                                <option>Offen</option>
+                                <option>Bezahlt</option>
+                                <option>Versendet</option>
+                                <option>Storniert</option>
+                            </select>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body" style="padding: 0">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Bestellung</th>
+                                                <th>Kunde</th>
+                                                <th>Produkte</th>
+                                                <th>Gesamtbetrag</th>
+                                                <th>Status</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>#ORD-2024-001</td>
+                                                <td>Max Mustermann</td>
+                                                <td>3 Artikel</td>
+                                                <td>€149.99</td>
+                                                <td>
+                                                    <span class="badge badge-success">Bezahlt</span>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-secondary">
+                                                        Details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>#ORD-2024-002</td>
+                                                <td>Anna Schmidt</td>
+                                                <td>1 Artikel</td>
+                                                <td>€89.50</td>
+                                                <td>
+                                                    <span class="badge badge-warning">Offen</span>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-secondary">
+                                                        Details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>#ORD-2024-003</td>
+                                                <td>Thomas Weber</td>
+                                                <td>2 Artikel</td>
+                                                <td>€245.00</td>
+                                                <td>
+                                                    <span class="badge badge-neutral"
+                                                        >Versendet</span
+                                                    >
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-secondary">
+                                                        Details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shop Settings Section -->
+                    <div id="shop" class="section">
+                        <div class="page-header">
+                            <h2 class="page-title">Shop-Einstellungen</h2>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Allgemeine Informationen</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Shop-Name</label>
+                                        <input
+                                            type="text"
+                                            class="form-input"
+                                            value="Risbo Vapeshop"
+                                        />
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Slug (URL)</label>
+                                        <input type="text" class="form-input" value="risbo-vape" />
+                                        <div class="form-hint">
+                                            Dein Shop ist erreichbar unter:
+                                            sellityet.com/shop/risbo-vape
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Beschreibung</label>
+                                    <textarea class="form-textarea">
+Premium E-Liquids und Hardware für anspruchsvolle Dampfer. Qualität made in Germany.</textarea
+                                    >
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Primäre Farbe</label>
+                                        <input
+                                            type="color"
+                                            class="form-input"
+                                            value="#2563EB"
+                                            style="height: 42px; padding: 4px"
+                                        />
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select">
+                                            <option>Aktiv</option>
+                                            <option>Inaktiv</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 24px; display: flex; gap: 12px">
+                                    <button class="btn btn-primary">Speichern</button>
+                                    <button class="btn btn-secondary">Abbrechen</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="header-actions">
-                    <button class="btn btn-primary" onclick="openProductModal()">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Neues Produkt
-                    </button>
+            </main>
+        </div>
+
+        <!-- Product Modal -->
+        <div class="modal-overlay" id="product-modal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Neues Produkt</h3>
+                    <button class="modal-close" onclick="closeProductModal()">&times;</button>
                 </div>
-            </header>
-
-            <div class="content">
-                <!-- Dashboard Section -->
-                <div id="dashboard" class="section active">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label">Gesamtumsatz</span>
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <div class="stat-value">€12.450</div>
-                            <div class="stat-change">+12% zum Vormonat</div>
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Produktname *</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                id="product-name"
+                                placeholder="z.B. Premium Liquid"
+                            />
                         </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label">Bestellungen</span>
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                                </svg>
-                            </div>
-                            <div class="stat-value">142</div>
-                            <div class="stat-change">+8% zum Vormonat</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label">Produkte</span>
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                                </svg>
-                            </div>
-                            <div class="stat-value">48</div>
-                            <div class="stat-change">3 neu diesen Monat</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label">Kunden</span>
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                            </div>
-                            <div class="stat-value">89</div>
-                            <div class="stat-change">+5% zum Vormonat</div>
+                        <div class="form-group">
+                            <label class="form-label">SKU / Artikelnummer</label>
+                            <input type="text" class="form-input" placeholder="z.B. EL-002" />
                         </div>
                     </div>
 
-                    <div class="alert alert-warning">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <span>3 Produkte haben niedrigen Bestand (unter Mindestbestand)</span>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Letzte Bestellungen</h3>
-                            <button class="btn btn-secondary" onclick="showSection('orders')">Alle anzeigen</button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Bestellung</th>
-                                            <th>Kunde</th>
-                                            <th>Datum</th>
-                                            <th>Betrag</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>#ORD-2024-001</td>
-                                            <td>Max Mustermann</td>
-                                            <td>10.04.2024</td>
-                                            <td>€149.99</td>
-                                            <td><span class="badge badge-success">Bezahlt</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-2024-002</td>
-                                            <td>Anna Schmidt</td>
-                                            <td>10.04.2024</td>
-                                            <td>€89.50</td>
-                                            <td><span class="badge badge-warning">Offen</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-2024-003</td>
-                                            <td>Thomas Weber</td>
-                                            <td>09.04.2024</td>
-                                            <td>€245.00</td>
-                                            <td><span class="badge badge-success">Versendet</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Products Section -->
-                <div id="products" class="section">
-                    <div class="page-header">
-                        <h2 class="page-title">Produkte</h2>
-                        <div style="display: flex; gap: 12px;">
-                            <select class="form-select" style="width: 160px;">
-                                <option>Alle Kategorien</option>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Kategorie *</label>
+                            <select class="form-select">
                                 <option>E-Liquid</option>
                                 <option>Hardware</option>
                                 <option>Zubehör</option>
                             </select>
-                            <select class="form-select" style="width: 140px;">
-                                <option>Alle Status</option>
-                                <option>Veröffentlicht</option>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select">
                                 <option>Entwurf</option>
+                                <option>Veröffentlicht</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-body" style="padding: 0;">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Produkt</th>
-                                            <th>Kategorie</th>
-                                            <th>Preis</th>
-                                            <th>Bestand</th>
-                                            <th>Status</th>
-                                            <th>Aktionen</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="product-table-body">
-                                        <tr>
-                                            <td>
-                                                <div class="product-cell">
-                                                    <div class="product-thumb" style="background: #F3F4F6; display: flex; align-items: center; justify-content: center;">📦</div>
-                                                    <div class="product-info">
-                                                        <h4>Premium Liquid Erdbeere</h4>
-                                                        <span>SKU: EL-001</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>E-Liquid</td>
-                                            <td>€19.99</td>
-                                            <td>45 Stück</td>
-                                            <td><span class="badge badge-success">Veröffentlicht</span></td>
-                                            <td>
-                                                <button class="btn btn-icon" onclick="editProduct(1)">
-                                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                                    </svg>
-                                                </button>
-                                                <button class="btn btn-icon" style="color: var(--danger);">
-                                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                    </svg>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="product-cell">
-                                                    <div class="product-thumb" style="background: #F3F4F6; display: flex; align-items: center; justify-content: center;">📦</div>
-                                                    <div class="product-info">
-                                                        <h4>Vape Pen Pro</h4>
-                                                        <span>SKU: HW-001</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>Hardware</td>
-                                            <td>€89.99</td>
-                                            <td style="color: var(--danger); font-weight: 600;">3 Stück</td>
-                                            <td><span class="badge badge-success">Veröffentlicht</span></td>
-                                            <td>
-                                                <button class="btn btn-icon">
-                                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                                    </svg>
-                                                </button>
-                                                <button class="btn btn-icon" style="color: var(--danger);">
-                                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                    </svg>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Preis (€) *</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="19.99"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Rabattpreis (optional)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="14.99"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Beschreibung</label>
+                        <textarea
+                            class="form-textarea"
+                            placeholder="Produktbeschreibung..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Anfangsbestand</label>
+                            <input type="number" class="form-input" value="0" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Mindestbestand (Warnung)</label>
+                            <input type="number" class="form-input" value="5" />
                         </div>
                     </div>
                 </div>
-
-                <!-- Orders Section -->
-                <div id="orders" class="section">
-                    <div class="page-header">
-                        <h2 class="page-title">Bestellungen</h2>
-                        <select class="form-select" style="width: 160px;">
-                            <option>Alle Status</option>
-                            <option>Offen</option>
-                            <option>Bezahlt</option>
-                            <option>Versendet</option>
-                            <option>Storniert</option>
-                        </select>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-body" style="padding: 0;">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Bestellung</th>
-                                            <th>Kunde</th>
-                                            <th>Produkte</th>
-                                            <th>Gesamtbetrag</th>
-                                            <th>Status</th>
-                                            <th>Aktionen</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>#ORD-2024-001</td>
-                                            <td>Max Mustermann</td>
-                                            <td>3 Artikel</td>
-                                            <td>€149.99</td>
-                                            <td><span class="badge badge-success">Bezahlt</span></td>
-                                            <td>
-                                                <button class="btn btn-secondary">Details</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-2024-002</td>
-                                            <td>Anna Schmidt</td>
-                                            <td>1 Artikel</td>
-                                            <td>€89.50</td>
-                                            <td><span class="badge badge-warning">Offen</span></td>
-                                            <td>
-                                                <button class="btn btn-secondary">Details</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-2024-003</td>
-                                            <td>Thomas Weber</td>
-                                            <td>2 Artikel</td>
-                                            <td>€245.00</td>
-                                            <td><span class="badge badge-neutral">Versendet</span></td>
-                                            <td>
-                                                <button class="btn btn-secondary">Details</button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeProductModal()">
+                        Abbrechen
+                    </button>
+                    <button class="btn btn-primary" onclick="saveProduct()">
+                        Produkt speichern
+                    </button>
                 </div>
-
-                <!-- Shop Settings Section -->
-                <div id="shop" class="section">
-                    <div class="page-header">
-                        <h2 class="page-title">Shop-Einstellungen</h2>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Allgemeine Informationen</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Shop-Name</label>
-                                    <input type="text" class="form-input" value="Risbo Vapeshop">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Slug (URL)</label>
-                                    <input type="text" class="form-input" value="risbo-vape">
-                                    <div class="form-hint">Dein Shop ist erreichbar unter: sellityet.com/shop/risbo-vape</div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Beschreibung</label>
-                                <textarea class="form-textarea">Premium E-Liquids und Hardware für anspruchsvolle Dampfer. Qualität made in Germany.</textarea>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Primäre Farbe</label>
-                                    <input type="color" class="form-input" value="#2563EB" style="height: 42px; padding: 4px;">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Status</label>
-                                    <select class="form-select">
-                                        <option>Aktiv</option>
-                                        <option>Inaktiv</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 24px; display: flex; gap: 12px;">
-                                <button class="btn btn-primary">Speichern</button>
-                                <button class="btn btn-secondary">Abbrechen</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Product Modal -->
-    <div class="modal-overlay" id="product-modal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Neues Produkt</h3>
-                <button class="modal-close" onclick="closeProductModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Produktname *</label>
-                        <input type="text" class="form-input" id="product-name" placeholder="z.B. Premium Liquid">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">SKU / Artikelnummer</label>
-                        <input type="text" class="form-input" placeholder="z.B. EL-002">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Kategorie *</label>
-                        <select class="form-select">
-                            <option>E-Liquid</option>
-                            <option>Hardware</option>
-                            <option>Zubehör</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <select class="form-select">
-                            <option>Entwurf</option>
-                            <option>Veröffentlicht</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Preis (€) *</label>
-                        <input type="number" class="form-input" step="0.01" placeholder="19.99">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Rabattpreis (optional)</label>
-                        <input type="number" class="form-input" step="0.01" placeholder="14.99">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Beschreibung</label>
-                    <textarea class="form-textarea" placeholder="Produktbeschreibung..."></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Anfangsbestand</label>
-                        <input type="number" class="form-input" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Mindestbestand (Warnung)</label>
-                        <input type="number" class="form-input" value="5">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeProductModal()">Abbrechen</button>
-                <button class="btn btn-primary" onclick="saveProduct()">Produkt speichern</button>
             </div>
         </div>
-    </div>
 
-    <script>
-        // Navigation
-        function showSection(sectionId) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // Show target section
-            document.getElementById(sectionId).classList.add('active');
-            
-            // Update nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // Update page title
-            const titles = {
-                'dashboard': 'Dashboard',
-                'products': 'Produkte',
-                'orders': 'Bestellungen',
-                'shop': 'Shop-Einstellungen'
-            };
-            document.getElementById('page-title').textContent = titles[sectionId] || 'Dashboard';
-        }
+        <script>
+            // Navigation
+            function showSection(sectionId) {
+                // Hide all sections
+                document.querySelectorAll('.section').forEach((section) => {
+                    section.classList.remove('active');
+                });
 
-        // Modal Functions
-        function openProductModal() {
-            document.getElementById('product-modal').classList.add('active');
-        }
+                // Show target section
+                document.getElementById(sectionId).classList.add('active');
 
-        function closeProductModal() {
-            document.getElementById('product-modal').classList.remove('active');
-        }
+                // Update nav items
+                document.querySelectorAll('.nav-item').forEach((item) => {
+                    item.classList.remove('active');
+                });
+                event.target.classList.add('active');
 
-        function saveProduct() {
-            // Placeholder for save logic
-            closeProductModal();
-            alert('Produkt gespeichert (Demo)');
-        }
-
-        function editProduct(id) {
-            openProductModal();
-            // Load product data
-        }
-
-        // Close modal on outside click
-        document.getElementById('product-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeProductModal();
+                // Update page title
+                const titles = {
+                    dashboard: 'Dashboard',
+                    products: 'Produkte',
+                    orders: 'Bestellungen',
+                    shop: 'Shop-Einstellungen'
+                };
+                document.getElementById('page-title').textContent =
+                    titles[sectionId] || 'Dashboard';
             }
-        });
-    </script>
-</body>
+
+            // Modal Functions
+            function openProductModal() {
+                document.getElementById('product-modal').classList.add('active');
+            }
+
+            function closeProductModal() {
+                document.getElementById('product-modal').classList.remove('active');
+            }
+
+            function saveProduct() {
+                // Placeholder for save logic
+                closeProductModal();
+                alert('Produkt gespeichert (Demo)');
+            }
+
+            function editProduct(id) {
+                openProductModal();
+                // Load product data
+            }
+
+            // Close modal on outside click
+            document.getElementById('product-modal').addEventListener('click', function (e) {
+                if (e.target === this) {
+                    closeProductModal();
+                }
+            });
+        </script>
+    </body>
 </html>

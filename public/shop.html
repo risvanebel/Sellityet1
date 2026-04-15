@@ -1,181 +1,199 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop - Sellityet</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            min-height: 100vh;
-        }
-        .shop-header {
-            padding: 60px 20px;
-            text-align: center;
-            color: white;
-        }
-        .shop-header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .shop-header p { font-size: 1.2em; opacity: 0.9; }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        
-        .back-link {
-            margin-bottom: 20px;
-        }
-        .back-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 1.1em;
-        }
-        
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-        }
-        
-        .product-card {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-        .product-image {
-            height: 200px;
-            background: #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4em;
-        }
-        .product-info {
-            padding: 20px;
-        }
-        .product-info h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.3em;
-        }
-        .product-info p {
-            color: #666;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-        .product-price {
-            font-size: 1.5em;
-            color: #FF6B6B;
-            font-weight: bold;
-        }
-        .product-category {
-            display: inline-block;
-            background: #f0f0f0;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        
-        .empty {
-            text-align: center;
-            padding: 60px;
-            color: #666;
-        }
-        .empty .icon { font-size: 4em; margin-bottom: 20px; }
-        
-        .not-found {
-            text-align: center;
-            padding: 100px 20px;
-        }
-        .not-found h2 { color: #333; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-    <div id="shop-container">
-        <div class="shop-header" style="background: #667eea;">
-            <h1>Lade Shop...</h1>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div class="back-link">
-            <a href="index.html">← Alle Shops</a>
-        </div>
-        <div id="products-container">
-            <div class="empty">
-                <div class="icon">📦</div>
-                <h3>Lade Produkte...</h3>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Shop - Sellityet</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #f5f5f5;
+                min-height: 100vh;
+            }
+            .shop-header {
+                padding: 60px 20px;
+                text-align: center;
+                color: white;
+            }
+            .shop-header h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+            }
+            .shop-header p {
+                font-size: 1.2em;
+                opacity: 0.9;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 30px 20px;
+            }
+
+            .back-link {
+                margin-bottom: 20px;
+            }
+            .back-link a {
+                color: #667eea;
+                text-decoration: none;
+                font-size: 1.1em;
+            }
+
+            .products-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 25px;
+            }
+
+            .product-card {
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            }
+            .product-image {
+                height: 200px;
+                background: #f0f0f0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 4em;
+            }
+            .product-info {
+                padding: 20px;
+            }
+            .product-info h3 {
+                color: #333;
+                margin-bottom: 10px;
+                font-size: 1.3em;
+            }
+            .product-info p {
+                color: #666;
+                margin-bottom: 15px;
+                line-height: 1.5;
+            }
+            .product-price {
+                font-size: 1.5em;
+                color: #ff6b6b;
+                font-weight: bold;
+            }
+            .product-category {
+                display: inline-block;
+                background: #f0f0f0;
+                padding: 5px 12px;
+                border-radius: 15px;
+                font-size: 0.85em;
+                color: #666;
+                margin-bottom: 10px;
+            }
+
+            .empty {
+                text-align: center;
+                padding: 60px;
+                color: #666;
+            }
+            .empty .icon {
+                font-size: 4em;
+                margin-bottom: 20px;
+            }
+
+            .not-found {
+                text-align: center;
+                padding: 100px 20px;
+            }
+            .not-found h2 {
+                color: #333;
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="shop-container">
+            <div class="shop-header" style="background: #667eea">
+                <h1>Lade Shop...</h1>
             </div>
         </div>
-    </div>
 
-    <script>
-        const API_URL = window.location.origin + '/api';
-        const urlParams = new URLSearchParams(window.location.search);
-        const shopSlug = urlParams.get('shop');
-        
-        async function loadShop() {
-            if (!shopSlug) {
-                document.getElementById('shop-container').innerHTML = `
+        <div class="container">
+            <div class="back-link">
+                <a href="index.html">← Alle Shops</a>
+            </div>
+            <div id="products-container">
+                <div class="empty">
+                    <div class="icon">📦</div>
+                    <h3>Lade Produkte...</h3>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const API_URL = window.location.origin + '/api';
+            const urlParams = new URLSearchParams(window.location.search);
+            const shopSlug = urlParams.get('shop');
+
+            async function loadShop() {
+                if (!shopSlug) {
+                    document.getElementById('shop-container').innerHTML = `
                     <div class="not-found">
                         <h2>❌ Shop nicht gefunden</h2>
                         <p><a href="index.html">Zurück zur Startseite</a></p>
                     </div>
                 `;
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/shops/${shopSlug}`);
-                if (!response.ok) throw new Error('Shop not found');
-                
-                const shop = await response.json();
-                
-                document.getElementById('shop-container').innerHTML = `
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/shops/${shopSlug}`);
+                    if (!response.ok) throw new Error('Shop not found');
+
+                    const shop = await response.json();
+
+                    document.getElementById('shop-container').innerHTML = `
                     <div class="shop-header" style="background: ${shop.primary_color || '#667eea'};">
                         <h1>🏪 ${shop.name}</h1>
                         <p>${shop.description || 'Willkommen in unserem Shop!'}</p>
                     </div>
                 `;
-                
-                loadProducts(shop.id);
-            } catch (error) {
-                document.getElementById('shop-container').innerHTML = `
+
+                    loadProducts(shop.id);
+                } catch (error) {
+                    document.getElementById('shop-container').innerHTML = `
                     <div class="not-found">
                         <h2>❌ Shop nicht gefunden</h2>
                         <p><a href="index.html">Zurück zur Startseite</a></p>
                     </div>
                 `;
+                }
             }
-        }
-        
-        async function loadProducts(shopId) {
-            try {
-                const response = await fetch(`${API_URL}/shops/${shopId}/products`);
-                const products = await response.json();
-                
-                const container = document.getElementById('products-container');
-                
-                if (products.length === 0) {
-                    container.innerHTML = `
+
+            async function loadProducts(shopId) {
+                try {
+                    const response = await fetch(`${API_URL}/shops/${shopId}/products`);
+                    const products = await response.json();
+
+                    const container = document.getElementById('products-container');
+
+                    if (products.length === 0) {
+                        container.innerHTML = `
                         <div class="empty">
                             <div class="icon">📦</div>
                             <h3>Noch keine Produkte</h3>
                             <p>Der Shop hat noch keine Produkte eingestellt.</p>
                         </div>
                     `;
-                    return;
-                }
-                
-                container.innerHTML = `
+                        return;
+                    }
+
+                    container.innerHTML = `
                     <div class="products-grid">
-                        ${products.map(p => `
+                        ${products
+                            .map(
+                                (p) => `
                             <div class="product-card">
                                 <div class="product-image">📦</div>
                                 <div class="product-info">
@@ -185,21 +203,23 @@
                                     <div class="product-price">${p.price}€</div>
                                 </div>
                             </div>
-                        `).join('')}
+                        `
+                            )
+                            .join('')}
                     </div>
                 `;
-            } catch (error) {
-                console.error('Error loading products:', error);
-                document.getElementById('products-container').innerHTML = `
+                } catch (error) {
+                    console.error('Error loading products:', error);
+                    document.getElementById('products-container').innerHTML = `
                     <div class="empty">
                         <div class="icon">⚠️</div>
                         <h3>Fehler beim Laden der Produkte</h3>
                     </div>
                 `;
+                }
             }
-        }
-        
-        loadShop();
-    </script>
-</body>
+
+            loadShop();
+        </script>
+    </body>
 </html>

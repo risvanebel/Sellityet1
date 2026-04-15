@@ -4,14 +4,16 @@ const puppeteer = require('puppeteer');
 
 // Simple HTML-based invoice generator
 function generateInvoiceHTML(order, shop) {
-    const shippingAddress = typeof order.shipping_address === 'string' 
-        ? JSON.parse(order.shipping_address) 
-        : order.shipping_address;
-    
-    const itemsHtml = order.items.map(item => {
-        const price = parseFloat(item.unit_price);
-        const total = price * item.quantity;
-        return `
+    const shippingAddress =
+        typeof order.shipping_address === 'string'
+            ? JSON.parse(order.shipping_address)
+            : order.shipping_address;
+
+    const itemsHtml = order.items
+        .map((item) => {
+            const price = parseFloat(item.unit_price);
+            const total = price * item.quantity;
+            return `
             <tr>
                 <td>${item.product_name}${item.variant_name ? ` (${item.variant_name})` : ''}</td>
                 <td style="text-align: center;">${item.quantity}</td>
@@ -19,10 +21,11 @@ function generateInvoiceHTML(order, shop) {
                 <td style="text-align: right;">€${total.toFixed(2)}</td>
             </tr>
         `;
-    }).join('');
-    
+        })
+        .join('');
+
     const invoiceDate = new Date(order.created_at).toLocaleDateString('de-DE');
-    
+
     return `
 <!DOCTYPE html>
 <html lang="de">
@@ -211,16 +214,24 @@ function generateInvoiceHTML(order, shop) {
             <span>Zwischensumme:</span>
             <span>€${parseFloat(order.subtotal || order.total_amount).toFixed(2)}</span>
         </div>
-        ${order.shipping_cost > 0 ? `
+        ${
+            order.shipping_cost > 0
+                ? `
         <div class="totals-row">
             <span>Versand:</span>
             <span>€${parseFloat(order.shipping_cost).toFixed(2)}</span>
-        </div>` : '<div class="totals-row"><span>Versand:</span><span>€0.00</span></div>'}
-        ${order.tax_amount > 0 ? `
+        </div>`
+                : '<div class="totals-row"><span>Versand:</span><span>€0.00</span></div>'
+        }
+        ${
+            order.tax_amount > 0
+                ? `
         <div class="totals-row">
             <span>Mehrwertsteuer (${order.tax_rate || 19}%):</span>
             <span>€${parseFloat(order.tax_amount).toFixed(2)}</span>
-        </div>` : ''}
+        </div>`
+                : ''
+        }
         <div class="totals-row">
             <span>Gesamtsumme:</span>
             <span>€${parseFloat(order.total_amount).toFixed(2)}</span>
@@ -241,13 +252,13 @@ function generateInvoiceHTML(order, shop) {
 
 function getPaymentMethodName(method) {
     const names = {
-        'cod': 'Nachnahme',
-        'banktransfer': 'Überweisung',
-        'sepa': 'SEPA-Lastschrift',
-        'creditcard': 'Kreditkarte',
-        'paypal': 'PayPal',
-        'paypal_friends': 'PayPal (F&F)',
-        'crypto': 'Kryptowährung'
+        cod: 'Nachnahme',
+        banktransfer: 'Überweisung',
+        sepa: 'SEPA-Lastschrift',
+        creditcard: 'Kreditkarte',
+        paypal: 'PayPal',
+        paypal_friends: 'PayPal (F&F)',
+        crypto: 'Kryptowährung'
     };
     return names[method] || method || 'Unbekannt';
 }
@@ -274,23 +285,23 @@ function getPaymentInstructions(method, shop) {
 // Generate PDF from HTML
 async function generateInvoicePDF(order, shop) {
     const html = generateInvoiceHTML(order, shop);
-    
+
     let browser;
     try {
         browser = await puppeteer.launch({
             headless: 'new',
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
-        
+
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
-        
+
         const pdf = await page.pdf({
             format: 'A4',
             printBackground: true,
             margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
         });
-        
+
         return pdf;
     } catch (error) {
         console.error('PDF generation error:', error);

@@ -189,22 +189,16 @@
     <main class="main">
         <div class="register-card">
             <div class="register-header">
-                <h1 class="register-title">Account erstellen</h1>
-                <p class="register-subtitle">Wähle, wie du Sellityet nutzen möchtest</p>
+                <h1 class="register-title">Shop erstellen</h1>
+                <p class="register-subtitle">Eröffne deinen eigenen Online-Shop</p>
             </div>
             <div class="error-message" id="errorMessage"></div>
             <form id="registerForm">
-                <div class="role-selection">
-                    <div class="role-card" data-role="customer" onclick="selectRole('customer')">
-                        <div class="icon">🛒</div>
-                        <div class="label">Ich möchte kaufen</div>
-                        <div class="desc">Entdecke Shops und Produkte</div>
-                    </div>
-                    <div class="role-card active" data-role="owner" onclick="selectRole('owner')">
-                        <div class="icon">🏪</div>
-                        <div class="label">Ich möchte verkaufen</div>
-                        <div class="desc">Eröffne deinen eigenen Shop</div>
-                    </div>
+                <input type="hidden" id="role" value="owner">
+                <div class="role-info" style="text-align: center; margin-bottom: 24px; padding: 16px; background: #F3F2F1; border-radius: 8px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🏪</div>
+                    <div style="font-weight: 600; color: #323130;">Shop-Betreiber Registrierung</div>
+                    <div style="font-size: 13px; color: #605E5C;">Eröffne deinen eigenen Online-Shop</div>
                 </div>
                 <div class="form-group">
                     <label>Name</label>
@@ -226,33 +220,21 @@
         </div>
     </main>
     <script>
-        let selectedRole = 'owner';
-        function selectRole(role) {
-            selectedRole = role;
-            document.querySelectorAll('.role-card').forEach(c => c.classList.remove('active'));
-            document.querySelector(`[data-role="${role}"]`).classList.add('active');
-        }
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             try {
-                const endpoint = selectedRole === 'owner' ? '/api/auth/register' : '/api/auth/customer/register';
-                const res = await fetch(endpoint, {
+                const res = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                    body: JSON.stringify({ name, email, password, role: 'owner' })
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    if (selectedRole === 'owner') {
-                        localStorage.setItem('owner_token', data.token);
-                        window.location.href = '/owner.html';
-                    } else {
-                        localStorage.setItem('customer_token', data.token);
-                        window.location.href = '/shop-home.html';
-                    }
+                    localStorage.setItem('owner_token', data.token);
+                    window.location.href = '/owner.html';
                 } else {
                     document.getElementById('errorMessage').textContent = data.error || 'Registrierung fehlgeschlagen';
                     document.getElementById('errorMessage').style.display = 'block';

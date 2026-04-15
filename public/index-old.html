@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sellityet - Entdecke Shops</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background: white;
+                border-radius: 20px;
+                padding: 30px;
+                margin-bottom: 30px;
+                text-align: center;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            }
+            .header h1 {
+                color: #333;
+                font-size: 2.5em;
+                margin-bottom: 10px;
+            }
+            .header p {
+                color: #666;
+                font-size: 1.2em;
+            }
+            .nav-buttons {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+                margin-top: 20px;
+                flex-wrap: wrap;
+            }
+            .btn {
+                padding: 12px 30px;
+                border-radius: 25px;
+                border: none;
+                cursor: pointer;
+                font-size: 1em;
+                transition: transform 0.2s;
+                text-decoration: none;
+                display: inline-block;
+            }
+            .btn:hover {
+                transform: translateY(-2px);
+            }
+            .btn-primary {
+                background: #ff6b6b;
+                color: white;
+            }
+            .btn-secondary {
+                background: white;
+                color: #667eea;
+                border: 2px solid #667eea;
+            }
+            .btn-admin {
+                background: #333;
+                color: white;
+            }
+
+            .shops-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 25px;
+            }
+            .shop-card {
+                background: white;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+                transition: transform 0.2s;
+                cursor: pointer;
+            }
+            .shop-card:hover {
+                transform: translateY(-5px);
+            }
+            .shop-header {
+                height: 150px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 3em;
+            }
+            .shop-body {
+                padding: 25px;
+            }
+            .shop-body h3 {
+                color: #333;
+                margin-bottom: 10px;
+                font-size: 1.4em;
+            }
+            .shop-body p {
+                color: #666;
+                line-height: 1.6;
+            }
+            .loading {
+                text-align: center;
+                color: white;
+                font-size: 1.2em;
+                padding: 50px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🛍️ Sellityet</h1>
+                <p>Entdecke einzigartige Shops und Produkte</p>
+                <div class="nav-buttons">
+                    <a href="register.html" class="btn btn-primary">Registrieren</a>
+                    <a href="/login.html" class="btn btn-secondary">Shop Owner Login</a>
+                    <!-- Master Admin: /admin-login.html (not publicly linked) -->
+                </div>
+            </div>
+
+            <div id="shops-container" class="shops-grid">
+                <div class="loading">Lade Shops...</div>
+            </div>
+        </div>
+
+        <script>
+            const API_URL = window.location.origin + '/api';
+
+            async function loadShops() {
+                try {
+                    const response = await fetch(`${API_URL}/shops`);
+                    const shops = await response.json();
+
+                    const container = document.getElementById('shops-container');
+
+                    if (shops.length === 0) {
+                        container.innerHTML =
+                            '<div class="loading">Noch keine Shops vorhanden. Werde der Erste!</div>';
+                        return;
+                    }
+
+                    container.innerHTML = shops
+                        .map(
+                            (shop) => `
+                    <div class="shop-card" onclick="viewShop('${shop.slug}')">
+                        <div class="shop-header" style="background: ${shop.primary_color || '#FF6B6B'};">
+                            🏪
+                        </div>
+                        <div class="shop-body">
+                            <h3>${shop.name}</h3>
+                            <p>${shop.description || 'Keine Beschreibung'}</p>
+                        </div>
+                    </div>
+                `
+                        )
+                        .join('');
+                } catch (error) {
+                    console.error('Error loading shops:', error);
+                    document.getElementById('shops-container').innerHTML =
+                        '<div class="loading">Fehler beim Laden der Shops</div>';
+                }
+            }
+
+            function viewShop(slug) {
+                window.location.href = `shop.html?shop=${slug}`;
+            }
+
+            loadShops();
+        </script>
+    </body>
+</html>

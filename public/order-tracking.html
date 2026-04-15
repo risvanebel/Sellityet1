@@ -1,347 +1,390 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bestellung verfolgen</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #F8FAFC;
-            color: #0F172A;
-            line-height: 1.5;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-        .header {
-            text-align: center;
-            padding: 40px 0;
-        }
-        .header h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .header p {
-            color: #64748B;
-        }
-        .search-box {
-            background: white;
-            border-radius: 12px;
-            padding: 32px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 24px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 6px;
-        }
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            font-size: 16px;
-            font-family: inherit;
-        }
-        .form-input:focus {
-            outline: none;
-            border-color: #2563EB;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-        }
-        .submit-btn {
-            width: 100%;
-            padding: 16px;
-            background: #2563EB;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .submit-btn:hover {
-            background: #1D4ED8;
-        }
-        .submit-btn:disabled {
-            background: #9CA3AF;
-            cursor: not-allowed;
-        }
-        .order-result {
-            background: white;
-            border-radius: 12px;
-            padding: 32px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .order-result.active {
-            display: block;
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 24px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid #E2E8F0;
-        }
-        .order-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-        .order-date {
-            color: #64748B;
-            margin-top: 4px;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .status-pending { background: #FEF3C7; color: #92400E; }
-        .status-paid { background: #D1FAE5; color: #065F46; }
-        .status-shipped { background: #DBEAFE; color: #1E40AF; }
-        .status-delivered { background: #D1FAE5; color: #065F46; }
-        .status-cancelled { background: #FEE2E2; color: #991B1B; }
-        
-        .progress-bar {
-            display: flex;
-            justify-content: space-between;
-            margin: 32px 0;
-            position: relative;
-        }
-        .progress-bar::before {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: #E2E8F0;
-            z-index: 0;
-        }
-        .progress-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-        }
-        .progress-dot {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #E2E8F0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        .progress-step.active .progress-dot {
-            background: #2563EB;
-            color: white;
-        }
-        .progress-step.completed .progress-dot {
-            background: #10B981;
-            color: white;
-        }
-        .progress-label {
-            font-size: 12px;
-            color: #64748B;
-            text-align: center;
-        }
-        .progress-step.active .progress-label {
-            color: #2563EB;
-            font-weight: 600;
-        }
-        
-        .order-items {
-            margin-top: 24px;
-        }
-        .items-title {
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-        .item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #E2E8F0;
-        }
-        .item:last-child {
-            border-bottom: none;
-        }
-        .item-info {
-            flex: 1;
-        }
-        .item-name {
-            font-weight: 500;
-        }
-        .item-variant {
-            font-size: 14px;
-            color: #64748B;
-        }
-        .item-quantity {
-            color: #64748B;
-            margin-right: 16px;
-        }
-        .item-price {
-            font-weight: 600;
-        }
-        
-        .order-total {
-            display: flex;
-            justify-content: space-between;
-            padding: 16px 0;
-            margin-top: 16px;
-            border-top: 2px solid #E2E8F0;
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-        
-        .shipping-info {
-            margin-top: 24px;
-            padding: 16px;
-            background: #F8FAFC;
-            border-radius: 8px;
-        }
-        .shipping-info h4 {
-            margin-bottom: 12px;
-        }
-        
-        .error-message {
-            background: #FEE2E2;
-            color: #991B1B;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .back-link {
-            display: inline-block;
-            margin-top: 24px;
-            color: #2563EB;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        
-        @media (max-width: 640px) {
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Bestellung verfolgen</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family:
+                    'Inter',
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                background: #f8fafc;
+                color: #0f172a;
+                line-height: 1.5;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 24px;
+            }
+            .header {
+                text-align: center;
+                padding: 40px 0;
+            }
+            .header h1 {
+                font-size: 1.75rem;
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
+            .header p {
+                color: #64748b;
+            }
+            .search-box {
+                background: white;
+                border-radius: 12px;
+                padding: 32px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                margin-bottom: 24px;
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            .form-label {
+                display: block;
+                font-size: 14px;
+                font-weight: 500;
+                margin-bottom: 6px;
+            }
+            .form-input {
+                width: 100%;
+                padding: 12px 16px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                font-size: 16px;
+                font-family: inherit;
+            }
+            .form-input:focus {
+                outline: none;
+                border-color: #2563eb;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+            .submit-btn {
+                width: 100%;
+                padding: 16px;
+                background: #2563eb;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+            }
+            .submit-btn:hover {
+                background: #1d4ed8;
+            }
+            .submit-btn:disabled {
+                background: #9ca3af;
+                cursor: not-allowed;
+            }
+            .order-result {
+                background: white;
+                border-radius: 12px;
+                padding: 32px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                display: none;
+            }
+            .order-result.active {
+                display: block;
+            }
             .order-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 24px;
+                padding-bottom: 24px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .order-number {
+                font-size: 1.5rem;
+                font-weight: 700;
+            }
+            .order-date {
+                color: #64748b;
+                margin-top: 4px;
+            }
+            .status-badge {
+                display: inline-block;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            .status-pending {
+                background: #fef3c7;
+                color: #92400e;
+            }
+            .status-paid {
+                background: #d1fae5;
+                color: #065f46;
+            }
+            .status-shipped {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+            .status-delivered {
+                background: #d1fae5;
+                color: #065f46;
+            }
+            .status-cancelled {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .progress-bar {
+                display: flex;
+                justify-content: space-between;
+                margin: 32px 0;
+                position: relative;
+            }
+            .progress-bar::before {
+                content: '';
+                position: absolute;
+                top: 15px;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: #e2e8f0;
+                z-index: 0;
+            }
+            .progress-step {
+                display: flex;
                 flex-direction: column;
-                gap: 16px;
+                align-items: center;
+                position: relative;
+                z-index: 1;
+            }
+            .progress-dot {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: #e2e8f0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+            .progress-step.active .progress-dot {
+                background: #2563eb;
+                color: white;
+            }
+            .progress-step.completed .progress-dot {
+                background: #10b981;
+                color: white;
             }
             .progress-label {
-                font-size: 10px;
+                font-size: 12px;
+                color: #64748b;
+                text-align: center;
             }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📦 Bestellung verfolgen</h1>
-            <p>Gib deine Bestellnummer und E-Mail ein</p>
-        </div>
-        
-        <div class="search-box">
-            <div id="error-container"></div>
-            
-            <div class="form-group">
-                <label class="form-label">Bestellnummer</label>
-                <input type="text" class="form-input" id="order-number" placeholder="z.B. ORD-123456">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">E-Mail (bei Bestellung verwendet)</label>
-                <input type="email" class="form-input" id="customer-email" placeholder="ihre@email.de">
-            </div>
-            
-            <button class="submit-btn" onclick="trackOrder()" id="track-btn">
-                Bestellung suchen
-            </button>
-        </div>
-        
-        <div class="order-result" id="order-result">
-            <!-- Order details will be loaded here -->
-        </div>
-    </div>
+            .progress-step.active .progress-label {
+                color: #2563eb;
+                font-weight: 600;
+            }
 
-    <script>
-        const API_URL = '/api';
-        
-        async function trackOrder() {
-            const orderNumber = document.getElementById('order-number').value.trim();
-            const email = document.getElementById('customer-email').value.trim();
-            
-            if (!orderNumber || !email) {
-                showError('Bitte Bestellnummer und E-Mail eingeben');
-                return;
+            .order-items {
+                margin-top: 24px;
             }
-            
-            const btn = document.getElementById('track-btn');
-            btn.disabled = true;
-            btn.textContent = 'Suche...';
-            
-            try {
-                const res = await fetch(`${API_URL}/orders/track?number=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`);
-                
-                if (!res.ok) {
-                    throw new Error('Bestellung nicht gefunden');
+            .items-title {
+                font-weight: 600;
+                margin-bottom: 16px;
+            }
+            .item {
+                display: flex;
+                justify-content: space-between;
+                padding: 12px 0;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .item:last-child {
+                border-bottom: none;
+            }
+            .item-info {
+                flex: 1;
+            }
+            .item-name {
+                font-weight: 500;
+            }
+            .item-variant {
+                font-size: 14px;
+                color: #64748b;
+            }
+            .item-quantity {
+                color: #64748b;
+                margin-right: 16px;
+            }
+            .item-price {
+                font-weight: 600;
+            }
+
+            .order-total {
+                display: flex;
+                justify-content: space-between;
+                padding: 16px 0;
+                margin-top: 16px;
+                border-top: 2px solid #e2e8f0;
+                font-size: 1.25rem;
+                font-weight: 700;
+            }
+
+            .shipping-info {
+                margin-top: 24px;
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 8px;
+            }
+            .shipping-info h4 {
+                margin-bottom: 12px;
+            }
+
+            .error-message {
+                background: #fee2e2;
+                color: #991b1b;
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+            }
+
+            .back-link {
+                display: inline-block;
+                margin-top: 24px;
+                color: #2563eb;
+                text-decoration: none;
+            }
+            .back-link:hover {
+                text-decoration: underline;
+            }
+
+            @media (max-width: 640px) {
+                .order-header {
+                    flex-direction: column;
+                    gap: 16px;
                 }
-                
-                const order = await res.json();
-                displayOrder(order);
-                
-            } catch (error) {
-                showError('Bestellung nicht gefunden. Bitte überprüfe Bestellnummer und E-Mail.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Bestellung suchen';
+                .progress-label {
+                    font-size: 10px;
+                }
             }
-        }
-        
-        function displayOrder(order) {
-            const resultDiv = document.getElementById('order-result');
-            
-            const statusSteps = [
-                { key: 'pending', label: 'Bestellt', icon: '📝' },
-                { key: 'paid', label: 'Bezahlt', icon: '💳' },
-                { key: 'shipped', label: 'Versendet', icon: '📦' },
-                { key: 'delivered', label: 'Geliefert', icon: '✅' }
-            ];
-            
-            const currentStepIndex = statusSteps.findIndex(s => s.key === order.status);
-            
-            const progressHtml = statusSteps.map((step, index) => {
-                let state = '';
-                if (index < currentStepIndex) state = 'completed';
-                else if (index === currentStepIndex) state = 'active';
-                
-                return `
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📦 Bestellung verfolgen</h1>
+                <p>Gib deine Bestellnummer und E-Mail ein</p>
+            </div>
+
+            <div class="search-box">
+                <div id="error-container"></div>
+
+                <div class="form-group">
+                    <label class="form-label">Bestellnummer</label>
+                    <input
+                        type="text"
+                        class="form-input"
+                        id="order-number"
+                        placeholder="z.B. ORD-123456"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">E-Mail (bei Bestellung verwendet)</label>
+                    <input
+                        type="email"
+                        class="form-input"
+                        id="customer-email"
+                        placeholder="ihre@email.de"
+                    />
+                </div>
+
+                <button class="submit-btn" onclick="trackOrder()" id="track-btn">
+                    Bestellung suchen
+                </button>
+            </div>
+
+            <div class="order-result" id="order-result">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+
+        <script>
+            const API_URL = '/api';
+
+            async function trackOrder() {
+                const orderNumber = document.getElementById('order-number').value.trim();
+                const email = document.getElementById('customer-email').value.trim();
+
+                if (!orderNumber || !email) {
+                    showError('Bitte Bestellnummer und E-Mail eingeben');
+                    return;
+                }
+
+                const btn = document.getElementById('track-btn');
+                btn.disabled = true;
+                btn.textContent = 'Suche...';
+
+                try {
+                    const res = await fetch(
+                        `${API_URL}/orders/track?number=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`
+                    );
+
+                    if (!res.ok) {
+                        throw new Error('Bestellung nicht gefunden');
+                    }
+
+                    const order = await res.json();
+                    displayOrder(order);
+                } catch (error) {
+                    showError(
+                        'Bestellung nicht gefunden. Bitte überprüfe Bestellnummer und E-Mail.'
+                    );
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Bestellung suchen';
+                }
+            }
+
+            function displayOrder(order) {
+                const resultDiv = document.getElementById('order-result');
+
+                const statusSteps = [
+                    { key: 'pending', label: 'Bestellt', icon: '📝' },
+                    { key: 'paid', label: 'Bezahlt', icon: '💳' },
+                    { key: 'shipped', label: 'Versendet', icon: '📦' },
+                    { key: 'delivered', label: 'Geliefert', icon: '✅' }
+                ];
+
+                const currentStepIndex = statusSteps.findIndex((s) => s.key === order.status);
+
+                const progressHtml = statusSteps
+                    .map((step, index) => {
+                        let state = '';
+                        if (index < currentStepIndex) state = 'completed';
+                        else if (index === currentStepIndex) state = 'active';
+
+                        return `
                     <div class="progress-step ${state}">
                         <div class="progress-dot">${step.icon}</div>
                         <div class="progress-label">${step.label}</div>
                     </div>
                 `;
-            }).join('');
-            
-            const itemsHtml = order.items.map(item => `
+                    })
+                    .join('');
+
+                const itemsHtml = order.items
+                    .map(
+                        (item) => `
                 <div class="item">
                     <div class="item-info">
                         <div class="item-name">${item.product_name}</div>
@@ -350,13 +393,16 @@
                     <span class="item-quantity">${item.quantity}x</span>
                     <span class="item-price">€${parseFloat(item.unit_price).toFixed(2)}</span>
                 </div>
-            `).join('');
-            
-            const shippingAddress = typeof order.shipping_address === 'string' 
-                ? JSON.parse(order.shipping_address) 
-                : order.shipping_address;
-            
-            resultDiv.innerHTML = `
+            `
+                    )
+                    .join('');
+
+                const shippingAddress =
+                    typeof order.shipping_address === 'string'
+                        ? JSON.parse(order.shipping_address)
+                        : order.shipping_address;
+
+                resultDiv.innerHTML = `
                 <div class="order-header">
                     <div>
                         <div class="order-number">${order.order_number}</div>
@@ -387,41 +433,45 @@
                         ${shippingAddress.zip} ${shippingAddress.city}<br>
                         ${shippingAddress.country}
                     </p>
-                    ${order.tracking_number ? `
+                    ${
+                        order.tracking_number
+                            ? `
                         <p style="margin-top: 12px;">
                             <strong>Tracking-Nummer:</strong> ${order.tracking_number}
                         </p>
-                    ` : ''}
+                    `
+                            : ''
+                    }
                 </div>
                 
                 <a href="javascript:location.reload()" class="back-link">← Neue Suche</a>
             `;
-            
-            resultDiv.classList.add('active');
-            document.querySelector('.search-box').style.display = 'none';
-        }
-        
-        function getStatusLabel(status) {
-            const labels = {
-                'pending': 'Offen',
-                'paid': 'Bezahlt',
-                'shipped': 'Versendet',
-                'delivered': 'Geliefert',
-                'cancelled': 'Storniert'
-            };
-            return labels[status] || status;
-        }
-        
-        function showError(message) {
-            document.getElementById('error-container').innerHTML = `
+
+                resultDiv.classList.add('active');
+                document.querySelector('.search-box').style.display = 'none';
+            }
+
+            function getStatusLabel(status) {
+                const labels = {
+                    pending: 'Offen',
+                    paid: 'Bezahlt',
+                    shipped: 'Versendet',
+                    delivered: 'Geliefert',
+                    cancelled: 'Storniert'
+                };
+                return labels[status] || status;
+            }
+
+            function showError(message) {
+                document.getElementById('error-container').innerHTML = `
                 <div class="error-message">${message}</div>
             `;
-        }
-        
-        // Enter key support
-        document.getElementById('customer-email').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') trackOrder();
-        });
-    </script>
-</body>
+            }
+
+            // Enter key support
+            document.getElementById('customer-email').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') trackOrder();
+            });
+        </script>
+    </body>
 </html>
