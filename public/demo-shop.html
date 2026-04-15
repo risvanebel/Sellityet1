@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Shop - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--surface-alt);
+            min-height: 100vh;
+        }
+        .shop-header {
+            background: var(--primary);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .shop-header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .shop-header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .back-link {
+            margin-bottom: 20px;
+        }
+        .back-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .product-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-4px);
+        }
+        .product-image {
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+        }
+        .product-info {
+            padding: 20px;
+        }
+        .product-category {
+            display: inline-block;
+            background: var(--surface-alt);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .product-info h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .product-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        .product-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+        .btn-add {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-add:hover {
+            background: var(--primary-dark);
+        }
+        .btn-added {
+            background: #10B981 !important;
+        }
+        .cart-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--primary);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        @media (max-width: 640px) {
+            .shop-header h1 { font-size: 1.8em; }
+            .products-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="shop-header">
+        <h1>Demo Shop</h1>
+        <p>Ein Demo-Shop zum Testen</p>
+    </header>
+
+    <div class="container">
+        <div class="back-link">
+            <a href="/">← Zurück zur Startseite</a>
+        </div>
+
+        <div class="products-grid" id="productsGrid"></div>
+    </div>
+
+    <a href="/cart.html" class="cart-float" id="cartBtn">
+        🛒 Warenkorb (<span id="cartCount">0</span>)
+    </a>
+
+    <script>
+        const demoProducts = [
+            {
+                id: 1,
+                name: 'Premium T-Shirt',
+                description: 'Hochwertiges Baumwoll-T-Shirt in verschiedenen Farben',
+                price: 29.99,
+                category: 'Bekleidung',
+                emoji: '👕'
+            },
+            {
+                id: 2,
+                name: 'Sport Hoodie',
+                description: 'Bequemer Hoodie für Sport und Freizeit',
+                price: 49.99,
+                category: 'Bekleidung',
+                emoji: '🧥'
+            },
+            {
+                id: 3,
+                name: 'Baseball Cap',
+                description: 'Klassische Basecap mit verstellbarem Verschluss',
+                price: 19.99,
+                category: 'Accessoires',
+                emoji: '🧢'
+            },
+            {
+                id: 4,
+                name: 'Trinkflasche',
+                description: 'Edelstahl Trinkflasche, 500ml, BPA-frei',
+                price: 14.99,
+                category: 'Accessoires',
+                emoji: '🥤'
+            }
+        ];
+
+        function loadProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = demoProducts.map(p => `
+                <div class="product-card">
+                    <div class="product-image">${p.emoji}</div>
+                    <div class="product-info">
+                        <span class="product-category">${p.category}</span>
+                        <h3>${p.name}</h3>
+                        <p>${p.description}</p>
+                        <div class="product-price">${p.price.toFixed(2)} €</div>
+                        <button class="btn-add" id="btn-${p.id}" onclick="addToCart(${p.id})">
+                            In den Warenkorb
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(productId) {
+            const product = demoProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            // Add shop_id for checkout
+            const cartItem = {
+                ...product,
+                shop_id: 4,
+                quantity: 1
+            };
+            
+            cart.push(cartItem);
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            // Update button
+            const btn = document.getElementById(`btn-${productId}`);
+            btn.textContent = '✓ Hinzugefügt';
+            btn.classList.add('btn-added');
+            
+            setTimeout(() => {
+                btn.textContent = 'In den Warenkorb';
+                btn.classList.remove('btn-added');
+            }, 2000);
+
+            updateCartCount();
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            document.getElementById('cartCount').textContent = cart.length;
+        }
+
+        // Load on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+            updateCartCount();
+        });
+    </script>
+</body>
+</html>
