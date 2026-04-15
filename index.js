@@ -3055,14 +3055,17 @@ app.post('/api/orders', async (req, res) => {
     const client = await pool.connect();
 
     try {
+        console.log('Step 1: Starting transaction');
         await client.query('BEGIN');
 
         // Generate order number
         const orderNumber = 'ORD-' + Date.now();
+        console.log('Step 2: Generated order number:', orderNumber);
 
         // Create or update customer (handle errors gracefully)
         let customerId = null;
         try {
+            console.log('Step 3: Creating customer...');
             const { rows: customerRows } = await client.query(
                 `
                 INSERT INTO customers (shop_id, email, name, phone, shipping_address, total_orders, total_spent, last_order_at)
@@ -3086,36 +3089,46 @@ app.post('/api/orders', async (req, res) => {
                 ]
             );
             customerId = customerRows[0]?.id;
+            console.log('Step 4: Customer created/updated, ID:', customerId);
         } catch (customerError) {
             console.error('Customer creation error:', customerError);
             // Continue without customer ID - order can still be created
         }
 
         // Create order
-        const { rows: orderRows } = await client.query(
-            `
-            INSERT INTO orders (order_number, shop_id, customer_id, customer_email, customer_name, customer_phone,
-                              shipping_address, total_amount, status, payment_status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'pending')
-            RETURNING *
-        `,
-            [
-                orderNumber,
-                shop_id,
-                customerId,
-                customer_email,
-                customer_name,
-                customer_phone,
-                JSON.stringify(shipping_address),
-                total_amount
-            ]
-        );
-
-        const order = orderRows[0];
+        console.log('Step 5: Creating order...');
+        let order;
+        try {
+            const { rows: orderRows } = await client.query(
+                `
+                INSERT INTO orders (order_number, shop_id, customer_id, customer_email, customer_name, customer_phone,
+                                  shipping_address, total_amount, status, payment_status)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'pending')
+                RETURNING *
+            `,
+                [
+                    orderNumber,
+                    shop_id,
+                    customerId,
+                    customer_email,
+                    customer_name,
+                    customer_phone || '',
+                    JSON.stringify(shipping_address),
+                    total_amount
+                ]
+            );
+            order = orderRows[0];
+            console.log('Step 6: Order created, ID:', order.id);
+        } catch (orderError) {
+            console.error('Order creation error:', orderError);
+            throw new Error('Failed to create order: ' + orderError.message);
+        }
 
         // Create order items
+        console.log('Step 7: Creating order items, count:', items.length);
         for (const item of items) {
             try {
+                console.log('Creating item:', item.product_name, 'for order:', order.id);
                 await client.query(
                     `
                     INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku, 
@@ -3124,15 +3137,16 @@ app.post('/api/orders', async (req, res) => {
                 `,
                     [
                         order.id,
-                        item.product_id,
+                        item.product_id || null,
                         item.variant_id || null,
                         item.product_name || 'Product',
                         item.sku || item.product_sku || null,
-                        item.quantity,
+                        item.quantity || 1,
                         item.unit_price || item.price || 0,
                         item.variant_name || ''
                     ]
                 );
+                console.log('Item created successfully');
             } catch (itemError) {
                 console.error('Error creating order item:', itemError);
                 throw new Error('Failed to create order item: ' + itemError.message);
@@ -3164,7 +3178,9 @@ app.post('/api/orders', async (req, res) => {
             ]);
         }
 
+        console.log('Step 8: Committing transaction...');
         await client.query('COMMIT');
+        console.log('Step 9: Transaction committed successfully');
 
         // Send confirmation emails (don't wait for response)
         try {
@@ -3203,7 +3219,12 @@ app.post('/api/orders', async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Create order error:', error);
-        res.status(500).json({ error: 'Failed to create order', details: error.message });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({
+            error: 'Failed to create order',
+            details: error.message,
+            hint: 'Check server logs for more details'
+        });
     } finally {
         client.release();
     }
