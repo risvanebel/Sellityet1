@@ -379,8 +379,95 @@
             document.getElementById('total').textContent = (total + shipping).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
         }
         
-        function placeOrder() {
-            alert('Bestellung wird verarbeitet... (In der Vollversion mit API-Integration)');
+        async function placeOrder() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            if (cart.length === 0) {
+                alert('Dein Warenkorb ist leer');
+                return;
+            }
+
+            // Get form data
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const address = document.getElementById('address').value;
+            const zip = document.getElementById('zip').value;
+            const city = document.getElementById('city').value;
+            const country = document.getElementById('country').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+
+            if (!firstName || !lastName || !address || !zip || !city || !email) {
+                alert('Bitte fülle alle Pflichtfelder aus');
+                return;
+            }
+
+            // Get shop_id from URL or cart
+            const urlParams = new URLSearchParams(window.location.search);
+            let shopId = urlParams.get('shop_id');
+            
+            // If no shop_id in URL, try to get from first cart item
+            if (!shopId && cart.length > 0) {
+                shopId = cart[0].shop_id || cart[0].shopId;
+            }
+            
+            if (!shopId) {
+                alert('Shop-ID nicht gefunden');
+                return;
+            }
+
+            // Calculate total
+            let subtotal = 0;
+            cart.forEach(item => {
+                subtotal += (item.price || 0) * item.quantity;
+            });
+            const shipping = subtotal > 50 ? 0 : 5.90;
+            const total = subtotal + shipping;
+
+            // Prepare order data
+            const orderData = {
+                shop_id: parseInt(shopId),
+                customer_email: email,
+                customer_name: `${firstName} ${lastName}`,
+                customer_phone: phone || '',
+                shipping_address: {
+                    first_name: firstName,
+                    last_name: lastName,
+                    address: address,
+                    zip: zip,
+                    city: city,
+                    country: country
+                },
+                items: cart.map(item => ({
+                    product_id: item.id,
+                    product_name: item.name,
+                    quantity: item.quantity,
+                    unit_price: item.price,
+                    variant_name: item.variant || ''
+                })),
+                total_amount: total
+            };
+
+            try {
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Clear cart
+                    localStorage.removeItem('cart');
+                    // Redirect to order confirmation
+                    window.location.href = `/order-confirmation.html?order=${data.order_number}`;
+                } else {
+                    alert(data.error || 'Fehler bei der Bestellung');
+                }
+            } catch (error) {
+                console.error('Order error:', error);
+                alert('Netzwerkfehler. Bitte versuche es erneut.');
+            }
         }
         
         document.querySelectorAll('.payment-method').forEach(method => {

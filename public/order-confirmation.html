@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bestellbestaetigung - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --accent: #00B294;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--surface-alt);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .confirmation-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 48px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 40px;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        .order-number {
+            background: var(--surface-alt);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin: 24px 0;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            margin-top: 16px;
+        }
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+        @media (max-width: 480px) {
+            .confirmation-card {
+                padding: 32px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="confirmation-card">
+        <div class="success-icon">✓</div>
+        <h1>Bestellung erfolgreich!</h1>
+        <p>Vielen Dank fuer deine Bestellung. Wir haben dir eine Bestaetigungs-E-Mail geschickt.</p>
+        <div class="order-number" id="orderNumber">-</div>
+        <p>Du kannst deine Bestellung jederzeit mit deiner E-Mail-Adresse und der Bestellnummer verfolgen.</p>
+        <a href="/" class="btn">Zurueck zur Startseite</a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderNumber = urlParams.get('order');
+        if (orderNumber) {
+            document.getElementById('orderNumber').textContent = orderNumber;
+        }
+    </script>
+</body>
+</html>
