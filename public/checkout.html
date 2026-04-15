@@ -3,672 +3,394 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=EUR"></script>
+    <title>Checkout - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #F8FAFC;
-            color: #0F172A;
-            line-height: 1.5;
-        }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 24px;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--surface-alt);
+            min-height: 100vh;
         }
         .header {
-            text-align: center;
-            padding: 40px 0;
+            background: var(--surface);
+            border-bottom: 1px solid #E1DFDD;
+            padding: 16px 32px;
         }
-        .header h1 {
-            font-size: 1.75rem;
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
             font-weight: 700;
-            margin-bottom: 8px;
         }
-        .header p {
-            color: #64748B;
-        }
-        .checkout-form {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-label {
-            display: block;
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 6px;
+            color: var(--accent);
         }
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            font-size: 16px;
-            font-family: inherit;
+        .main {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 48px 24px;
         }
-        .form-input:focus {
-            outline: none;
-            border-color: #2563EB;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 32px;
+        }
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 32px;
+        }
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F3F2F1;
         }
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
         }
-        .order-summary {
-            background: #F8FAFC;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-        .summary-title {
-            font-weight: 600;
+        .form-group {
             margin-bottom: 16px;
-            font-size: 1.1rem;
         }
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #E1DFDD;
+            border-radius: var(--radius);
             font-size: 14px;
         }
-        .summary-total {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 16px;
-            border-top: 2px solid #E2E8F0;
-            font-size: 1.25rem;
-            font-weight: 700;
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
         }
         .payment-methods {
-            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         .payment-method {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 16px;
-            border: 2px solid #E2E8F0;
-            border-radius: 8px;
-            margin-bottom: 12px;
+            border: 2px solid #E1DFDD;
+            border-radius: var(--radius);
             cursor: pointer;
             transition: all 0.2s;
         }
         .payment-method:hover {
-            border-color: #94A3B8;
+            border-color: var(--primary);
         }
-        .payment-method.selected {
-            border-color: #2563EB;
-            background: #EFF6FF;
+        .payment-method.active {
+            border-color: var(--primary);
+            background: rgba(0,120,212,0.05);
         }
         .payment-method input {
             width: 20px;
             height: 20px;
-            accent-color: #2563EB;
         }
-        .payment-method-info {
-            flex: 1;
+        .order-summary {
+            position: sticky;
+            top: 24px;
         }
-        .payment-method-name {
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .summary-row.total {
+            font-size: 18px;
             font-weight: 600;
-            display: block;
+            padding-top: 16px;
+            border-top: 1px solid #E1DFDD;
+            margin-top: 16px;
         }
-        .payment-method-desc {
-            font-size: 12px;
-            color: #64748B;
-        }
-        .submit-btn {
+        .btn {
             width: 100%;
-            padding: 16px;
-            background: #111827;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
+            padding: 14px 24px;
+            border-radius: var(--radius);
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-        }
-        .submit-btn:hover {
-            background: #374151;
-        }
-        .submit-btn:disabled {
-            background: #9CA3AF;
-            cursor: not-allowed;
-        }
-        .error-message {
-            background: #FEE2E2;
-            color: #991B1B;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .success-message {
-            background: #D1FAE5;
-            color: #065F46;
-            padding: 24px;
-            border-radius: 12px;
+            border: none;
+            text-decoration: none;
             text-align: center;
         }
-        .success-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            margin-top: 20px;
         }
-        .payment-details {
-            background: #F8FAFC;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 16px;
-            display: none;
+        .btn-primary:hover {
+            background: var(--primary-dark);
         }
-        .payment-details.active {
-            display: block;
-        }
-        #card-element {
+        .btn-secondary {
             background: white;
-            padding: 12px;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
+            color: var(--text-primary);
+            border: 1px solid #E1DFDD;
         }
-        .bank-details {
-            background: white;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px dashed #CBD5E1;
+        .cart-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #F3F2F1;
         }
-        .bank-details p {
-            margin: 8px 0;
-            font-family: monospace;
+        .cart-item:last-child {
+            border-bottom: none;
         }
-        .crypto-address {
-            background: #1E293B;
-            color: #E2E8F0;
-            padding: 16px;
-            border-radius: 8px;
-            font-family: monospace;
-            word-break: break-all;
-            text-align: center;
+        .item-image {
+            width: 60px;
+            height: 60px;
+            background: var(--surface-alt);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
         }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #64748B;
+        .item-info {
+            flex: 1;
         }
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #E2E8F0;
-            border-top-color: #2563EB;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 8px;
+        .item-name {
+            font-weight: 600;
+            font-size: 14px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .item-qty {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .item-price {
+            font-weight: 600;
+        }
+        @media (max-width: 900px) {
+            .checkout-grid {
+                grid-template-columns: 1fr;
+            }
+            .order-summary {
+                position: static;
+            }
+        }
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔒 Sicherer Checkout</h1>
-            <p>Bitte füllen Sie Ihre Daten aus, um die Bestellung abzuschließen</p>
-        </div>
-        
-        <div id="checkout-container">
-            <div class="checkout-form">
-                <div class="loading"><span class="spinner"></span>Wird geladen...</div>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="brand">
+                <div class="brand-logo">S</div>
+                <span style="font-size: 20px; font-weight: 600;">Sellityet</span>
+            </a>
+            <div class="secure-badge">
+                <span>🔒</span>
+                <span>Sicherer Checkout</span>
             </div>
         </div>
-    </div>
-
-    <script>
-        const API_URL = '/api';
-        const SESSION_ID = localStorage.getItem('cart_session_id');
-        const urlParams = new URLSearchParams(window.location.search);
-        let shopId = urlParams.get('shop_id') || localStorage.getItem('current_shop_id');
-        let cartItems = [];
-        let total = 0;
-        let paymentMethods = [];
-        let currentOrder = null;
-        let stripeInstance = null;
-        let cardElement = null;
-        
-        async function loadCheckout() {
-            if (!shopId || !SESSION_ID) {
-                document.getElementById('checkout-container').innerHTML = `
-                    <div class="error-message">
-                        Kein Warenkorb gefunden. Bitte fügen Sie zuerst Artikel hinzu.
+    </header>
+    <main class="main">
+        <h1 class="page-title">Bestellung abschliessen</h1>
+        <div class="checkout-grid">
+            <div class="checkout-form">
+                <div class="card">
+                    <h2 class="card-title">Lieferadresse</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Vorname</label>
+                            <input type="text" id="firstName" placeholder="Max">
+                        </div>
+                        <div class="form-group">
+                            <label>Nachname</label>
+                            <input type="text" id="lastName" placeholder="Mustermann">
+                        </div>
                     </div>
-                `;
+                    <div class="form-group">
+                        <label>Strasse und Hausnummer</label>
+                        <input type="text" id="address" placeholder="Musterstrasse 123">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>PLZ</label>
+                            <input type="text" id="zip" placeholder="12345">
+                        </div>
+                        <div class="form-group">
+                            <label>Ort</label>
+                            <input type="text" id="city" placeholder="Berlin">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Land</label>
+                        <select id="country">
+                            <option value="DE">Deutschland</option>
+                            <option value="AT">Oesterreich</option>
+                            <option value="CH">Schweiz</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title">Kontaktdaten</h2>
+                    <div class="form-group">
+                        <label>E-Mail</label>
+                        <input type="email" id="email" placeholder="max@beispiel.de">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon (optional)</label>
+                        <input type="tel" id="phone" placeholder="+49 123 456789">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title">Zahlungsmethode</h2>
+                    <div class="payment-methods">
+                        <label class="payment-method active">
+                            <input type="radio" name="payment" value="bank" checked>
+                            <span>🏦</span>
+                            <div>
+                                <div style="font-weight: 600;">Bankueberweisung</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Ueberweisen Sie nach Bestellung</div>
+                            </div>
+                        </label>
+                        <label class="payment-method">
+                            <input type="radio" name="payment" value="paypal">
+                            <span>🅿️</span>
+                            <div>
+                                <div style="font-weight: 600;">PayPal</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Sicher bezahlen mit PayPal</div>
+                            </div>
+                        </label>
+                        <label class="payment-method">
+                            <input type="radio" name="payment" value="card">
+                            <span>💳</span>
+                            <div>
+                                <div style="font-weight: 600;">Kreditkarte</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Visa, Mastercard, Amex</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="order-summary">
+                <div class="card">
+                    <h2 class="card-title">Zusammenfassung</h2>
+                    <div id="cartItems"></div>
+                    <div class="summary-row">
+                        <span>Zwischensumme</span>
+                        <span id="subtotal">0,00 €</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Versand</span>
+                        <span id="shipping">5,90 €</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Gesamt</span>
+                        <span id="total">0,00 €</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="placeOrder()">Jetzt kaufen</button>
+                    <a href="/cart.html" class="btn btn-secondary" style="margin-top: 12px; display: block;">Zurueck zum Warenkorb</a>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        function loadCart() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const container = document.getElementById('cartItems');
+            
+            if (cart.length === 0) {
+                window.location.href = '/cart.html';
                 return;
             }
             
-            try {
-                // Load cart and payment methods in parallel
-                const [cartRes, methodsRes] = await Promise.all([
-                    fetch(`${API_URL}/cart?session_id=${SESSION_ID}&shop_id=${shopId}`),
-                    fetch(`${API_URL}/shops/${shopId}/payment-methods`)
-                ]);
-                
-                const cart = await cartRes.json();
-                paymentMethods = await methodsRes.json();
-                
-                if (!cart.items || cart.items.length === 0) {
-                    document.getElementById('checkout-container').innerHTML = `
-                        <div class="error-message">
-                            Ihr Warenkorb ist leer. <a href="/shop/${localStorage.getItem('current_shop_slug') || ''}">Zurück zum Shop</a>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                cartItems = cart.items;
-                renderCheckout();
-            } catch (error) {
-                console.error('Load checkout error:', error);
-                document.getElementById('checkout-container').innerHTML = `
-                    <div class="error-message">
-                        Fehler beim Laden. Bitte versuchen Sie es später erneut.
-                    </div>
-                `;
-            }
-        }
-        
-        function renderCheckout() {
-            total = cartItems.reduce((sum, item) => {
-                const price = parseFloat(item.product_price) + (parseFloat(item.price_adjustment) || 0);
-                return sum + (price * item.quantity);
-            }, 0);
-            
-            const itemsHtml = cartItems.map(item => {
-                const price = parseFloat(item.product_price) + (parseFloat(item.price_adjustment) || 0);
+            let total = 0;
+            container.innerHTML = cart.map(item => {
+                total += (item.price || 0) * item.quantity;
                 return `
-                    <div class="summary-item">
-                        <span>${item.quantity}x ${item.product_name}</span>
-                        <span>€${(price * item.quantity).toFixed(2)}</span>
+                    <div class="cart-item">
+                        <div class="item-image">📦</div>
+                        <div class="item-info">
+                            <div class="item-name">${item.name || 'Produkt'}</div>
+                            <div class="item-qty">Anzahl: ${item.quantity}</div>
+                        </div>
+                        <div class="item-price">${((item.price || 0) * item.quantity).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</div>
                     </div>
                 `;
             }).join('');
             
-            // Build payment methods
-            const paymentMethodsHtml = paymentMethods.length > 0 
-                ? paymentMethods.map((method, index) => `
-                    <label class="payment-method ${index === 0 ? 'selected' : ''}" data-method="${method.id}">
-                        <input type="radio" name="payment" value="${method.id}" ${index === 0 ? 'checked' : ''}>
-                        <div class="payment-method-info">
-                            <span class="payment-method-name">${method.icon} ${method.name}</span>
-                            <span class="payment-method-desc">${method.description}</span>
-                        </div>
-                    </label>
-                `).join('')
-                : `
-                    <label class="payment-method selected">
-                        <input type="radio" name="payment" value="cod" checked>
-                        <div class="payment-method-info">
-                            <span class="payment-method-name">💶 Nachnahme</span>
-                            <span class="payment-method-desc">Bezahlung bei Lieferung</span>
-                        </div>
-                    </label>
-                `;
-            
-            document.getElementById('checkout-container').innerHTML = `
-                <div class="checkout-form">
-                    <div id="error-container"></div>
-                    
-                    <div class="order-summary">
-                        <div class="summary-title">Bestellübersicht</div>
-                        ${itemsHtml}
-                        <div class="summary-total">
-                            <span>Gesamtsumme</span>
-                            <span>€${total.toFixed(2)}</span>
-                        </div>
-                    </div>
-                    
-                    <form id="checkout-form" onsubmit="submitOrder(event)">
-                        <h3 style="margin-bottom: 20px;">Kontaktdaten</h3>
-                        
-                        <div class="form-group">
-                            <label class="form-label">E-Mail *</label>
-                            <input type="email" class="form-input" name="email" required placeholder="ihre@email.de">
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Vorname *</label>
-                                <input type="text" class="form-input" name="firstName" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Nachname *</label>
-                                <input type="text" class="form-input" name="lastName" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Telefon</label>
-                            <input type="tel" class="form-input" name="phone" placeholder="+49 123 456789">
-                        </div>
-                        
-                        <h3 style="margin: 32px 0 20px;">Lieferadresse</h3>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Straße und Hausnummer *</label>
-                            <input type="text" class="form-input" name="street" required>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">PLZ *</label>
-                                <input type="text" class="form-input" name="zip" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Stadt *</label>
-                                <input type="text" class="form-input" name="city" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Land *</label>
-                            <input type="text" class="form-input" name="country" value="Deutschland" required>
-                        </div>
-                        
-                        <h3 style="margin: 32px 0 20px;">Zahlungsmethode</h3>
-                        
-                        <div class="payment-methods" id="payment-methods-list">
-                            ${paymentMethodsHtml}
-                        </div>
-                        
-                        <!-- Payment Details Container -->
-                        <div id="payment-details-container" class="payment-details">
-                            <!-- Dynamically filled based on selection -->
-                        </div>
-                        
-                        <button type="submit" class="submit-btn" id="submit-btn">
-                            Bestellung aufgeben (€${total.toFixed(2)})
-                        </button>
-                    </form>
-                </div>
-            `;
-            
-            // Add payment method selection handlers
-            document.querySelectorAll('.payment-method').forEach(el => {
-                el.addEventListener('click', () => selectPaymentMethod(el.dataset.method));
+            const shipping = total > 50 ? 0 : 5.90;
+            document.getElementById('subtotal').textContent = total.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+            document.getElementById('shipping').textContent = shipping === 0 ? 'Gratis' : shipping.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+            document.getElementById('total').textContent = (total + shipping).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+        }
+        
+        function placeOrder() {
+            alert('Bestellung wird verarbeitet... (In der Vollversion mit API-Integration)');
+        }
+        
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.addEventListener('click', () => {
+                document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
+                method.classList.add('active');
             });
-            
-            // Initialize first payment method
-            if (paymentMethods.length > 0) {
-                selectPaymentMethod(paymentMethods[0].id);
-            }
-        }
+        });
         
-        function selectPaymentMethod(methodId) {
-            // Update UI
-            document.querySelectorAll('.payment-method').forEach(el => {
-                el.classList.toggle('selected', el.dataset.method === methodId);
-                el.querySelector('input').checked = el.dataset.method === methodId;
-            });
-            
-            const method = paymentMethods.find(m => m.id === methodId);
-            if (!method) return;
-            
-            const detailsContainer = document.getElementById('payment-details-container');
-            detailsContainer.innerHTML = '';
-            detailsContainer.classList.remove('active');
-            
-            switch (method.type) {
-                case 'stripe':
-                    detailsContainer.innerHTML = `
-                        <h4 style="margin-bottom: 16px;">Kreditkartendaten</h4>
-                        <div id="card-element"></div>
-                        <div id="card-errors" style="color: #DC2626; margin-top: 8px; font-size: 14px;"></div>
-                    `;
-                    detailsContainer.classList.add('active');
-                    initializeStripe(method.config?.public_key);
-                    break;
-                    
-                case 'manual':
-                    if (methodId === 'banktransfer') {
-                        detailsContainer.innerHTML = `
-                            <h4 style="margin-bottom: 16px;">🏦 Banküberweisung</h4>
-                            <p style="margin-bottom: 12px; color: #64748B;">
-                                Bitte überweise den Betrag innerhalb von 7 Tagen.
-                            </p>
-                            <div class="bank-details">
-                                <p><strong>Betrag:</strong> €${total.toFixed(2)}</p>
-                                <p style="margin-top: 12px; color: #64748B; font-size: 12px;">
-                                    Die genauen Bankdaten erhältst du per E-Mail.
-                                </p>
-                            </div>
-                        `;
-                    } else if (methodId === 'sepa') {
-                        detailsContainer.innerHTML = `
-                            <h4 style="margin-bottom: 16px;">📋 SEPA-Lastschrift</h4>
-                            <div class="form-group">
-                                <label class="form-label">IBAN *</label>
-                                <input type="text" class="form-input" id="sepa-iban" placeholder="DE12 3456 7890 1234 5678 90">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Kontoinhaber *</label>
-                                <input type="text" class="form-input" id="sepa-owner" placeholder="Max Mustermann">
-                            </div>
-                            <p style="font-size: 12px; color: #64748B; margin-top: 8px;">
-                                Ich ermächtige den Händler, Zahlungen von meinem Konto einzuziehen.
-                            </p>
-                        `;
-                    } else if (methodId === 'paypal_friends') {
-                        detailsContainer.innerHTML = `
-                            <h4 style="margin-bottom: 16px;">💸 PayPal Freunde & Familie</h4>
-                            <p style="margin-bottom: 12px; color: #64748B;">
-                                Bitte sende den Betrag per PayPal als "Freunde & Familie".
-                            </p>
-                            <div class="bank-details">
-                                <p><strong>Betrag:</strong> €${total.toFixed(2)}</p>
-                                <p style="margin-top: 12px; color: #64748B; font-size: 12px;">
-                                    Die PayPal-E-Mail erhältst du nach der Bestellung.
-                                </p>
-                            </div>
-                        `;
-                    }
-                    detailsContainer.classList.add('active');
-                    break;
-                    
-                case 'crypto':
-                    detailsContainer.innerHTML = `
-                        <h4 style="margin-bottom: 16px;">₿ Kryptowährung</h4>
-                        <p style="margin-bottom: 12px; color: #64748B;">
-                            Die Zahlungsadresse wird nach Bestellung generiert.
-                        </p>
-                    `;
-                    detailsContainer.classList.add('active');
-                    break;
-                    
-                case 'paypal':
-                    detailsContainer.innerHTML = `
-                        <h4 style="margin-bottom: 16px;">🅿️ PayPal</h4>
-                        <p style="color: #64748B;">
-                            Du wirst nach der Bestellung zu PayPal weitergeleitet.
-                        </p>
-                    `;
-                    detailsContainer.classList.add('active');
-                    break;
-            }
-        }
-        
-        function initializeStripe(publicKey) {
-            if (!publicKey) {
-                document.getElementById('card-errors').textContent = 
-                    'Kreditkartenzahlung ist nicht konfiguriert.';
-                return;
-            }
-            
-            stripeInstance = Stripe(publicKey);
-            const elements = stripeInstance.elements();
-            cardElement = elements.create('card', {
-                style: {
-                    base: {
-                        fontSize: '16px',
-                        color: '#0F172A',
-                        '::placeholder': { color: '#94A3B8' }
-                    }
-                }
-            });
-            cardElement.mount('#card-element');
-            
-            cardElement.on('change', (event) => {
-                document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
-            });
-        }
-        
-        async function submitOrder(event) {
-            event.preventDefault();
-            
-            const form = event.target;
-            const formData = new FormData(form);
-            const paymentMethod = formData.get('payment');
-            
-            const orderData = {
-                session_id: SESSION_ID,
-                shop_id: parseInt(shopId),
-                customer_email: formData.get('email'),
-                customer_name: `${formData.get('firstName')} ${formData.get('lastName')}`,
-                customer_phone: formData.get('phone'),
-                shipping_address: {
-                    street: formData.get('street'),
-                    zip: formData.get('zip'),
-                    city: formData.get('city'),
-                    country: formData.get('country')
-                },
-                items: cartItems.map(item => ({
-                    product_id: item.product_id,
-                    variant_id: item.variant_id,
-                    product_name: item.product_name,
-                    sku: '',
-                    variant_name: item.variant_name,
-                    quantity: item.quantity,
-                    price: parseFloat(item.product_price) + (parseFloat(item.price_adjustment) || 0)
-                })),
-                total_amount: total
-            };
-            
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Wird verarbeitet...';
-            
-            try {
-                // Create order
-                const res = await fetch(`${API_URL}/orders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
-                
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.error || 'Bestellung fehlgeschlagen');
-                }
-                
-                const order = await res.json();
-                currentOrder = order;
-                
-                // Handle payment based on method
-                await handlePayment(order.id, paymentMethod);
-                
-            } catch (error) {
-                console.error('Submit order error:', error);
-                document.getElementById('error-container').innerHTML = `
-                    <div class="error-message">${error.message}</div>
-                `;
-                submitBtn.disabled = false;
-                submitBtn.textContent = `Bestellung aufgeben (€${total.toFixed(2)})`;
-            }
-        }
-        
-        async function handlePayment(orderId, method) {
-            try {
-                // Initialize payment
-                const initRes = await fetch(`${API_URL}/orders/${orderId}/payment`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ method })
-                });
-                
-                const paymentData = await initRes.json();
-                
-                switch (method) {
-                    case 'creditcard':
-                        if (!stripeInstance || !cardElement) {
-                            throw new Error('Kreditkartenzahlung nicht verfügbar');
-                        }
-                        
-                        const { error, paymentIntent } = await stripeInstance.confirmCardPayment(
-                            paymentData.client_secret,
-                            { payment_method: { card: cardElement } }
-                        );
-                        
-                        if (error) {
-                            throw new Error(error.message);
-                        }
-                        
-                        // Confirm payment on server
-                        await fetch(`${API_URL}/orders/${orderId}/payment/confirm`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                payment_intent_id: paymentData.payment_intent_id 
-                            })
-                        });
-                        
-                        showSuccess(currentOrder);
-                        break;
-                        
-                    case 'paypal':
-                        // Redirect to PayPal
-                        window.location.href = `https://www.paypal.com/checkoutnow?token=${paymentData.order_id}`;
-                        break;
-                        
-                    default:
-                        // Manual payment methods - show success
-                        showSuccess(currentOrder);
-                        break;
-                }
-            } catch (error) {
-                document.getElementById('error-container').innerHTML = `
-                    <div class="error-message">${error.message}</div>
-                `;
-                document.getElementById('submit-btn').disabled = false;
-                document.getElementById('submit-btn').textContent = `Bestellung aufgeben (€${total.toFixed(2)})`;
-            }
-        }
-        
-        function showSuccess(order) {
-            document.getElementById('checkout-container').innerHTML = `
-                <div class="success-message">
-                    <div class="success-icon">🎉</div>
-                    <h2>Vielen Dank für Ihre Bestellung!</h2>
-                    <p style="margin: 16px 0;">Bestellnummer: <strong>${order.order_number}</strong></p>
-                    <p style="margin-bottom: 24px;">
-                        Wir haben eine Bestätigung an ${order.customer_email} gesendet.
-                    </p>
-                    <a href="/shop/${localStorage.getItem('current_shop_slug') || ''}" 
-                       style="color: #065F46; text-decoration: underline;">
-                        ← Zurück zum Shop
-                    </a>
-                </div>
-            `;
-            
-            localStorage.removeItem('cart_session_id');
-        }
-        
-        // Load on page load
-        loadCheckout();
+        loadCart();
     </script>
 </body>
 </html>
