@@ -1473,6 +1473,18 @@ app.get('/api/shops/:slug', async (req, res) => {
     }
 });
 
+// Debug: Get all products
+app.get('/api/debug/products', async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, name, shop_id, status, is_active FROM products ORDER BY id DESC LIMIT 10'
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get products by shop
 app.get('/api/shops/:shopId/products', async (req, res) => {
     try {
