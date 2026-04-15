@@ -87,6 +87,22 @@ app.get('/api/fix-product-images', async (req, res) => {
     }
 });
 
+// Fix cost_price column
+app.get('/api/fix-cost-price', async (req, res) => {
+    try {
+        await pool.query(`
+            ALTER TABLE products 
+            ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0.00
+        `);
+        await pool.query(
+            `CREATE INDEX IF NOT EXISTS idx_products_cost_price ON products(cost_price)`
+        );
+        res.json({ success: true, message: 'cost_price column added' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Tenant detection middleware (before static files)
 app.use(detectTenant);
 
