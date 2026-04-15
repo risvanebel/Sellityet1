@@ -1483,7 +1483,7 @@ app.get('/api/shops/:shopId/products', async (req, res) => {
             FROM products p
             LEFT JOIN inventory i ON p.id = i.product_id
             LEFT JOIN categories c ON p.category_id = c.id
-            WHERE p.shop_id = $1 AND p.is_active = true AND p.status = 'published'
+            WHERE p.shop_id = $1 AND p.is_active = true
             ORDER BY p.created_at DESC
         `,
             [req.params.shopId]
