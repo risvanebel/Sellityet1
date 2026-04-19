@@ -117,7 +117,7 @@ app.get('/api/fix-order-items', async (req, res) => {
 app.get('/api/fix-cost-price', async (req, res) => {
     try {
         await pool.query(`
-            ALTER TABLE products 
+            ALTER TABLE products
             ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0.00
         `);
         await pool.query(
@@ -414,7 +414,7 @@ app.get('/api/owner/coupons', authMiddleware, requireRole('owner', 'admin'), asy
     try {
         const { rows } = await pool.query(
             `
-            SELECT c.*, 
+            SELECT c.*,
                    (SELECT COUNT(*) FROM coupon_usage WHERE coupon_id = c.id) as times_used
             FROM coupons c
             JOIN shops s ON c.shop_id = s.id
@@ -677,12 +677,12 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
         // Sales stats
         const { rows: salesRows } = await pool.query(
             `
-            SELECT 
+            SELECT
                 COALESCE(SUM(total_amount), 0) as total_revenue,
                 COUNT(*) as order_count,
                 AVG(total_amount) as avg_order_value
             FROM orders
-            WHERE shop_id = $1 
+            WHERE shop_id = $1
               AND created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND status != 'cancelled'
         `,
@@ -692,14 +692,14 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
         // Top products
         const { rows: topProducts } = await pool.query(
             `
-            SELECT 
+            SELECT
                 p.name,
                 SUM(oi.quantity) as total_sold,
                 SUM(oi.quantity * oi.unit_price) as revenue
             FROM order_items oi
             JOIN orders o ON oi.order_id = o.id
             JOIN products p ON oi.product_id = p.id
-            WHERE o.shop_id = $1 
+            WHERE o.shop_id = $1
               AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND o.status != 'cancelled'
             GROUP BY p.id, p.name
@@ -712,7 +712,7 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
         // Recent orders
         const { rows: recentOrders } = await pool.query(
             `
-            SELECT o.*, 
+            SELECT o.*,
                    (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
             FROM orders o
             WHERE o.shop_id = $1
@@ -725,7 +725,7 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
         // Sales by category
         const { rows: categoryStats } = await pool.query(
             `
-            SELECT 
+            SELECT
                 COALESCE(c.name, 'Ohne Kategorie') as category,
                 SUM(oi.quantity) as items_sold,
                 SUM(oi.quantity * oi.unit_price) as revenue
@@ -733,7 +733,7 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
             JOIN orders o ON oi.order_id = o.id
             JOIN products p ON oi.product_id = p.id
             LEFT JOIN categories c ON p.category_id = c.id
-            WHERE o.shop_id = $1 
+            WHERE o.shop_id = $1
               AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND o.status != 'cancelled'
             GROUP BY c.name
@@ -745,12 +745,12 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
         // Sales over time (daily)
         const { rows: dailySales } = await pool.query(
             `
-            SELECT 
+            SELECT
                 DATE(created_at) as date,
                 SUM(total_amount) as revenue,
                 COUNT(*) as orders
             FROM orders
-            WHERE shop_id = $1 
+            WHERE shop_id = $1
               AND created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND status != 'cancelled'
             GROUP BY DATE(created_at)
@@ -762,12 +762,12 @@ app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), a
         // Payment method stats
         const { rows: paymentStats } = await pool.query(
             `
-            SELECT 
+            SELECT
                 payment_method,
                 COUNT(*) as order_count,
                 SUM(total_amount) as total_revenue
             FROM orders
-            WHERE shop_id = $1 
+            WHERE shop_id = $1
               AND created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND status != 'cancelled'
             GROUP BY payment_method
@@ -823,7 +823,7 @@ app.get('/api/owner/profit', authMiddleware, requireRole('owner', 'admin'), asyn
         // Berechne Gewinn basierend auf Bestellungen und Produkt-Einkaufspreisen
         const { rows: profitData } = await pool.query(
             `
-            SELECT 
+            SELECT
                 SUM(o.total_amount) as total_revenue,
                 SUM(
                     (SELECT SUM(oi.quantity * COALESCE(p.cost_price, 0))
@@ -833,7 +833,7 @@ app.get('/api/owner/profit', authMiddleware, requireRole('owner', 'admin'), asyn
                 ) as total_costs,
                 COUNT(*) as order_count
             FROM orders o
-            WHERE o.shop_id = $1 
+            WHERE o.shop_id = $1
               AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND o.status NOT IN ('cancelled', 'refunded')
             `,
@@ -848,7 +848,7 @@ app.get('/api/owner/profit', authMiddleware, requireRole('owner', 'admin'), asyn
         // Top profit products
         const { rows: topProfitProducts } = await pool.query(
             `
-            SELECT 
+            SELECT
                 p.name,
                 SUM(oi.quantity) as units_sold,
                 SUM(oi.quantity * oi.unit_price) as revenue,
@@ -857,7 +857,7 @@ app.get('/api/owner/profit', authMiddleware, requireRole('owner', 'admin'), asyn
             FROM order_items oi
             JOIN products p ON oi.product_id = p.id
             JOIN orders o ON oi.order_id = o.id
-            WHERE p.shop_id = $1 
+            WHERE p.shop_id = $1
               AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND o.status NOT IN ('cancelled', 'refunded')
             GROUP BY p.id, p.name
@@ -870,7 +870,7 @@ app.get('/api/owner/profit', authMiddleware, requireRole('owner', 'admin'), asyn
         // Daily profit trend
         const { rows: dailyProfit } = await pool.query(
             `
-            SELECT 
+            SELECT
                 DATE(o.created_at) as date,
                 SUM(o.total_amount) as revenue,
                 SUM(
@@ -880,7 +880,7 @@ app.get('/api/owner/profit', authMiddleware, requireRole('owner', 'admin'), asyn
                      WHERE oi.order_id = o.id)
                 ) as costs
             FROM orders o
-            WHERE o.shop_id = $1 
+            WHERE o.shop_id = $1
               AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '${period} days'
               AND o.status NOT IN ('cancelled', 'refunded')
             GROUP BY DATE(o.created_at)
@@ -930,10 +930,10 @@ app.get(
 
             const shopId = shopRows[0].id;
             const { rows } = await pool.query(
-                `SELECT c.*, COUNT(p.id) as product_count 
-             FROM categories c 
-             LEFT JOIN products p ON c.id = p.category_id 
-             WHERE c.shop_id = $1 
+                `SELECT c.*, COUNT(p.id) as product_count
+             FROM categories c
+             LEFT JOIN products p ON c.id = p.category_id
+             WHERE c.shop_id = $1
              GROUP BY c.id ORDER BY c.name`,
                 [shopId]
             );
@@ -1099,12 +1099,12 @@ app.put('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async 
         const { name, description, primary_color } = req.body;
 
         const { rows } = await pool.query(
-            `UPDATE shops SET 
-                name = COALESCE($1, name), 
-                description = COALESCE($2, description), 
+            `UPDATE shops SET
+                name = COALESCE($1, name),
+                description = COALESCE($2, description),
                 primary_color = COALESCE($3, primary_color),
                 updated_at = CURRENT_TIMESTAMP
-             WHERE owner_id = $4 
+             WHERE owner_id = $4
              RETURNING *`,
             [name, description, primary_color, req.user.id]
         );
@@ -1297,7 +1297,7 @@ app.get('/api/shop/current', async (req, res) => {
     }
 });
 
-// Get products by shop slug (public API)
+// Get products by shop slug (public API) - redirects to /api/shops/:id/products
 app.get('/api/products', async (req, res) => {
     const { shop } = req.query;
 
@@ -1316,35 +1316,8 @@ app.get('/api/products', async (req, res) => {
             return res.status(404).json({ error: 'Shop not found' });
         }
 
-        const shopId = shopRows[0].id;
-
-        const { rows } = await pool.query(
-            `
-            SELECT p.*, i.quantity, i.reserved, i.min_stock, i.max_order_quantity,
-                   c.name as category_name
-            FROM products p
-            LEFT JOIN inventory i ON p.id = i.product_id
-            LEFT JOIN categories c ON p.category_id = c.id
-            WHERE p.shop_id = $1 AND p.status IN ('published', 'draft')
-            ORDER BY p.created_at DESC
-        `,
-            [shopId]
-        );
-
-        // Load images for each product
-        for (let product of rows) {
-            try {
-                const { rows: images } = await pool.query(
-                    'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
-                    [product.id]
-                );
-                product.image_urls = images.map((img) => img.image_url);
-            } catch (imgErr) {
-                product.image_urls = [];
-            }
-        }
-
-        res.json(rows);
+        // Redirect to the working endpoint
+        return res.redirect(`/api/shops/${shopRows[0].id}/products`);
     } catch (error) {
         console.error('Get products by shop error:', error);
         res.status(500).json({ error: 'Failed to fetch products' });
@@ -1515,7 +1488,7 @@ app.post('/api/auth/login-customer', async (req, res) => {
 app.get('/api/shops', async (req, res) => {
     try {
         const { rows } = await pool.query(`
-            SELECT s.id, s.name, s.slug, s.description, s.logo_url, s.primary_color, 
+            SELECT s.id, s.name, s.slug, s.description, s.logo_url, s.primary_color,
                    u.email as owner_email
             FROM shops s
             JOIN users u ON s.owner_id = u.id
@@ -1606,7 +1579,7 @@ app.get('/api/owner/shops', authMiddleware, requireRole('owner', 'admin'), async
     try {
         const { rows } = await pool.query(
             `
-            SELECT s.*, 
+            SELECT s.*,
                    (SELECT COUNT(*) FROM products WHERE shop_id = s.id) as product_count
             FROM shops s
             WHERE s.owner_id = $1
@@ -1669,8 +1642,8 @@ app.delete(
         try {
             // Delete products with test SKUs or names containing 'Test'
             const { rowCount } = await pool.query(`
-            DELETE FROM products 
-            WHERE sku LIKE 'TEST%' 
+            DELETE FROM products
+            WHERE sku LIKE 'TEST%'
                OR name LIKE '%Test%'
                OR name LIKE '%test%'
                OR name LIKE 'Produkt %'
@@ -1701,7 +1674,7 @@ app.get('/api/nuke-products', async (req, res) => {
             // Delete all products NOT matching the keep pattern
             const { rowCount } = await pool.query(
                 `
-                DELETE FROM products 
+                DELETE FROM products
                 WHERE name NOT LIKE $1
             `,
                 [`%${keep}%`]
@@ -1732,8 +1705,8 @@ app.get('/api/cleanup', async (req, res) => {
     try {
         console.log('🧹 Public cleanup requested');
         const { rowCount } = await pool.query(`
-            DELETE FROM products 
-            WHERE sku LIKE 'TEST%' 
+            DELETE FROM products
+            WHERE sku LIKE 'TEST%'
                OR name LIKE '%Test%'
                OR name LIKE 'Produkt %'
                OR description LIKE '%Testbeschreibung%'
@@ -1754,7 +1727,7 @@ app.get('/api/fix-db', async (req, res) => {
     try {
         // Add payment_methods column
         await pool.query(`
-            ALTER TABLE shops 
+            ALTER TABLE shops
             ADD COLUMN IF NOT EXISTS payment_methods JSONB DEFAULT '["banktransfer", "cod"]'
         `);
 
@@ -1839,8 +1812,8 @@ async function runMissingMigrations() {
 
         // Check if payment_methods column exists
         const { rows } = await pool.query(`
-            SELECT column_name 
-            FROM information_schema.columns 
+            SELECT column_name
+            FROM information_schema.columns
             WHERE table_name = 'shops' AND column_name = 'payment_methods'
         `);
 
@@ -1868,7 +1841,7 @@ async function runMissingMigrations() {
 
         // Check if customers table exists
         const { rows: customerRows } = await pool.query(`
-            SELECT table_name FROM information_schema.tables 
+            SELECT table_name FROM information_schema.tables
             WHERE table_name = 'customers'
         `);
 
@@ -1893,8 +1866,8 @@ setTimeout(async () => {
     try {
         console.log('🧹 Cleaning up test products...');
         const { rowCount } = await pool.query(`
-            DELETE FROM products 
-            WHERE sku LIKE 'TEST%' 
+            DELETE FROM products
+            WHERE sku LIKE 'TEST%'
                OR name LIKE '%Test%'
                OR name LIKE 'Produkt %'
                OR created_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
@@ -2289,7 +2262,7 @@ app.put(
                 `
             INSERT INTO inventory (product_id, quantity, min_stock, max_order_quantity)
             VALUES ($1, $2, $3, $4)
-            ON CONFLICT (product_id) 
+            ON CONFLICT (product_id)
             DO UPDATE SET quantity = $2, min_stock = $3, max_order_quantity = $4, updated_at = CURRENT_TIMESTAMP
             RETURNING *
         `,
@@ -2570,7 +2543,7 @@ app.get('/api/owner/orders', authMiddleware, requireRole('owner', 'admin'), asyn
         const { status, limit = 50, offset = 0 } = req.query;
 
         let query = `
-            SELECT o.*, s.name as shop_name, 
+            SELECT o.*, s.name as shop_name,
                    COUNT(oi.id) as item_count,
                    u.email as customer_email
             FROM orders o
@@ -2650,7 +2623,7 @@ app.get('/api/owner/customers', authMiddleware, requireRole('owner', 'admin'), a
     try {
         const { rows } = await pool.query(
             `
-            SELECT c.*, 
+            SELECT c.*,
                    (SELECT COUNT(*) FROM orders WHERE customer_id = c.id) as order_count,
                    (SELECT MAX(created_at) FROM orders WHERE customer_id = c.id) as last_order_date
             FROM customers c
@@ -2694,7 +2667,7 @@ app.get(
             // Get order history
             const { rows: orders } = await pool.query(
                 `
-            SELECT o.*, 
+            SELECT o.*,
                    (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
             FROM orders o
             WHERE o.customer_id = $1
@@ -2772,7 +2745,7 @@ app.get(
     async (req, res) => {
         try {
             const { rows } = await pool.query(
-                `SELECT email_enabled, notification_email, sender_email, smtp_host, smtp_port, smtp_user 
+                `SELECT email_enabled, notification_email, sender_email, smtp_host, smtp_port, smtp_user
              FROM shops WHERE owner_id = $1 LIMIT 1`,
                 [req.user.id]
             );
@@ -2932,7 +2905,7 @@ app.get('/api/cart', async (req, res) => {
         // Get cart items with product details
         const { rows: items } = await pool.query(
             `
-            SELECT ci.*, p.name as product_name, p.price as product_price, 
+            SELECT ci.*, p.name as product_name, p.price as product_price,
                    p.image_urls, v.name as variant_name, v.price_adjustment
             FROM cart_items ci
             JOIN products p ON ci.product_id = p.id
@@ -3185,7 +3158,7 @@ app.post('/api/orders', async (req, res) => {
                 console.log('Creating item:', item.product_name, 'for order:', order.id);
                 await client.query(
                     `
-                    INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku, 
+                    INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku,
                                             quantity, unit_price, variant_name)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 `,
@@ -3409,9 +3382,9 @@ app.post('/api/orders/:orderId/payment', async (req, res) => {
         // Get order with shop
         const { rows: orderRows } = await pool.query(
             `
-      SELECT o.*, s.* 
-      FROM orders o 
-      JOIN shops s ON o.shop_id = s.id 
+      SELECT o.*, s.*
+      FROM orders o
+      JOIN shops s ON o.shop_id = s.id
       WHERE o.id = $1
     `,
             [orderId]
@@ -3531,8 +3504,8 @@ app.get(
             // Get order with items and shop
             const { rows: orderRows } = await pool.query(
                 `
-            SELECT o.*, s.name as shop_name, s.email as shop_email, s.phone as shop_phone, 
-                   s.description as shop_description, s.bank_account_name, s.bank_account_iban, 
+            SELECT o.*, s.name as shop_name, s.email as shop_email, s.phone as shop_phone,
+                   s.description as shop_description, s.bank_account_name, s.bank_account_iban,
                    s.bank_account_bic
             FROM orders o
             JOIN shops s ON o.shop_id = s.id
@@ -3640,7 +3613,7 @@ app.get(
         try {
             const { rows } = await pool.query(
                 `
-            SELECT sz.*, 
+            SELECT sz.*,
                    (SELECT COUNT(*) FROM shipping_methods WHERE zone_id = sz.id AND is_active = true) as method_count
             FROM shipping_zones sz
             JOIN shops s ON sz.shop_id = s.id
@@ -3759,7 +3732,7 @@ app.post(
             // Verify zone belongs to owner's shop
             const { rows: zoneRows } = await pool.query(
                 `
-            SELECT sz.id, sz.shop_id 
+            SELECT sz.id, sz.shop_id
             FROM shipping_zones sz
             JOIN shops s ON sz.shop_id = s.id
             WHERE sz.id = $1 AND s.owner_id = $2
@@ -3773,7 +3746,7 @@ app.post(
 
             const { rows } = await pool.query(
                 `
-            INSERT INTO shipping_methods 
+            INSERT INTO shipping_methods
             (shop_id, zone_id, name, description, price, free_shipping_threshold, estimated_days_min, estimated_days_max)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
@@ -3810,7 +3783,7 @@ app.post('/api/shipping/calculate', async (req, res) => {
         // Find matching zone for country
         const { rows: zoneRows } = await pool.query(
             `
-            SELECT id FROM shipping_zones 
+            SELECT id FROM shipping_zones
             WHERE shop_id = $1 AND countries @> $2::jsonb
             LIMIT 1
         `,
@@ -3824,7 +3797,7 @@ app.post('/api/shipping/calculate', async (req, res) => {
             // Fall back to default zone
             const { rows: defaultZone } = await pool.query(
                 `
-                SELECT id FROM shipping_zones 
+                SELECT id FROM shipping_zones
                 WHERE shop_id = $1 AND is_default = true
                 LIMIT 1
             `,
@@ -3842,7 +3815,7 @@ app.post('/api/shipping/calculate', async (req, res) => {
         // Get shipping methods for zone
         const { rows: methods } = await pool.query(
             `
-            SELECT * FROM shipping_methods 
+            SELECT * FROM shipping_methods
             WHERE zone_id = $1 AND is_active = true
             ORDER BY price
         `,
@@ -3910,7 +3883,7 @@ app.put(
         try {
             const { rows } = await pool.query(
                 `
-            UPDATE shops 
+            UPDATE shops
             SET free_shipping_threshold = $1, default_shipping_method = $2
             WHERE owner_id = $3
             RETURNING id, free_shipping_threshold, default_shipping_method
@@ -4037,7 +4010,7 @@ app.put(
         try {
             const { rows } = await pool.query(
                 `
-            UPDATE shops 
+            UPDATE shops
             SET default_tax_rate = $1, tax_included = $2, tax_number = $3, vat_id = $4
             WHERE owner_id = $5
             RETURNING id, default_tax_rate, tax_included, tax_number, vat_id
@@ -4071,8 +4044,8 @@ app.get(
     async (req, res) => {
         try {
             const { rows } = await pool.query(
-                `SELECT payment_methods, stripe_public_key, paypal_client_id, paypal_mode, 
-                    bank_account_name, bank_account_iban, bank_transfer_instructions 
+                `SELECT payment_methods, stripe_public_key, paypal_client_id, paypal_mode,
+                    bank_account_name, bank_account_iban, bank_transfer_instructions
              FROM shops WHERE owner_id = $1 LIMIT 1`,
                 [req.user.id]
             );
