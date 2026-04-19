@@ -304,10 +304,10 @@
                     <span class="nav-icon"></span> Produkte
                 </div>
                 <div class="nav-item" onclick="showTab('orders')">
-                    <span class="nav-icon">📋</span> Bestellungen
+                    <span class="nav-icon">B</span> Bestellungen
                 </div>
                 <div class="nav-item" onclick="showTab('categories')">
-                    <span class="nav-icon">🏷️</span> Kategorien
+                    <span class="nav-icon">K</span> Kategorien
                 </div>
                 <div class="nav-item" onclick="showTab('customers')">
                     <span class="nav-icon"></span> Kunden
@@ -370,7 +370,7 @@
 
                 <div id="tab-orders" class="tab-content hidden">
                     <div class="header">
-                        <h2>📋 Bestellungen</h2>
+                        <h2>B Bestellungen</h2>
                         <button onclick="loadOrders()">🔄 Aktualisieren</button>
                     </div>
                     <div class="card">
@@ -382,7 +382,7 @@
 
                 <div id="tab-categories" class="tab-content hidden">
                     <div class="header">
-                        <h2>🏷️ Kategorien</h2>
+                        <h2>K Kategorien</h2>
                         <button onclick="openCategoryModal()">➕ Neue Kategorie</button>
                     </div>
                     <div class="card">
@@ -474,7 +474,7 @@
         <!-- Category Modal -->
         <div class="modal-overlay" id="category-modal">
             <div class="modal">
-                <h3>🏷️ Neue Kategorie</h3>
+                <h3>K Neue Kategorie</h3>
                 <div class="form-group">
                     <label>Kategoriename *</label>
                     <input type="text" id="cat-name" placeholder="z.B. E-Liquids" />
@@ -807,7 +807,7 @@
                     });
 
                     closeModal('product-modal');
-                    showMessage('✅ Produkt erfolgreich erstellt!', 'success');
+                    showMessage('OK Produkt erfolgreich erstellt!', 'success');
 
                     // Reset form
                     document.getElementById('prod-name').value = '';
@@ -842,7 +842,7 @@
                     });
 
                     closeModal('category-modal');
-                    showMessage('✅ Kategorie erfolgreich erstellt!', 'success');
+                    showMessage('OK Kategorie erfolgreich erstellt!', 'success');
 
                     // Reset form
                     document.getElementById('cat-name').value = '';
@@ -886,7 +886,7 @@
                             primary_color: color
                         })
                     });
-                    showMessage('✅ Einstellungen gespeichert!', 'success');
+                    showMessage('OK Einstellungen gespeichert!', 'success');
                 } catch (e) {
                     showMessage('❌ Fehler: ' + e.message, 'error');
                 }
