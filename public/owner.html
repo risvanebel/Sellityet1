@@ -1220,12 +1220,16 @@
 
         function showCreateProduct() {
             // Navigation zur Produkterstellung
-            document.getElementById('nav-products').click();
+            showTab('products');
             setTimeout(() => {
                 const form = document.getElementById('product-form');
                 if (form) {
                     form.classList.remove('hidden');
                     document.getElementById('product-list').classList.add('hidden');
+                    // Formular zurücksetzen
+                    form.reset();
+                    document.getElementById('product-id').value = '';
+                    document.getElementById('variants-container').innerHTML = '';
                 }
             }, 100);
         }
