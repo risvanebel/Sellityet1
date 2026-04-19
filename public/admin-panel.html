@@ -293,15 +293,15 @@
         </style>
     </head>
     <body>
-        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <button class="menu-toggle" onclick="toggleSidebar()">MENU</button>
         <div class="app">
             <nav class="sidebar" id="sidebar">
-                <h1>🏪 Sellityet</h1>
+                <h1>S Sellityet</h1>
                 <div class="nav-item active" onclick="showTab('dashboard')">
-                    <span class="nav-icon">📊</span> Dashboard
+                    <span class="nav-icon"></span> Dashboard
                 </div>
                 <div class="nav-item" onclick="showTab('products')">
-                    <span class="nav-icon">📦</span> Produkte
+                    <span class="nav-icon"></span> Produkte
                 </div>
                 <div class="nav-item" onclick="showTab('orders')">
                     <span class="nav-icon">📋</span> Bestellungen
@@ -310,14 +310,14 @@
                     <span class="nav-icon">🏷️</span> Kategorien
                 </div>
                 <div class="nav-item" onclick="showTab('customers')">
-                    <span class="nav-icon">👥</span> Kunden
+                    <span class="nav-icon"></span> Kunden
                 </div>
                 <div class="nav-item" onclick="showTab('settings')">
-                    <span class="nav-icon">⚙️</span> Einstellungen
+                    <span class="nav-icon"></span> Einstellungen
                 </div>
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333">
                     <div class="nav-item" onclick="logout()">
-                        <span class="nav-icon">🚪</span> Ausloggen
+                        <span class="nav-icon"></span> Ausloggen
                     </div>
                 </div>
             </nav>
@@ -327,7 +327,7 @@
 
                 <div id="tab-dashboard" class="tab-content">
                     <div class="header">
-                        <h2>📊 Dashboard</h2>
+                        <h2> Dashboard</h2>
                         <button onclick="loadDashboard()">🔄 Aktualisieren</button>
                     </div>
 
@@ -351,14 +351,14 @@
                     </div>
 
                     <div class="card">
-                        <h3>📈 Übersicht</h3>
+                        <h3> Übersicht</h3>
                         <p id="dash-info" style="color: #666">Lade Daten...</p>
                     </div>
                 </div>
 
                 <div id="tab-products" class="tab-content hidden">
                     <div class="header">
-                        <h2>📦 Produkte</h2>
+                        <h2> Produkte</h2>
                         <button onclick="openProductModal()">️ Neues Produkt</button>
                     </div>
                     <div class="card">
@@ -394,7 +394,7 @@
 
                 <div id="tab-customers" class="tab-content hidden">
                     <div class="header">
-                        <h2>👥 Kunden</h2>
+                        <h2> Kunden</h2>
                         <button onclick="loadCustomers()">🔄 Aktualisieren</button>
                     </div>
                     <div class="card">
@@ -406,7 +406,7 @@
 
                 <div id="tab-settings" class="tab-content hidden">
                     <div class="header">
-                        <h2>⚙️ Einstellungen</h2>
+                        <h2> Einstellungen</h2>
                         <button onclick="saveSettings()">💾 Speichern</button>
                     </div>
                     <div class="card">
