@@ -1297,6 +1297,60 @@ app.get('/api/shop/current', async (req, res) => {
     }
 });
 
+// Get products by shop slug (public API)
+app.get('/api/products', async (req, res) => {
+    const { shop } = req.query;
+
+    if (!shop) {
+        return res.status(400).json({ error: 'Shop slug required' });
+    }
+
+    try {
+        // Find shop by slug
+        const { rows: shopRows } = await pool.query(
+            'SELECT id FROM shops WHERE slug = $1 OR subdomain = $1 LIMIT 1',
+            [shop]
+        );
+
+        if (shopRows.length === 0) {
+            return res.status(404).json({ error: 'Shop not found' });
+        }
+
+        const shopId = shopRows[0].id;
+
+        const { rows } = await pool.query(
+            `
+            SELECT p.*, i.quantity, i.reserved, i.min_stock, i.max_order_quantity,
+                   c.name as category_name
+            FROM products p
+            LEFT JOIN inventory i ON p.id = i.product_id
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.shop_id = $1 AND p.status = 'published'
+            ORDER BY p.created_at DESC
+        `,
+            [shopId]
+        );
+
+        // Load images for each product
+        for (let product of rows) {
+            try {
+                const { rows: images } = await pool.query(
+                    'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
+                    [product.id]
+                );
+                product.image_urls = images.map((img) => img.image_url);
+            } catch (imgErr) {
+                product.image_urls = [];
+            }
+        }
+
+        res.json(rows);
+    } catch (error) {
+        console.error('Get products by shop error:', error);
+        res.status(500).json({ error: 'Failed to fetch products' });
+    }
+});
+
 // Get products for current shop (subdomain-based)
 app.get('/api/shop/products', async (req, res) => {
     if (!req.shop) {
