@@ -43,8 +43,8 @@
             z-index: 200;
             width: 44px;
             height: 44px;
-            background: var(--primary);
-            border: none;
+            background: #2D2D2D;
+            border: 1px solid #444;
             border-radius: var(--radius);
             color: white;
             font-size: 14px;
@@ -522,7 +522,7 @@
         <main class="main">
             <header class="topbar">
                 <h1 class="page-title" id="pageTitle">Dashboard</h1>
-                <button class="btn btn-primary" onclick="createProduct()">+ Neues Produkt</button>
+                <!-- Button entfernt - ist jetzt nur noch im Produkte-Tab -->
             </header>
 
             <div class="content">
@@ -1216,7 +1216,15 @@
         }
 
         function showCreateProduct() {
-            alert('Produkt-Erstellung: In Vollversion mit Modal/Formular');
+            // Navigation zur Produkterstellung
+            document.getElementById('nav-products').click();
+            setTimeout(() => {
+                const form = document.getElementById('product-form');
+                if (form) {
+                    form.classList.remove('hidden');
+                    document.getElementById('product-list').classList.add('hidden');
+                }
+            }, 100);
         }
 
         function logout() {
