@@ -47,7 +47,8 @@
             border: none;
             border-radius: var(--radius);
             color: white;
-            font-size: 20px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             box-shadow: var(--shadow);
             align-items: center;
@@ -175,6 +176,11 @@
             position: sticky;
             top: 0;
             z-index: 50;
+        }
+
+        /* Mobile: Topbar unter Overlay wenn Menu offen */
+        .sidebar-overlay.show ~ .layout .topbar {
+            z-index: 98;
         }
 
         .page-title {
