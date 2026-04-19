@@ -34,6 +34,43 @@
             min-height: 100vh;
         }
 
+        /* Mobile Menu Button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 200;
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            border: none;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-menu-btn:active { transform: scale(0.95); }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+
+        .sidebar-overlay.show { display: block; }
+
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+            .topbar { padding-left: 72px; }
+        }
         .sidebar {
             width: 260px;
             background: var(--sidebar);
@@ -41,6 +78,9 @@
             position: fixed;
             height: 100vh;
             overflow-y: auto;
+            z-index: 100;
+            left: 0;
+            top: 0;
         }
 
         .sidebar-brand {
@@ -375,7 +415,24 @@
             display: none;
         }
 
-        @media (max-width: 1024px) {
+
+        .mobile-menu-btn:active { transform: scale(0.95); }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+
+        .sidebar-overlay.show { display: block; }
+
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+            .topbar { padding-left: 72px; }
+        }
             .sidebar { display: none; }
             .main { margin-left: 0; }
             .grid-2 { grid-template-columns: 1fr; }
@@ -397,9 +454,18 @@
             padding: 60px;
             color: var(--text-secondary);
         }
+        @media (max-width: 1024px) {
+            .mobile-menu-btn { display: flex; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+            .topbar { padding-left: 72px; }
+        }
     </style>
 </head>
 <body>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menü" style="font-size: 14px; font-weight: 600;">MENU</button>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
     <div class="layout">
         <aside class="sidebar">
             <div class="sidebar-brand">
@@ -410,16 +476,16 @@
             </div>
             <nav class="nav-section">
                 <div class="nav-title">Hauptmenü</div>
-                <a class="nav-item active" onclick="showTab('dashboard')">📊 Dashboard</a>
-                <a class="nav-item" onclick="showTab('products')">🛍️ Produkte</a>
-                <a class="nav-item" onclick="showTab('orders')">📦 Bestellungen</a>
-                <a class="nav-item" onclick="showTab('customers')">👥 Kunden</a>
+                <a class="nav-item active" onclick="showTab('dashboard')">Dashboard</a>
+                <a class="nav-item" onclick="showTab('products')">Produkte</a>
+                <a class="nav-item" onclick="showTab('orders')">Bestellungen</a>
+                <a class="nav-item" onclick="showTab('customers')">Kunden</a>
                 <div class="nav-title">Verwaltung</div>
-                <a class="nav-item" onclick="showTab('analytics')">📈 Gewinn-Analyse</a>
-                <a class="nav-item" onclick="showTab('settings')">⚙️ Einstellungen</a>
+                <a class="nav-item" onclick="showTab('analytics')">Gewinn-Analyse</a>
+                <a class="nav-item" onclick="showTab('settings')">Einstellungen</a>
             </nav>
             <div class="sidebar-footer">
-                <a class="nav-item" onclick="logout()">🚪 Abmelden</a>
+                <a class="nav-item" onclick="logout()">Abmelden</a>
             </div>
         </aside>
 
@@ -1129,6 +1195,20 @@
         }
 
         loadDashboard();
+        function toggleSidebar() {
+            const sidebar = document.querySelector(".sidebar");
+            const overlay = document.querySelector(".sidebar-overlay");
+            const btn = document.querySelector(".mobile-menu-btn");
+            sidebar.classList.toggle("open");
+            overlay.classList.toggle("show");
+            btn.innerHTML = sidebar.classList.contains("open") ? "X" : "MENU";
+        }
+
+        document.querySelectorAll(".nav-item").forEach(item => {
+            item.addEventListener("click", () => {
+                if (window.innerWidth <= 1024) toggleSidebar();
+            });
+        });
     </script>
 </body>
 </html>

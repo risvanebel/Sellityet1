@@ -255,22 +255,22 @@
     </head>
     <body>
         <div class="shop-header" id="shop-header">
-            <h1 id="shop-name">🏪 Laden...</h1>
+            <h1 id="shop-name">Laden...</h1>
             <p id="shop-description">Shop wird geladen...</p>
         </div>
 
         <div class="container">
             <div class="nav-actions">
-                <a href="/customer-login.html" class="btn btn-primary">👤 Mein Konto</a>
+                <a href="/customer-login.html" class="btn btn-primary">Mein Konto</a>
                 <button class="btn cart-btn" onclick="openCart()">
-                    🛒 Warenkorb
+                    Warenkorb
                     <span class="cart-count" id="cart-count" style="display: none">0</span>
                 </button>
             </div>
 
             <div id="products-container" class="products-grid">
                 <div class="loading">
-                    <div class="empty-state-icon">📦</div>
+                    <div class="empty-state-icon" style="font-size: 48px; color: #9CA3AF;">Produkte</div>
                     Produkte werden geladen...
                 </div>
             </div>
@@ -280,7 +280,7 @@
         <div class="modal" id="cart-modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>🛒 Warenkorb</h2>
+                    <h2>Warenkorb</h2>
                     <button class="modal-close" onclick="closeCart()">&times;</button>
                 </div>
                 <div id="cart-items">
