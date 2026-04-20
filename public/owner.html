@@ -599,14 +599,67 @@
                 </div>
 
                 <div id="products" class="tab-content">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Produkte</h3>
-                            <button class="btn btn-primary" onclick="showCreateProduct()">+ Produkt hinzufügen</button>
+                    <div id="product-list-view">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Produkte</h3>
+                                <button class="btn btn-primary" onclick="showCreateProduct()">+ Produkt hinzufügen</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="productsList">
+                                    <div class="loading">Produkte werden geladen...</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div id="productsList">
-                                <div class="loading">Produkte werden geladen...</div>
+                    </div>
+                    <div id="product-form-view" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Neues Produkt</h3>
+                            </div>
+                            <div class="card-body">
+                                <input type="hidden" id="product-id">
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Produktname *</label>
+                                        <input type="text" id="product-name" placeholder="z.B. Premium T-Shirt">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>SKU</label>
+                                        <input type="text" id="product-sku" placeholder="Artikelnummer">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Beschreibung</label>
+                                    <textarea id="product-description" rows="3"></textarea>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Preis (EUR) *</label>
+                                        <input type="number" id="product-price" step="0.01" min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Einkaufspreis</label>
+                                        <input type="number" id="product-cost" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Lagerbestand</label>
+                                        <input type="number" id="product-stock" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Status</label>
+                                        <select id="product-status">
+                                            <option value="draft">Entwurf</option>
+                                            <option value="published">Veröffentlicht</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 20px;">
+                                    <button class="btn btn-primary" onclick="saveProduct()">Speichern</button>
+                                    <button class="btn btn-secondary" onclick="cancelProduct()">Abbrechen</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1232,6 +1285,62 @@
                     document.getElementById('variants-container').innerHTML = '';
                 }
             }, 100);
+        }
+
+        function showCreateProduct() {
+            document.getElementById('product-list-view').style.display = 'none';
+            document.getElementById('product-form-view').style.display = 'block';
+            document.getElementById('product-id').value = '';
+            document.getElementById('product-name').value = '';
+            document.getElementById('product-sku').value = '';
+            document.getElementById('product-description').value = '';
+            document.getElementById('product-price').value = '';
+            document.getElementById('product-cost').value = '';
+            document.getElementById('product-stock').value = '0';
+            document.getElementById('product-status').value = 'draft';
+        }
+
+        function cancelProduct() {
+            document.getElementById('product-form-view').style.display = 'none';
+            document.getElementById('product-list-view').style.display = 'block';
+        }
+
+        async function saveProduct() {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
+
+            const data = {
+                name: document.getElementById('product-name').value,
+                description: document.getElementById('product-description').value,
+                price: parseFloat(document.getElementById('product-price').value) || 0,
+                cost_price: parseFloat(document.getElementById('product-cost').value) || 0,
+                stock: parseInt(document.getElementById('product-stock').value) || 0,
+                sku: document.getElementById('product-sku').value,
+                status: document.getElementById('product-status').value
+            };
+
+            try {
+                const res = await fetch('/api/owner/products', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('Produkt erstellt!');
+                    cancelProduct();
+                    loadProducts();
+                } else {
+                    const err = await res.json();
+                    alert('Fehler: ' + (err.error || 'Unbekannt'));
+                }
+            } catch (e) {
+                console.error('Save error:', e);
+                alert('Fehler beim Speichern');
+            }
         }
 
         function logout() {
