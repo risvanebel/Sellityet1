@@ -95,7 +95,8 @@
         <p>Vielen Dank fuer deine Bestellung. Wir haben dir eine Bestaetigungs-E-Mail geschickt.</p>
         <div class="order-number" id="orderNumber">-</div>
         <p>Du kannst deine Bestellung jederzeit mit deiner E-Mail-Adresse und der Bestellnummer verfolgen.</p>
-        <a href="/" class="btn">Zurueck zur Startseite</a>
+        <a href="/order-tracking.html" class="btn" id="trackBtn" style="display:none;">Bestellung verfolgen</a>
+        <a href="/" class="btn" style="background:#6B7280; margin-left:8px;">Zurueck zur Startseite</a>
     </div>
 
     <script>
@@ -103,6 +104,8 @@
         const orderNumber = urlParams.get('order');
         if (orderNumber) {
             document.getElementById('orderNumber').textContent = orderNumber;
+            document.getElementById('trackBtn').href = '/order-tracking.html?order=' + orderNumber;
+            document.getElementById('trackBtn').style.display = 'inline-block';
         }
     </script>
 </body>
