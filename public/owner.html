@@ -1350,14 +1350,18 @@
 
         loadDashboard();
         function toggleSidebar() {
-            console.log("toggleSidebar called");
-            const sidebar = document.querySelector(".sidebar");
-            const overlay = document.querySelector(".sidebar-overlay");
-            const btn = document.querySelector(".mobile-menu-btn");
-            sidebar.classList.toggle("open");
-            overlay.classList.toggle("show");
-            btn.innerHTML = sidebar.classList.contains("open") ? "X" : "MENU";
-            console.log("Sidebar open:", sidebar.classList.contains("open"));
+            var s = document.querySelector('.sidebar');
+            var o = document.querySelector('.sidebar-overlay');
+            var b = document.querySelector('.mobile-menu-btn');
+            if (s.classList.contains('open')) {
+                s.classList.remove('open');
+                o.classList.remove('show');
+                b.innerHTML = 'MENU';
+            } else {
+                s.classList.add('open');
+                o.classList.add('show');
+                b.innerHTML = 'X';
+            }
         }
 
         document.querySelectorAll(".nav-item").forEach(item => {
