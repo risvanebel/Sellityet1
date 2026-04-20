@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mein Konto - Sellityet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0078D4;
+            --primary-dark: #106EBE;
+            --surface: #FFFFFF;
+            --surface-alt: #F3F2F1;
+            --text-primary: #323130;
+            --text-secondary: #605E5C;
+            --success: #107C10;
+            --warning: #FF8C00;
+            --danger: #D13438;
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+            --radius: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--surface-alt);
+            color: var(--text-primary);
+        }
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid #E1DFDD;
+            padding: 16px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #8A8886;
+            color: var(--text-primary);
+        }
+        .btn-outline:hover {
+            background: #F3F2F1;
+        }
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+        .page-header {
+            margin-bottom: 32px;
+        }
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .page-subtitle {
+            color: var(--text-secondary);
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid #E1DFDD;
+            margin-bottom: 24px;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            color: var(--text-primary);
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+        .orders-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .order-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .order-header {
+            background: #F3F2F1;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .order-number {
+            font-weight: 600;
+        }
+        .order-date {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .order-status {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-offen { background: #FFF4CE; color: #986000; }
+        .status-bezahlt { background: #EFF7FF; color: #0078D4; }
+        .status-versendet { background: #E1DFDD; color: #323130; }
+        .status-geliefert { background: #DFF6DD; color: #107C10; }
+        .status-storniert { background: #FDE7E9; color: #D13438; }
+        .order-body {
+            padding: 24px;
+        }
+        .order-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-name {
+            font-weight: 500;
+        }
+        .item-variant {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .item-qty {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .item-price {
+            font-weight: 600;
+        }
+        .order-footer {
+            border-top: 1px solid #E1DFDD;
+            padding-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .order-total-label {
+            color: var(--text-secondary);
+        }
+        .order-total {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 64px 24px;
+            color: var(--text-secondary);
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .loading {
+            text-align: center;
+            padding: 48px;
+            color: var(--text-secondary);
+        }
+        .shop-banner {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 24px;
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+        .shop-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        @media (max-width: 640px) {
+            .header { padding: 12px 16px; }
+            .main { padding: 16px; }
+            .order-header { flex-direction: column; align-items: flex-start; }
+            .tabs { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="brand">
+                <div class="brand-logo">S</div>
+                <span id="shopName">Mein Konto</span>
+            </a>
+            <div class="user-menu">
+                <div class="user-info">
+                    <span id="userEmail">...</span>
+                </div>
+                <button class="btn btn-outline" onclick="logout()">Abmelden</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="shop-banner" id="shopBanner" style="display:none;">
+            <div class="shop-name" id="shopBannerName"></div>
+        </div>
+
+        <div class="page-header">
+            <h1 class="page-title">Meine Bestellungen</h1>
+            <p class="page-subtitle">Übersicht aller Ihrer Bestellungen</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('orders')">Bestellungen</button>
+            <button class="tab" onclick="switchTab('account')">Konto</button>
+        </div>
+
+        <div id="orders-content">
+            <div class="loading" id="loading">Laden...</div>
+            <div class="orders-grid" id="orders-list" style="display:none;"></div>
+            <div class="empty-state" id="empty-state" style="display:none;">
+                <div class="empty-icon">📦</div>
+                <p>Noch keine Bestellungen</p>
+            </div>
+        </div>
+
+        <div id="account-content" style="display:none;">
+            <div class="order-card">
+                <div class="order-body">
+                    <h3 style="margin-bottom: 16px;">Kontoinformationen</h3>
+                    <p><strong>E-Mail:</strong> <span id="accountEmail">-</span></p>
+                    <p><strong>Name:</strong> <span id="accountName">-</span></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API = window.location.origin;
+
+        async function checkAuth() {
+            const token = localStorage.getItem('customer_token');
+            if (!token) {
+                window.location.href = '/customer-login.html';
+                return null;
+            }
+            return token;
+        }
+
+        async function loadOrders() {
+            const token = await checkAuth();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${API}/api/customer/orders`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const orders = await res.json();
+                renderOrders(orders);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').textContent = 'Fehler beim Laden';
+            }
+        }
+
+        function renderOrders(orders) {
+            document.getElementById('loading').style.display = 'none';
+
+            if (!orders || orders.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                return;
+            }
+
+            const list = document.getElementById('orders-list');
+            list.style.display = 'flex';
+
+            list.innerHTML = orders.map(order => {
+                const statusClass = `status-${order.status}`;
+                const date = new Date(order.created_at).toLocaleDateString('de-DE', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                });
+                const items = order.items.filter(i => i.id);
+
+                return `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-number">#${order.order_number}</div>
+                                <div class="order-date">${date}</div>
+                            </div>
+                            <span class="order-status ${statusClass}">${order.status}</span>
+                        </div>
+                        <div class="order-body">
+                            <div class="order-items">
+                                ${items.map(item => `
+                                    <div class="order-item">
+                                        <div>
+                                            <div class="item-name">${item.product_name}</div>
+                                            ${item.variant_name ? `<div class="item-variant">${item.variant_name}</div>` : ''}
+                                        </div>
+                                        <div class="item-qty">x${item.quantity}</div>
+                                        <div class="item-price">€${(item.price * item.quantity).toFixed(2)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="order-footer">
+                                <span class="order-total-label">Gesamt</span>
+                                <span class="order-total">€${parseFloat(order.total_amount).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('orders-content').style.display = tab === 'orders' ? 'block' : 'none';
+            document.getElementById('account-content').style.display = tab === 'account' ? 'block' : 'none';
+        }
+
+        function logout() {
+            localStorage.removeItem('customer_token');
+            window.location.href = '/';
+        }
+
+        // Load on start
+        (async () => {
+            const token = await checkAuth();
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    document.getElementById('userEmail').textContent = payload.email;
+                    document.getElementById('accountEmail').textContent = payload.email;
+                    if (payload.first_name || payload.last_name) {
+                        document.getElementById('accountName').textContent = 
+                            [payload.first_name, payload.last_name].filter(Boolean).join(' ');
+                    }
+                } catch(e) {}
+                loadOrders();
+            }
+        })();
+    </script>
+</body>
+</html>

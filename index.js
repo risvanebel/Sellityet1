@@ -1482,6 +1482,48 @@ app.post('/api/auth/login-customer', async (req, res) => {
     }
 });
 
+// Customer: Get own orders
+app.get('/api/customer/orders', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const token = authHeader.replace('Bearer ', '');
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.type !== 'customer') {
+            return res.status(403).json({ error: 'Customer access only' });
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT o.id, o.order_number, o.status, o.payment_method, o.payment_status,
+                   o.shipping_address, o.total_amount, o.created_at,
+                   json_agg(json_build_object(
+                       'id', oi.id,
+                       'product_name', oi.product_name,
+                       'quantity', oi.quantity,
+                       'price', oi.price,
+                       'variant_name', oi.variant_name
+                   )) as items
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.customer_id = $1
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+        `,
+            [decoded.id]
+        );
+
+        res.json(rows);
+    } catch (error) {
+        console.error('Get customer orders error:', error);
+        res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+});
+
 // ========== PUBLIC ==========
 
 // Get all shops

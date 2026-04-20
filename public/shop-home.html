@@ -514,6 +514,18 @@
                 }
             });
 
+            // Update "Mein Konto" button if logged in
+            (function() {
+                const token = localStorage.getItem('customer_token');
+                if (token) {
+                    const btn = document.querySelector('.nav-actions .btn-primary');
+                    if (btn) {
+                        btn.href = '/customer-dashboard.html';
+                        btn.textContent = 'Mein Konto';
+                    }
+                }
+            })();
+
             // Load shop on page load
             loadShop();
         </script>
