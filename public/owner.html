@@ -599,14 +599,78 @@
                 </div>
 
                 <div id="products" class="tab-content">
-                    <div class="card">
+                    <div id="product-list">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Produkte</h3>
+                                <button class="btn btn-primary" onclick="showCreateProduct()">+ Produkt hinzufügen</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="productsList">
+                                    <div class="loading">Produkte werden geladen...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Produkt Formular -->
+                    <div id="product-form" class="card hidden" style="display: none;">
                         <div class="card-header">
-                            <h3 class="card-title">Produkte</h3>
-                            <button class="btn btn-primary" onclick="showCreateProduct()">+ Produkt hinzufügen</button>
+                            <h3 class="card-title" id="productFormTitle">Neues Produkt</h3>
                         </div>
                         <div class="card-body">
-                            <div id="productsList">
-                                <div class="loading">Produkte werden geladen...</div>
+                            <input type="hidden" id="product-id">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Produktname *</label>
+                                    <input type="text" id="product-name" placeholder="z.B. Premium T-Shirt" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Artikelnummer (SKU)</label>
+                                    <input type="text" id="product-sku" placeholder="z.B. TS-001">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Beschreibung</label>
+                                <textarea id="product-description" rows="3" placeholder="Produktbeschreibung..."></textarea>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Verkaufspreis (€) *</label>
+                                    <input type="number" id="product-price" step="0.01" min="0" placeholder="29.99" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Einkaufspreis (€)</label>
+                                    <input type="number" id="product-cost" step="0.01" min="0" placeholder="15.00">
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Lagerbestand *</label>
+                                    <input type="number" id="product-stock" min="0" value="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <select id="product-status">
+                                        <option value="draft">Entwurf</option>
+                                        <option value="published">Veröffentlicht</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Kategorie</label>
+                                <input type="text" id="product-category" placeholder="z.B. Bekleidung">
+                            </div>
+                            
+                            <div class="section-divider"></div>
+                            <h4>Varianten (optional)</h4>
+                            <div id="variants-container"></div>
+                            <button type="button" class="btn btn-secondary" onclick="addVariant()" style="margin-top: 12px;">+ Variante hinzufügen</button>
+                            
+                            <div class="section-divider"></div>
+                            <div style="display: flex; gap: 12px;">
+                                <button type="button" class="btn btn-primary" onclick="saveProduct()">Speichern</button>
+                                <button type="button" class="btn btn-secondary" onclick="cancelProduct()">Abbrechen</button>
                             </div>
                         </div>
                     </div>
@@ -1218,7 +1282,114 @@
             showCreateProduct();
         }
 
+        function addVariant() {
+            const container = document.getElementById('variants-container');
+            const div = document.createElement('div');
+            div.className = 'variant-row grid-2';
+            div.style.cssText = 'padding: 16px; background: var(--surface-alt); border-radius: var(--radius); margin-bottom: 12px;';
+            div.innerHTML = `
+                <div class="form-group">
+                    <label>Variantenname</label>
+                    <input type="text" class="variant-name" placeholder="z.B. Rot, Größe L">
+                </div>
+                <div class="form-group">
+                    <label>Preis-Änderung (€)</label>
+                    <input type="number" class="variant-price" step="0.01" value="0" placeholder="+/- Preis">
+                </div>
+                <div class="form-group">
+                    <label>Lagerbestand</label>
+                    <input type="number" class="variant-stock" min="0" value="0">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.variant-row').remove()" style="background: #FCE8E6; color: #C5221F;">Entfernen</button>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function cancelProduct() {
+            document.getElementById('product-form').style.display = 'none';
+            document.getElementById('product-list').style.display = 'block';
+        }
+
+        async function saveProduct() {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
+
+            const productId = document.getElementById('product-id')?.value;
+            const isEdit = !!productId;
+
+            const data = {
+                name: document.getElementById('product-name')?.value,
+                description: document.getElementById('product-description')?.value,
+                price: parseFloat(document.getElementById('product-price')?.value) || 0,
+                cost_price: parseFloat(document.getElementById('product-cost')?.value) || 0,
+                stock: parseInt(document.getElementById('product-stock')?.value) || 0,
+                sku: document.getElementById('product-sku')?.value,
+                status: document.getElementById('product-status')?.value || 'draft',
+                category: document.getElementById('product-category')?.value
+            };
+
+            // Variants sammeln
+            const variantRows = document.querySelectorAll('.variant-row');
+            if (variantRows.length > 0) {
+                data.variants = Array.from(variantRows).map(row => ({
+                    name: row.querySelector('.variant-name')?.value,
+                    price_adjustment: parseFloat(row.querySelector('.variant-price')?.value) || 0,
+                    stock: parseInt(row.querySelector('.variant-stock')?.value) || 0
+                }));
+            }
+
+            try {
+                const url = isEdit ? `/api/owner/products/${productId}` : '/api/owner/products';
+                const method = isEdit ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert(isEdit ? 'Produkt aktualisiert' : 'Produkt erstellt');
+                    // Zurück zur Liste
+                    document.getElementById('product-form')?.classList.add('hidden');
+                    document.getElementById('product-list')?.classList.remove('hidden');
+                    loadProducts();
+                } else {
+                    const err = await res.json();
+                    alert('Fehler: ' + (err.error || 'Unbekannter Fehler'));
+                }
+            } catch (e) {
+                console.error('Save product error:', e);
+                alert('Fehler beim Speichern');
+            }
+        }
+
         function showCreateProduct() {
+            // Formular anzeigen, Liste ausblenden
+            document.getElementById('product-form').style.display = 'block';
+            document.getElementById('product-list').style.display = 'none';
+            document.getElementById('productFormTitle').textContent = 'Neues Produkt';
+            
+            // Formular zurücksetzen
+            document.getElementById('product-id').value = '';
+            document.getElementById('product-name').value = '';
+            document.getElementById('product-description').value = '';
+            document.getElementById('product-price').value = '';
+            document.getElementById('product-cost').value = '';
+            document.getElementById('product-stock').value = '0';
+            document.getElementById('product-sku').value = '';
+            document.getElementById('product-status').value = 'draft';
+            document.getElementById('product-category').value = '';
+            document.getElementById('variants-container').innerHTML = '';
+        }
+
+        /* OLD function - now inline above
+        function showCreateProductOLD() {
             // Navigation zur Produkterstellung
             showTab('products');
             setTimeout(() => {
