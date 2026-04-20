@@ -1310,6 +1310,7 @@
             if (!token) return;
 
             const data = {
+                shop_id: currentShop?.id,
                 name: document.getElementById('product-name').value,
                 description: document.getElementById('product-description').value,
                 price: parseFloat(document.getElementById('product-price').value) || 0,
@@ -1318,6 +1319,11 @@
                 sku: document.getElementById('product-sku').value,
                 status: document.getElementById('product-status').value
             };
+
+            if (!data.shop_id || !data.name || !data.price) {
+                alert('Bitte Shop auswählen, Namen und Preis angeben');
+                return;
+            }
 
             try {
                 const res = await fetch('/api/owner/products', {
