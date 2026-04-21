@@ -2161,6 +2161,46 @@ app.get('/api/owner/products', authMiddleware, requireRole('owner', 'admin'), as
     }
 });
 
+// Get single product
+app.get(
+    '/api/owner/products/:id',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows } = await pool.query(
+                `
+            SELECT p.*, s.name as shop_name 
+            FROM products p
+            JOIN shops s ON p.shop_id = s.id
+            WHERE p.id = $1 AND s.owner_id = $2
+        `,
+                [req.params.id, req.user.id]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            const product = rows[0];
+
+            // Calculate stock from variants
+            if (product.has_variants) {
+                const { rows: variants } = await pool.query(
+                    'SELECT COALESCE(SUM(stock), 0) as total FROM product_variants WHERE product_id = $1 AND is_active = true',
+                    [product.id]
+                );
+                product.quantity = parseInt(variants[0].total);
+            }
+
+            res.json(product);
+        } catch (error) {
+            console.error('Get product error:', error);
+            res.status(500).json({ error: 'Failed to fetch product' });
+        }
+    }
+);
+
 // PRODUCT CREATION AUDIT LOG
 const productCreationLog = [];
 
