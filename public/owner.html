@@ -680,7 +680,7 @@
                                             + Bild hochladen
                                         </button>
                                         <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                                            Speichere das Produkt erst, bevor du Bilder hochlädst
+                                            Bilder werden automatisch beim Hochladen gespeichert
                                         </p>
                                     </div>
                                 </div>
@@ -1278,19 +1278,21 @@
                 }
 
                 div.innerHTML = products.map(p => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #F3F2F1;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600;">${p.name} ${p.is_featured ? '⭐' : ''}</div>
-                            <div style="font-size: 13px; color: #605E5C;">${(p.price || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</div>
-                        </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <button class="btn ${p.status === 'published' ? 'btn-primary' : 'btn-secondary'}" onclick="toggleProductStatus(${p.id}, '${p.status === 'published' ? 'draft' : 'published'}')" style="padding: 4px 8px; font-size: 12px;">
-                                ${p.status === 'published' ? '👁 Sichtbar' : '🚫 Versteckt'}
-                            </button>
-                            <button class="btn ${p.is_featured ? 'btn-primary' : 'btn-secondary'}" onclick="toggleProductFeatured(${p.id}, ${!p.is_featured})" style="padding: 4px 8px; font-size: 12px;">
-                                ${p.is_featured ? '⭐ Hervorgehoben' : '☆ Hervorheben'}
-                            </button>
-                            <button class="btn btn-secondary" onclick="editProduct(${p.id})" style="padding: 4px 8px; font-size: 12px;">Bearbeiten</button>
+                    <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-bottom: 1px solid #F3F2F1;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 16px;">${p.name} ${p.is_featured ? '⭐' : ''}</div>
+                                <div style="font-size: 14px; color: #605E5C; margin-top: 4px;">${(p.price || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                                <button class="btn ${p.status === 'published' ? 'btn-primary' : 'btn-secondary'}" onclick="toggleProductStatus(${p.id}, '${p.status === 'published' ? 'draft' : 'published'}')" style="padding: 8px 14px; font-size: 13px; min-height: 40px; white-space: nowrap;">
+                                    ${p.status === 'published' ? 'Sichtbar' : 'Versteckt'}
+                                </button>
+                                <button class="btn ${p.is_featured ? 'btn-primary' : 'btn-secondary'}" onclick="toggleProductFeatured(${p.id}, ${!p.is_featured})" style="padding: 8px 14px; font-size: 13px; min-height: 40px; white-space: nowrap;">
+                                    ${p.is_featured ? 'Hervorgehoben' : 'Hervorheben'}
+                                </button>
+                                <button class="btn btn-secondary" onclick="editProduct(${p.id})" style="padding: 8px 14px; font-size: 13px; min-height: 40px;">Bearbeiten</button>
+                            </div>
                         </div>
                     </div>
                 `).join('');
@@ -1811,7 +1813,7 @@
             const div = document.createElement('div');
             div.className = 'variant-row';
             div.id = variantId;
-            div.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; align-items: end;';
+            div.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px; align-items: end;';
             
             div.innerHTML = `
                 <div class="form-group">
@@ -1977,11 +1979,18 @@
 
         async function uploadProductImage(event) {
             const token = localStorage.getItem('owner_token');
-            const productId = document.getElementById('product-id').value;
+            let productId = document.getElementById('product-id').value;
             
-            if (!token || !productId) {
-                alert('Bitte speichere das Produkt erst, bevor du Bilder hochlädst');
-                return;
+            if (!token) return;
+            
+            // If no productId, save product first
+            if (!productId) {
+                const saved = await autoSaveProduct();
+                if (!saved) {
+                    alert('Produkt konnte nicht gespeichert werden');
+                    return;
+                }
+                productId = saved.id;
             }
             
             const file = event.target.files[0];
@@ -2007,6 +2016,50 @@
             } catch (e) {
                 console.error('Upload error:', e);
                 alert('Fehler beim Hochladen');
+            }
+        }
+
+        async function autoSaveProduct() {
+            const data = {
+                name: document.getElementById('product-name').value,
+                description: document.getElementById('product-description').value,
+                price: parseFloat(document.getElementById('product-price').value) || 0,
+                cost_price: parseFloat(document.getElementById('product-cost').value) || 0,
+                sku: document.getElementById('product-sku').value,
+                brand: document.getElementById('product-brand').value,
+                status: document.getElementById('product-status').value,
+                shop_id: currentShop?.id,
+                initial_quantity: parseInt(document.getElementById('product-stock').value) || 0,
+                image_urls: []
+            };
+
+            if (!data.name || !data.price || !data.shop_id) {
+                alert('Bitte Namen, Preis und Shop angeben');
+                return null;
+            }
+
+            try {
+                const res = await fetch('/api/owner/products', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    const product = await res.json();
+                    document.getElementById('product-id').value = product.id;
+                    return product;
+                } else {
+                    const err = await res.json();
+                    alert('Fehler: ' + (err.error || 'Unbekannt'));
+                    return null;
+                }
+            } catch (e) {
+                console.error('Auto-save error:', e);
+                return null;
             }
         }
 
