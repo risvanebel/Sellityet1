@@ -849,7 +849,19 @@
 
         async function loadShop() {
             try {
-                const res = await fetch(`${API_URL}/shop/current`);
+                // First try subdomain-based detection
+                let res = await fetch(`${API_URL}/shop/current`);
+                
+                // If that fails, try query parameter
+                if (!res.ok) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const shopSlug = urlParams.get('shop');
+                    
+                    if (shopSlug) {
+                        // Get shop info by slug
+                        res = await fetch(`${API_URL}/shops/${shopSlug}`);
+                    }
+                }
 
                 if (!res.ok) {
                     throw new Error('Shop not found');
@@ -898,7 +910,20 @@
 
         async function loadProducts() {
             try {
-                const res = await fetch(`${API_URL}/shop/products`);
+                let res;
+                
+                // First try subdomain-based products
+                res = await fetch(`${API_URL}/shop/products`);
+                
+                // If that fails, try query parameter
+                if (!res.ok) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const shopSlug = urlParams.get('shop');
+                    
+                    if (shopSlug) {
+                        res = await fetch(`${API_URL}/products?shop=${shopSlug}`);
+                    }
+                }
 
                 if (!res.ok) {
                     throw new Error('Failed to load products');
