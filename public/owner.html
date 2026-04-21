@@ -1233,10 +1233,8 @@
                     selectTheme(shop.theme);
                 }
                 
-                // Set shop link
-                const shopUrl = shop.subdomain 
-                    ? `https://${shop.subdomain}.sellityet.store`
-                    : `${window.location.origin}/shop.html?shop=${shop.slug}`;
+                // Set shop link - always use direct URL (subdomain not configured yet)
+                const shopUrl = `${window.location.origin}/shop.html?shop=${shop.slug}`;
                 document.getElementById('shopLinkUrl').value = shopUrl;
                 
                 // Show image previews
