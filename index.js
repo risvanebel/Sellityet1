@@ -1524,6 +1524,71 @@ app.get('/api/customer/orders', async (req, res) => {
     }
 });
 
+// Customer: Get own profile
+app.get('/api/customer/profile', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const token = authHeader.replace('Bearer ', '');
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.type !== 'customer') {
+            return res.status(403).json({ error: 'Customer access only' });
+        }
+
+        const { rows } = await pool.query(
+            'SELECT id, email, first_name, last_name, phone, shipping_address, created_at FROM customers WHERE id = $1',
+            [decoded.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Get customer profile error:', error);
+        res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
+// Customer: Update own profile
+app.put('/api/customer/profile', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const token = authHeader.replace('Bearer ', '');
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.type !== 'customer') {
+            return res.status(403).json({ error: 'Customer access only' });
+        }
+
+        const { first_name, last_name, phone, shipping_address } = req.body;
+
+        await pool.query(
+            `UPDATE customers SET 
+                first_name = COALESCE($1, first_name),
+                last_name = COALESCE($2, last_name),
+                phone = COALESCE($3, phone),
+                shipping_address = COALESCE($4, shipping_address)
+            WHERE id = $5`,
+            [first_name, last_name, phone, shipping_address, decoded.id]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Update customer profile error:', error);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
 // ========== PUBLIC ==========
 
 // Get all shops

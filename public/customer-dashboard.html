@@ -291,8 +291,31 @@
             <div class="order-card">
                 <div class="order-body">
                     <h3 style="margin-bottom: 16px;">Kontoinformationen</h3>
-                    <p><strong>E-Mail:</strong> <span id="accountEmail">-</span></p>
-                    <p><strong>Name:</strong> <span id="accountName">-</span></p>
+                    <div style="display: grid; gap: 16px; max-width: 400px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Vorname</label>
+                            <input type="text" id="profileFirstName" style="width: 100%; padding: 10px; border: 1px solid #E1DFDD; border-radius: var(--radius); font-family: inherit;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Nachname</label>
+                            <input type="text" id="profileLastName" style="width: 100%; padding: 10px; border: 1px solid #E1DFDD; border-radius: var(--radius); font-family: inherit;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Telefon</label>
+                            <input type="tel" id="profilePhone" style="width: 100%; padding: 10px; border: 1px solid #E1DFDD; border-radius: var(--radius); font-family: inherit;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Lieferadresse</label>
+                            <textarea id="profileAddress" rows="3" style="width: 100%; padding: 10px; border: 1px solid #E1DFDD; border-radius: var(--radius); font-family: inherit; resize: vertical;"></textarea>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500;">E-Mail</label>
+                            <input type="email" id="profileEmail" disabled style="width: 100%; padding: 10px; border: 1px solid #E1DFDD; border-radius: var(--radius); font-family: inherit; background: #F3F2F1; color: #605E5C;">
+                            <small style="color: #605E5C;">E-Mail kann nicht geändert werden</small>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveProfile()" id="saveProfileBtn">Speichern</button>
+                        <p id="profileMsg" style="color: var(--success); display: none;">Gespeichert!</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -388,6 +411,68 @@
 
             document.getElementById('orders-content').style.display = tab === 'orders' ? 'block' : 'none';
             document.getElementById('account-content').style.display = tab === 'account' ? 'block' : 'none';
+
+            if (tab === 'account') {
+                loadProfile();
+            }
+        }
+
+        async function loadProfile() {
+            const token = localStorage.getItem('customer_token');
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${API}/api/customer/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const profile = await res.json();
+                    document.getElementById('profileFirstName').value = profile.first_name || '';
+                    document.getElementById('profileLastName').value = profile.last_name || '';
+                    document.getElementById('profilePhone').value = profile.phone || '';
+                    document.getElementById('profileAddress').value = profile.shipping_address || '';
+                    document.getElementById('profileEmail').value = profile.email || '';
+                }
+            } catch (err) {
+                console.error('Load profile error:', err);
+            }
+        }
+
+        async function saveProfile() {
+            const token = localStorage.getItem('customer_token');
+            if (!token) return;
+
+            const btn = document.getElementById('saveProfileBtn');
+            btn.disabled = true;
+            btn.textContent = 'Speichern...';
+
+            try {
+                const res = await fetch(`${API}/api/customer/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        first_name: document.getElementById('profileFirstName').value,
+                        last_name: document.getElementById('profileLastName').value,
+                        phone: document.getElementById('profilePhone').value,
+                        shipping_address: document.getElementById('profileAddress').value
+                    })
+                });
+
+                if (res.ok) {
+                    const msg = document.getElementById('profileMsg');
+                    msg.style.display = 'block';
+                    setTimeout(() => msg.style.display = 'none', 3000);
+                }
+            } catch (err) {
+                console.error('Save profile error:', err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Speichern';
+            }
         }
 
         function logout() {
