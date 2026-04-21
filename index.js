@@ -1120,6 +1120,38 @@ app.put('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async 
     }
 });
 
+// Update shop design settings
+app.put(
+    '/api/owner/shop/design',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { theme, logo_url, banner_url } = req.body;
+
+            const { rows } = await pool.query(
+                `UPDATE shops SET
+                theme = COALESCE($1, theme),
+                logo_url = COALESCE($2, logo_url),
+                banner_url = COALESCE($3, banner_url),
+                updated_at = CURRENT_TIMESTAMP
+             WHERE owner_id = $4
+             RETURNING *`,
+                [theme, logo_url, banner_url, req.user.id]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json({ error: 'No shop found' });
+            }
+
+            res.json(rows[0]);
+        } catch (error) {
+            console.error('Update design error:', error);
+            res.status(500).json({ error: 'Failed to update design settings' });
+        }
+    }
+);
+
 // Delete coupon
 app.delete(
     '/api/owner/coupons/:id',
@@ -1278,8 +1310,8 @@ app.get('/api/shop/current', async (req, res) => {
         // Return public shop info
         const { rows } = await pool.query(
             `
-            SELECT s.id, s.name, s.slug, s.description, s.logo_url, s.primary_color,
-                   s.subdomain, s.custom_domain
+            SELECT s.id, s.name, s.slug, s.description, s.logo_url, s.banner_url, s.primary_color,
+                   s.theme, s.subdomain, s.custom_domain
             FROM shops s
             WHERE s.id = $1 AND s.is_active = true
         `,

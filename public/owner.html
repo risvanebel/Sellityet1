@@ -736,6 +736,7 @@
                 <div id="settings" class="tab-content">
                     <div class="tabs">
                         <button class="tab active" onclick="showSettingsTab('shop', this)">Shop</button>
+                        <button class="tab" onclick="showSettingsTab('design', this)">Design</button>
                         <button class="tab" onclick="showSettingsTab('payment', this)">Zahlung</button>
                         <button class="tab" onclick="showSettingsTab('shipping', this)">Versand</button>
                         <button class="tab" onclick="showSettingsTab('email', this)">E-Mail</button>
@@ -759,6 +760,57 @@
                                     <input type="color" id="shopColorInput" value="#0078D4" style="width: 100px; height: 40px; padding: 4px;">
                                 </div>
                                 <button class="btn btn-primary" onclick="saveShopSettings()">Speichern</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-design" class="settings-panel">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Shop-Design</h3></div>
+                            <div class="card-body">
+                                <div class="success-message" id="designSuccess">✓ Design-Einstellungen gespeichert</div>
+                                
+                                <div class="section-title">Theme auswählen</div>
+                                <div class="theme-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                                    <div class="theme-option" data-theme="modern" onclick="selectTheme('modern')" style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+                                        <div style="height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; margin-bottom: 10px;"></div>
+                                        <div style="font-weight: 600;">Modern Minimal</div>
+                                        <div style="font-size: 12px; color: #6b7280;">Elegant & Sauber</div>
+                                    </div>
+                                    <div class="theme-option" data-theme="bold" onclick="selectTheme('bold')" style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+                                        <div style="height: 100px; background: #111; border: 3px solid #ff6b6b; border-radius: 0; margin-bottom: 10px;"></div>
+                                        <div style="font-weight: 600;">Bold & Vibrant</div>
+                                        <div style="font-size: 12px; color: #6b7280;">Stark & Modern</div>
+                                    </div>
+                                    <div class="theme-option" data-theme="luxury" onclick="selectTheme('luxury')" style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+                                        <div style="height: 100px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 8px; margin-bottom: 10px;"></div>
+                                        <div style="font-weight: 600;">Luxury Dark</div>
+                                        <div style="font-size: 12px; color: #6b7280;">Premium & Dunkel</div>
+                                    </div>
+                                    <div class="theme-option" data-theme="nature" onclick="selectTheme('nature')" style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+                                        <div style="height: 100px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 8px; margin-bottom: 10px;"></div>
+                                        <div style="font-weight: 600;">Nature Fresh</div>
+                                        <div style="font-size: 12px; color: #6b7280;">Frisch & Natürlich</div>
+                                    </div>
+                                </div>
+                                
+                                <input type="hidden" id="selectedTheme" value="modern">
+                                
+                                <hr class="section-divider">
+                                
+                                <div class="section-title">Bilder</div>
+                                <div class="form-group">
+                                    <label>Logo URL</label>
+                                    <input type="text" id="shopLogoUrl" placeholder="https://example.com/logo.png">
+                                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">Quadratisches Bild empfohlen (1:1)</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Banner URL</label>
+                                    <input type="text" id="shopBannerUrl" placeholder="https://example.com/banner.jpg">
+                                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">Breites Banner (16:9 oder 3:1)</div>
+                                </div>
+                                
+                                <button class="btn btn-primary" onclick="saveDesignSettings()">Design speichern</button>
                             </div>
                         </div>
                     </div>
@@ -1142,6 +1194,13 @@
                 document.getElementById('shopNameInput').value = shop.name || '';
                 document.getElementById('shopDescInput').value = shop.description || '';
                 document.getElementById('shopColorInput').value = shop.primary_color || '#0078D4';
+                
+                // Load design settings
+                document.getElementById('shopLogoUrl').value = shop.logo_url || '';
+                document.getElementById('shopBannerUrl').value = shop.banner_url || '';
+                if (shop.theme) {
+                    selectTheme(shop.theme);
+                }
             } catch (e) {
                 console.error('Error loading settings:', e);
             }
@@ -1167,6 +1226,45 @@
                 if (res.ok) {
                     document.getElementById('shopSuccess').style.display = 'block';
                     setTimeout(() => document.getElementById('shopSuccess').style.display = 'none', 3000);
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        function selectTheme(theme) {
+            document.getElementById('selectedTheme').value = theme;
+            document.querySelectorAll('.theme-option').forEach(el => {
+                el.style.borderColor = '#e5e7eb';
+                el.style.background = 'white';
+            });
+            const selected = document.querySelector(`[data-theme="${theme}"]`);
+            if (selected) {
+                selected.style.borderColor = '#0078D4';
+                selected.style.background = '#f0f7ff';
+            }
+        }
+
+        async function saveDesignSettings() {
+            try {
+                const data = {
+                    theme: document.getElementById('selectedTheme').value,
+                    logo_url: document.getElementById('shopLogoUrl').value,
+                    banner_url: document.getElementById('shopBannerUrl').value
+                };
+                
+                const res = await fetch('/api/owner/shop/design', {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('designSuccess').style.display = 'block';
+                    setTimeout(() => document.getElementById('designSuccess').style.display = 'none', 3000);
                 }
             } catch (e) {
                 console.error('Error:', e);
