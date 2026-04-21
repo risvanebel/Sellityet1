@@ -2043,6 +2043,22 @@ async function runMissingMigrations() {
             console.log('🔧 All migrations completed');
         }
 
+        // Add product visibility columns if not exists
+        try {
+            await pool.query(
+                `ALTER TABLE products ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false`
+            );
+            await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS brand VARCHAR(100)`);
+            await pool.query(
+                `CREATE INDEX IF NOT EXISTS idx_products_featured ON products(is_featured) WHERE is_featured = true`
+            );
+            await pool.query(
+                `CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand) WHERE brand IS NOT NULL`
+            );
+        } catch (e) {
+            console.log('Product visibility columns may already exist');
+        }
+
         // Check if customers table exists
         const { rows: customerRows } = await pool.query(`
             SELECT table_name FROM information_schema.tables
@@ -2084,7 +2100,9 @@ app.get('/api/run-migrations', async (req, res) => {
             '012_product_images.sql',
             '013_coupon_rules.sql',
             '014_customer_phone_fix.sql',
-            '015_payment_status_fix.sql'
+            '015_payment_status_fix.sql',
+            '016_order_features.sql',
+            '017_product_visibility.sql'
         ];
 
         for (const migration of migrations) {
@@ -2401,8 +2419,18 @@ app.put(
     authMiddleware,
     requireRole('owner', 'admin'),
     async (req, res) => {
-        const { name, description, price, cost_price, category_id, sku, status, image_urls } =
-            req.body;
+        const {
+            name,
+            description,
+            price,
+            cost_price,
+            category_id,
+            sku,
+            status,
+            image_urls,
+            is_featured,
+            brand
+        } = req.body;
         const productId = req.params.id;
 
         try {
@@ -2423,6 +2451,16 @@ app.put(
             if (image_urls !== undefined) {
                 updateFields.push(`image_urls = $${paramIndex}::text[]`);
                 params.push(image_urls || null);
+                paramIndex++;
+            }
+            if (is_featured !== undefined) {
+                updateFields.push(`is_featured = $${paramIndex}`);
+                params.push(is_featured);
+                paramIndex++;
+            }
+            if (brand !== undefined) {
+                updateFields.push(`brand = $${paramIndex}`);
+                params.push(brand || null);
                 paramIndex++;
             }
 

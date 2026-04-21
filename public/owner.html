@@ -636,6 +636,19 @@
                                         <input type="text" id="product-sku" placeholder="Artikelnummer">
                                     </div>
                                 </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Marke</label>
+                                        <input type="text" id="product-brand" placeholder="z.B. Nike, Apple...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Status</label>
+                                        <select id="product-status">
+                                            <option value="draft">Entwurf</option>
+                                            <option value="published">Veröffentlicht</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="form-group">
                                     <label>Beschreibung</label>
                                     <textarea id="product-description" rows="3"></textarea>
@@ -654,13 +667,6 @@
                                     <div class="form-group">
                                         <label>Lagerbestand</label>
                                         <input type="number" id="product-stock" min="0" value="0">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Status</label>
-                                        <select id="product-status">
-                                            <option value="draft">Entwurf</option>
-                                            <option value="published">Veröffentlicht</option>
-                                        </select>
                                     </div>
                                 </div>
                                 
@@ -1273,11 +1279,19 @@
 
                 div.innerHTML = products.map(p => `
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #F3F2F1;">
-                        <div>
-                            <div style="font-weight: 600;">${p.name}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${p.name} ${p.is_featured ? '⭐' : ''}</div>
                             <div style="font-size: 13px; color: #605E5C;">${(p.price || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</div>
                         </div>
-                        <button class="btn btn-secondary" onclick="editProduct(${p.id})" style="padding: 6px 12px; font-size: 12px;">Bearbeiten</button>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button class="btn ${p.status === 'published' ? 'btn-primary' : 'btn-secondary'}" onclick="toggleProductStatus(${p.id}, '${p.status === 'published' ? 'draft' : 'published'}')" style="padding: 4px 8px; font-size: 12px;">
+                                ${p.status === 'published' ? '👁 Sichtbar' : '🚫 Versteckt'}
+                            </button>
+                            <button class="btn ${p.is_featured ? 'btn-primary' : 'btn-secondary'}" onclick="toggleProductFeatured(${p.id}, ${!p.is_featured})" style="padding: 4px 8px; font-size: 12px;">
+                                ${p.is_featured ? '⭐ Hervorgehoben' : '☆ Hervorheben'}
+                            </button>
+                            <button class="btn btn-secondary" onclick="editProduct(${p.id})" style="padding: 4px 8px; font-size: 12px;">Bearbeiten</button>
+                        </div>
                     </div>
                 `).join('');
             } catch (e) {
@@ -1776,6 +1790,7 @@
             document.getElementById('product-id').value = '';
             document.getElementById('product-name').value = '';
             document.getElementById('product-sku').value = '';
+            document.getElementById('product-brand').value = '';
             document.getElementById('product-description').value = '';
             document.getElementById('product-price').value = '';
             document.getElementById('product-cost').value = '';
@@ -1894,6 +1909,7 @@
                 document.getElementById('product-id').value = product.id;
                 document.getElementById('product-name').value = product.name || '';
                 document.getElementById('product-sku').value = product.sku || '';
+                document.getElementById('product-brand').value = product.brand || '';
                 document.getElementById('product-description').value = product.description || '';
                 document.getElementById('product-price').value = product.price || '';
                 document.getElementById('product-cost').value = product.cost_price || '';
@@ -2006,6 +2022,7 @@
                 price: parseFloat(document.getElementById('product-price').value) || 0,
                 cost_price: parseFloat(document.getElementById('product-cost').value) || 0,
                 sku: document.getElementById('product-sku').value,
+                brand: document.getElementById('product-brand').value,
                 status: document.getElementById('product-status').value,
                 image_urls: []
             };
@@ -2198,6 +2215,38 @@
                 }
             } catch (e) {
                 console.error('Delete coupon error:', e);
+            }
+        }
+
+        async function toggleProductStatus(productId, newStatus) {
+            try {
+                const res = await fetch(`/api/owner/products/${productId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (res.ok) loadProducts();
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function toggleProductFeatured(productId, featured) {
+            try {
+                const res = await fetch(`/api/owner/products/${productId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_featured: featured })
+                });
+                if (res.ok) loadProducts();
+            } catch (e) {
+                console.error('Error:', e);
             }
         }
 

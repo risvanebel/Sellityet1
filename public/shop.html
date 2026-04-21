@@ -812,6 +812,18 @@
     <img src="" alt="" class="shop-banner" id="shop-banner" style="display: none">
 
     <div class="shop-container">
+        <div id="filter-bar" style="display: none; margin-bottom: 20px; padding: 16px; background: var(--color-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <span style="font-weight: 600; font-size: 14px;">Filter:</span>
+                <select id="brand-filter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); font-size: 14px;">
+                    <option value="">Alle Marken</option>
+                </select>
+                <select id="category-filter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); font-size: 14px;">
+                    <option value="">Alle Kategorien</option>
+                </select>
+                <button class="btn btn-secondary" onclick="resetFilters()" style="padding: 6px 12px; font-size: 13px;">Zurücksetzen</button>
+            </div>
+        </div>
         <div id="products-container" class="products-grid">
             <div class="loading">
                 <div style="font-size: 48px; margin-bottom: 20px;">🛍️</div>
@@ -930,69 +942,35 @@
                 }
 
                 const products = await res.json();
-                const container = document.getElementById('products-container');
-
-                if (products.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1 / -1;">
-                            <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
-                            <h3>Noch keine Produkte</h3>
-                            <p>Dieser Shop hat noch keine Produkte.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Load variants for products that have them
-                for (const product of products) {
-                    if (product.has_variants) {
-                        try {
-                            const variantRes = await fetch(`${API_URL}/shops/${shop ? shop.id : product.shop_id}/products/${product.id}/variants`);
-                            if (variantRes.ok) {
-                                product.variants = await variantRes.json();
-                            }
-                        } catch (e) {
-                            console.error('Error loading variants:', e);
-                        }
+                window.allProducts = products; // Store for filtering
+                
+                // Extract unique brands and categories
+                const brands = [...new Set(products.map(p => p.brand).filter(Boolean))].sort();
+                const categories = [...new Set(products.map(p => p.category_name).filter(Boolean))].sort();
+                
+                // Populate filter dropdowns
+                const brandSelect = document.getElementById('brand-filter');
+                const categorySelect = document.getElementById('category-filter');
+                
+                if (brands.length > 0 || categories.length > 0) {
+                    document.getElementById('filter-bar').style.display = 'block';
+                    
+                    if (brands.length > 0) {
+                        brandSelect.innerHTML = '<option value="">Alle Marken</option>' + 
+                            brands.map(b => `<option value="${b}">${b}</option>`).join('');
+                    } else {
+                        brandSelect.style.display = 'none';
+                    }
+                    
+                    if (categories.length > 0) {
+                        categorySelect.innerHTML = '<option value="">Alle Kategorien</option>' + 
+                            categories.map(c => `<option value="${c}">${c}</option>`).join('');
+                    } else {
+                        categorySelect.style.display = 'none';
                     }
                 }
-
-                container.innerHTML = products
-                    .map((product) => `
-                        <div class="product-card">
-                            <div class="product-image">
-                                ${
-                                    product.image_urls && product.image_urls.length > 0
-                                        ? `<img src="${product.image_urls[0]}" alt="${product.name}">`
-                                        : '<div style="font-size: 48px; color: var(--color-text-secondary);">📷</div>'
-                                }
-                            </div>
-                            <div class="product-info">
-                                <div class="product-name">${product.name}</div>
-                                <div class="product-description">${product.description || ''}</div>
-                                <div class="product-price">€${parseFloat(product.price).toFixed(2)}</div>
-                                ${product.variants && product.variants.length > 0 ? `
-                                    <select id="variant-select-${product.id}" class="variant-select" style="width: 100%; margin: 8px 0; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border);" onchange="selectVariant(${product.id}, this.value)">
-                                        <option value="">Variante wählen</option>
-                                        ${product.variants.map(v => `<option value="${v.id}">${v.name} (+€${parseFloat(v.price_adjustment || 0).toFixed(2)}) - ${v.stock > 0 ? v.stock + ' auf Lager' : 'ausverkauft'}</option>`).join('')}
-                                    </select>
-                                ` : ''}
-                                <div class="product-actions" style="display: flex; gap: 10px; margin-top: 12px; align-items: stretch;">
-                                    <div class="qty-selector" style="display: flex; align-items: center; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 10px; overflow: hidden; min-width: 100px;">
-                                        <button class="qty-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, -1)" style="width: 36px; height: 40px; border: none; background: transparent; cursor: pointer; font-size: 18px; font-weight: 600; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
-                                        <span id="qty-${product.id}" style="min-width: 36px; text-align: center; font-size: 15px; font-weight: 600; color: var(--color-text); padding: 0 4px;">1</span>
-                                        <button class="qty-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, 1)" style="width: 36px; height: 40px; border: none; background: transparent; cursor: pointer; font-size: 18px; font-weight: 600; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
-                                    </div>
-                                    <button class="btn-add" onclick='addToCart(${JSON.stringify(product).replace(/'/g, '&#39;')})' style="flex: 1; border-radius: 10px; font-weight: 600; font-size: 14px;">
-                                        In den Warenkorb
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `)
-                    .join('');
-
-                updateCartUI();
+                
+                renderProducts(products);
             } catch (error) {
                 console.error('Error loading products:', error);
                 document.getElementById('products-container').innerHTML = `
@@ -1003,6 +981,94 @@
                     </div>
                 `;
             }
+        }
+
+        async function renderProducts(products) {
+            const container = document.getElementById('products-container');
+            
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+                        <h3>Keine Produkte gefunden</h3>
+                        <p>Keine Produkte entsprechen deinen Filtern.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Load variants for products that have them
+            for (const product of products) {
+                if (product.has_variants) {
+                    try {
+                        const variantRes = await fetch(`${API_URL}/shops/${shop ? shop.id : product.shop_id}/products/${product.id}/variants`);
+                        if (variantRes.ok) {
+                            product.variants = await variantRes.json();
+                        }
+                    } catch (e) {
+                        console.error('Error loading variants:', e);
+                    }
+                }
+            }
+
+            container.innerHTML = products
+                .map((product) => `
+                    <div class="product-card">
+                        <div class="product-image">
+                            ${
+                                product.image_urls && product.image_urls.length > 0
+                                    ? `<img src="${product.image_urls[0]}" alt="${product.name}">`
+                                    : '<div style="font-size: 48px; color: var(--color-text-secondary);">📷</div>'
+                            }
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-description">${product.description || ''}</div>
+                            <div class="product-price">€${parseFloat(product.price).toFixed(2)}</div>
+                            ${product.variants && product.variants.length > 0 ? `
+                                <select id="variant-select-${product.id}" class="variant-select" style="width: 100%; margin: 8px 0; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border);" onchange="selectVariant(${product.id}, this.value)">
+                                    <option value="">Variante wählen</option>
+                                    ${product.variants.map(v => `<option value="${v.id}">${v.name} (+€${parseFloat(v.price_adjustment || 0).toFixed(2)}) - ${v.stock > 0 ? v.stock + ' auf Lager' : 'ausverkauft'}</option>`).join('')}
+                                </select>
+                            ` : ''}
+                            <div class="product-actions" style="display: flex; gap: 10px; margin-top: 12px; align-items: stretch;">
+                                <div class="qty-selector" style="display: flex; align-items: center; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 10px; overflow: hidden; min-width: 100px;">
+                                    <button class="qty-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, -1)" style="width: 36px; height: 40px; border: none; background: transparent; cursor: pointer; font-size: 18px; font-weight: 600; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
+                                    <span id="qty-${product.id}" style="min-width: 36px; text-align: center; font-size: 15px; font-weight: 600; color: var(--color-text); padding: 0 4px;">1</span>
+                                    <button class="qty-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, 1)" style="width: 36px; height: 40px; border: none; background: transparent; cursor: pointer; font-size: 18px; font-weight: 600; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
+                                </div>
+                                <button class="btn-add" onclick='addToCart(${JSON.stringify(product).replace(/'/g, '&#39;')})' style="flex: 1; border-radius: 10px; font-weight: 600; font-size: 14px;">
+                                    In den Warenkorb
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `)
+                .join('');
+
+            updateCartUI();
+        }
+
+        function applyFilters() {
+            const brandFilter = document.getElementById('brand-filter').value;
+            const categoryFilter = document.getElementById('category-filter').value;
+            
+            let filtered = window.allProducts || [];
+            
+            if (brandFilter) {
+                filtered = filtered.filter(p => p.brand === brandFilter);
+            }
+            if (categoryFilter) {
+                filtered = filtered.filter(p => p.category_name === categoryFilter);
+            }
+            
+            renderProducts(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('brand-filter').value = '';
+            document.getElementById('category-filter').value = '';
+            renderProducts(window.allProducts || []);
         }
 
         function changeProductQty(productId, delta) {
