@@ -809,16 +809,38 @@
                                 
                                 <hr class="section-divider">
                                 
-                                <div class="section-title">Bilder</div>
+                                <div class="section-title">Shop-Link für Kunden</div>
                                 <div class="form-group">
-                                    <label>Logo URL</label>
-                                    <input type="text" id="shopLogoUrl" placeholder="https://example.com/logo.png">
-                                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">Quadratisches Bild empfohlen (1:1)</div>
+                                    <label>Dein Shop-Link</label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="shopLinkUrl" readonly style="flex: 1; background: #f3f2f1;">
+                                        <button class="btn btn-primary" onclick="copyShopLink()">Kopieren</button>
+                                    </div>
+                                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">Teile diesen Link mit deinen Kunden</div>
                                 </div>
+                                
+                                <hr class="section-divider">
+                                
+                                <div class="section-title">Bilder hochladen</div>
+                                
                                 <div class="form-group">
-                                    <label>Banner URL</label>
-                                    <input type="text" id="shopBannerUrl" placeholder="https://example.com/banner.jpg">
-                                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">Breites Banner (16:9 oder 3:1)</div>
+                                    <label>Logo</label>
+                                    <div id="logoPreview" style="width: 100px; height: 100px; border: 2px dashed #e5e7eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; overflow: hidden;">
+                                        <span style="color: #9ca3af; font-size: 24px;">📷</span>
+                                    </div>
+                                    <input type="file" id="logoUpload" accept="image/*" style="display: none" onchange="uploadImage('logo')">
+                                    <button class="btn" onclick="document.getElementById('logoUpload').click()" style="border: 1px solid #e5e7eb; background: white;">Logo auswählen</button>
+                                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">Quadratisches Bild empfohlen (1:1), max. 5MB</div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Banner</label>
+                                    <div id="bannerPreview" style="width: 100%; height: 120px; border: 2px dashed #e5e7eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; overflow: hidden;">
+                                        <span style="color: #9ca3af; font-size: 24px;">📷</span>
+                                    </div>
+                                    <input type="file" id="bannerUpload" accept="image/*" style="display: none" onchange="uploadImage('banner')">
+                                    <button class="btn" onclick="document.getElementById('bannerUpload').click()" style="border: 1px solid #e5e7eb; background: white;">Banner auswählen</button>
+                                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">Breites Bild (16:9), max. 5MB</div>
                                 </div>
                                 
                                 <button class="btn btn-primary" onclick="saveDesignSettings()">Design speichern</button>
@@ -1207,13 +1229,75 @@
                 document.getElementById('shopColorInput').value = shop.primary_color || '#0078D4';
                 
                 // Load design settings
-                document.getElementById('shopLogoUrl').value = shop.logo_url || '';
-                document.getElementById('shopBannerUrl').value = shop.banner_url || '';
                 if (shop.theme) {
                     selectTheme(shop.theme);
                 }
+                
+                // Set shop link
+                const shopUrl = shop.subdomain 
+                    ? `https://${shop.subdomain}.sellityet.store`
+                    : `${window.location.origin}/shop.html?shop=${shop.slug}`;
+                document.getElementById('shopLinkUrl').value = shopUrl;
+                
+                // Show image previews
+                if (shop.logo_url) {
+                    document.getElementById('logoPreview').innerHTML = `<img src="${shop.logo_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                }
+                if (shop.banner_url) {
+                    document.getElementById('bannerPreview').innerHTML = `<img src="${shop.banner_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                }
             } catch (e) {
                 console.error('Error loading settings:', e);
+            }
+        }
+
+        function copyShopLink() {
+            const linkInput = document.getElementById('shopLinkUrl');
+            linkInput.select();
+            document.execCommand('copy');
+            
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Kopiert!';
+            setTimeout(() => btn.textContent = originalText, 2000);
+        }
+
+        async function uploadImage(type) {
+            const input = document.getElementById(type + 'Upload');
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Datei zu groß. Maximal 5MB.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', type);
+
+            try {
+                const res = await fetch('/api/owner/shop/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    // Show preview
+                    const preview = document.getElementById(type + 'Preview');
+                    preview.innerHTML = `<img src="${data.url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    
+                    // Show success
+                    const successDiv = document.getElementById('designSuccess');
+                    successDiv.textContent = `✓ ${type === 'logo' ? 'Logo' : 'Banner'} hochgeladen`;
+                    successDiv.style.display = 'block';
+                    setTimeout(() => successDiv.style.display = 'none', 3000);
+                }
+            } catch (e) {
+                console.error('Upload error:', e);
+                alert('Upload fehlgeschlagen');
             }
         }
 
@@ -1259,9 +1343,7 @@
         async function saveDesignSettings() {
             try {
                 const data = {
-                    theme: document.getElementById('selectedTheme').value,
-                    logo_url: document.getElementById('shopLogoUrl').value,
-                    banner_url: document.getElementById('shopBannerUrl').value
+                    theme: document.getElementById('selectedTheme').value
                 };
                 
                 const res = await fetch('/api/owner/shop/design', {
@@ -1274,6 +1356,7 @@
                 });
                 
                 if (res.ok) {
+                    document.getElementById('designSuccess').textContent = '✓ Design-Einstellungen gespeichert';
                     document.getElementById('designSuccess').style.display = 'block';
                     setTimeout(() => document.getElementById('designSuccess').style.display = 'none', 3000);
                 }

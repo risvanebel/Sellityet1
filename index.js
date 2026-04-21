@@ -1152,6 +1152,42 @@ app.put(
     }
 );
 
+// Upload shop image (logo or banner)
+app.post(
+    '/api/owner/shop/upload',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    upload.single('image'),
+    async (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: 'No image uploaded' });
+            }
+
+            const { type } = req.body; // 'logo' or 'banner'
+            const folder = type === 'logo' ? 'shop-logos' : 'shop-banners';
+
+            const result = await uploadToCloudinary(req.file.buffer, folder);
+
+            // Update shop with new image URL
+            const field = type === 'logo' ? 'logo_url' : 'banner_url';
+            await pool.query(
+                `UPDATE shops SET ${field} = $1, updated_at = CURRENT_TIMESTAMP WHERE owner_id = $2`,
+                [result.secure_url, req.user.id]
+            );
+
+            res.json({
+                success: true,
+                url: result.secure_url,
+                type
+            });
+        } catch (error) {
+            console.error('Upload error:', error);
+            res.status(500).json({ error: 'Upload failed' });
+        }
+    }
+);
+
 // Delete coupon
 app.delete(
     '/api/owner/coupons/:id',
