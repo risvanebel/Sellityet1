@@ -735,10 +735,10 @@
 
                 <div id="settings" class="tab-content">
                     <div class="tabs">
-                        <button class="tab active" onclick="showSettingsTab('shop')">Shop</button>
-                        <button class="tab" onclick="showSettingsTab('payment')">Zahlung</button>
-                        <button class="tab" onclick="showSettingsTab('shipping')">Versand</button>
-                        <button class="tab" onclick="showSettingsTab('email')">E-Mail</button>
+                        <button class="tab active" onclick="showSettingsTab('shop', this)">Shop</button>
+                        <button class="tab" onclick="showSettingsTab('payment', this)">Zahlung</button>
+                        <button class="tab" onclick="showSettingsTab('shipping', this)">Versand</button>
+                        <button class="tab" onclick="showSettingsTab('email', this)">E-Mail</button>
                     </div>
                     
                     <div id="settings-shop" class="settings-panel active">
@@ -944,11 +944,11 @@
             if (tabName === 'settings') loadSettings();
         }
 
-        function showSettingsTab(tab) {
+        function showSettingsTab(tab, btn) {
             document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('#settings .tab').forEach(t => t.classList.remove('active'));
             document.getElementById(`settings-${tab}`).classList.add('active');
-            event.target.classList.add('active');
+            btn.classList.add('active');
         }
 
         async function loadDashboard() {
