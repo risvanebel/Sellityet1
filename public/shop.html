@@ -977,13 +977,13 @@
                                         ${product.variants.map(v => `<option value="${v.id}">${v.name} (+€${parseFloat(v.price_adjustment || 0).toFixed(2)}) - ${v.stock > 0 ? v.stock + ' auf Lager' : 'ausverkauft'}</option>`).join('')}
                                     </select>
                                 ` : ''}
-                                <div style="display: flex; gap: 8px; margin-top: 10px; align-items: center;">
-                                    <div class="quantity-control" style="display: flex; align-items: center; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden;">
-                                        <button class="quantity-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, -1)" style="width: 32px; height: 32px; border: none; background: var(--color-surface); cursor: pointer; font-size: 16px;">-</button>
-                                        <input type="number" id="qty-${product.id}" value="1" min="1" style="width: 40px; height: 32px; border: none; text-align: center; font-size: 14px; background: var(--color-surface); -moz-appearance: textfield;" readonly>
-                                        <button class="quantity-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, 1)" style="width: 32px; height: 32px; border: none; background: var(--color-surface); cursor: pointer; font-size: 16px;">+</button>
+                                <div class="product-actions" style="display: flex; gap: 10px; margin-top: 12px; align-items: stretch;">
+                                    <div class="qty-selector" style="display: flex; align-items: center; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 10px; overflow: hidden; min-width: 100px;">
+                                        <button class="qty-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, -1)" style="width: 36px; height: 40px; border: none; background: transparent; cursor: pointer; font-size: 18px; font-weight: 600; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
+                                        <span id="qty-${product.id}" style="min-width: 36px; text-align: center; font-size: 15px; font-weight: 600; color: var(--color-text); padding: 0 4px;">1</span>
+                                        <button class="qty-btn" onclick="event.stopPropagation(); changeProductQty(${product.id}, 1)" style="width: 36px; height: 40px; border: none; background: transparent; cursor: pointer; font-size: 18px; font-weight: 600; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
                                     </div>
-                                    <button class="btn-add" onclick='addToCart(${JSON.stringify(product).replace(/'/g, '&#39;')})' style="flex: 1;">
+                                    <button class="btn-add" onclick='addToCart(${JSON.stringify(product).replace(/'/g, '&#39;')})' style="flex: 1; border-radius: 10px; font-weight: 600; font-size: 14px;">
                                         In den Warenkorb
                                     </button>
                                 </div>
@@ -1006,11 +1006,11 @@
         }
 
         function changeProductQty(productId, delta) {
-            const qtyInput = document.getElementById(`qty-${productId}`);
-            if (qtyInput) {
-                let newQty = parseInt(qtyInput.value) + delta;
+            const qtySpan = document.getElementById(`qty-${productId}`);
+            if (qtySpan) {
+                let newQty = parseInt(qtySpan.textContent) + delta;
                 if (newQty < 1) newQty = 1;
-                qtyInput.value = newQty;
+                qtySpan.textContent = newQty;
             }
         }
 
@@ -1030,8 +1030,8 @@
                 }
             }
 
-            const qtyInput = document.getElementById(`qty-${product.id}`);
-            const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+            const qtySpan = document.getElementById(`qty-${product.id}`);
+            const qty = qtySpan ? parseInt(qtySpan.textContent) || 1 : 1;
             
             // Check stock
             const maxStock = selectedVariant ? selectedVariant.stock : product.quantity;
@@ -1061,7 +1061,7 @@
             }
 
             // Reset quantity to 1
-            if (qtyInput) qtyInput.value = 1;
+            if (qtySpan) qtySpan.textContent = 1;
 
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartUI();
