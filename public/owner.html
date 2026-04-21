@@ -701,20 +701,29 @@
                 </div>
 
                 <div id="orders" class="tab-content">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Alle Bestellungen</h3>
+                    <div id="order-list-view">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Alle Bestellungen</h3>
+                            </div>
+                            <div class="card-body">
+                                <table class="table" id="allOrdersTable">
+                                    <thead>
+                                        <tr><th>Bestellung</th><th>Datum</th><th>Kunde</th><th>Betrag</th><th>Status</th><th>Aktion</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="6" class="loading">Lade...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <table class="table" id="allOrdersTable">
-                                <thead>
-                                    <tr><th>Bestellung</th><th>Datum</th><th>Kunde</th><th>Betrag</th><th>Status</th><th>Aktion</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td colspan="6" class="loading">Lade...</td></tr>
-                                </tbody>
-                            </table>
+                    </div>
+                    <div id="order-detail-view" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <button class="btn btn-secondary" onclick="showOrderList()">← Zurück zur Übersicht</button>
+                            <h2 id="orderDetailTitle">Bestellung #</h2>
                         </div>
+                        <div id="orderDetailContent"></div>
                     </div>
                 </div>
 
@@ -1294,9 +1303,185 @@
                         <td>${o.customer_name || o.customer_email || 'Unbekannt'}</td>
                         <td>${(o.total_amount || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
                         <td><span class="status ${o.status}">${o.status}</span></td>
-                        <td><button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">Details</button></td>
+                        <td><button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="showOrderDetail(${o.id})">Details</button></td>
                     </tr>
                 `).join('');
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        function showOrderList() {
+            document.getElementById('order-list-view').style.display = 'block';
+            document.getElementById('order-detail-view').style.display = 'none';
+        }
+
+        async function showOrderDetail(orderId) {
+            try {
+                const res = await fetch(`/api/owner/orders/${orderId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!res.ok) {
+                    alert('Bestellung nicht gefunden');
+                    return;
+                }
+                
+                const order = await res.json();
+                
+                document.getElementById('order-list-view').style.display = 'none';
+                document.getElementById('order-detail-view').style.display = 'block';
+                document.getElementById('orderDetailTitle').textContent = `Bestellung #${order.id}`;
+                
+                // Load notes
+                const notesRes = await fetch(`/api/owner/orders/${orderId}/notes`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const notes = notesRes.ok ? await notesRes.json() : [];
+                
+                document.getElementById('orderDetailContent').innerHTML = `
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Kunde</h3></div>
+                            <div class="card-body">
+                                <p><strong>${order.customer_name || 'N/A'}</strong></p>
+                                <p>${order.customer_email || ''}</p>
+                                <p>${order.customer_phone || ''}</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Lieferadresse</h3></div>
+                            <div class="card-body">
+                                <p>${order.shipping_address?.first_name || ''} ${order.shipping_address?.last_name || ''}</p>
+                                <p>${order.shipping_address?.address || ''}</p>
+                                <p>${order.shipping_address?.zip || ''} ${order.shipping_address?.city || ''}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <div class="card-header"><h3 class="card-title">Artikel</h3></div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead><tr><th>Produkt</th><th>Menge</th><th>Preis</th><th>Gesamt</th></tr></thead>
+                                <tbody>
+                                    ${(order.items || []).map(item => `
+                                        <tr>
+                                            <td>${item.product_name}${item.variant_name ? ` (${item.variant_name})` : ''}</td>
+                                            <td>${item.quantity}</td>
+                                            <td>${(item.unit_price || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                                            <td>${((item.unit_price || 0) * item.quantity).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            <div style="text-align: right; margin-top: 10px; font-size: 18px; font-weight: 600;">
+                                Gesamt: ${(order.total_amount || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <div class="card-header"><h3 class="card-title">Status & Tracking</h3></div>
+                        <div class="card-body">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <select id="orderStatus-${order.id}" class="form-control" onchange="updateOrderStatus(${order.id})">
+                                        <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Ausstehend</option>
+                                        <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>Bezahlt</option>
+                                        <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Versendet</option>
+                                        <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Geliefert</option>
+                                        <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Storniert</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tracking-Nummer</label>
+                                    <input type="text" id="tracking-${order.id}" value="${order.tracking_number || ''}" placeholder="Tracking-Nummer">
+                                    <button class="btn btn-secondary" style="margin-top: 5px;" onclick="saveTracking(${order.id})">Speichern</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <div class="card-header"><h3 class="card-title">Notizen</h3></div>
+                        <div class="card-body">
+                            <div id="orderNotesList">
+                                ${notes.length > 0 ? notes.map(n => `
+                                    <div style="padding: 10px; background: var(--surface-alt); border-radius: 8px; margin-bottom: 8px;">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">
+                                            ${new Date(n.created_at).toLocaleString('de-DE')} von ${n.created_by || 'System'}
+                                        </div>
+                                        <div>${n.note}</div>
+                                    </div>
+                                `).join('') : '<p style="color: var(--text-secondary);">Keine Notizen vorhanden</p>'}
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                <input type="text" id="newNote-${order.id}" placeholder="Neue Notiz..." style="flex: 1; padding: 10px; border: 1px solid var(--color-border); border-radius: 8px;">
+                                <button class="btn btn-primary" onclick="addOrderNote(${order.id})">Hinzufügen</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('Error loading order detail:', e);
+                alert('Fehler beim Laden der Bestelldetails');
+            }
+        }
+
+        async function updateOrderStatus(orderId) {
+            const status = document.getElementById(`orderStatus-${orderId}`).value;
+            try {
+                const res = await fetch(`/api/owner/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+                if (res.ok) alert('Status aktualisiert!');
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function saveTracking(orderId) {
+            const tracking = document.getElementById(`tracking-${orderId}`).value;
+            try {
+                const res = await fetch(`/api/owner/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: document.getElementById(`orderStatus-${orderId}`).value, tracking_number: tracking })
+                });
+                if (res.ok) alert('Tracking-Nummer gespeichert!');
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        async function addOrderNote(orderId) {
+            const note = document.getElementById(`newNote-${orderId}`).value;
+            if (!note.trim()) return;
+            
+            try {
+                const res = await fetch(`/api/owner/orders/${orderId}/notes`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ note })
+                });
+                
+                if (res.ok) {
+                    document.getElementById(`newNote-${orderId}`).value = '';
+                    showOrderDetail(orderId);
+                }
             } catch (e) {
                 console.error('Error:', e);
             }

@@ -3091,6 +3091,133 @@ app.put(
     }
 );
 
+// Get order notes
+app.get(
+    '/api/owner/orders/:id/notes',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows } = await pool.query(
+                `
+            SELECT n.* FROM order_notes n
+            JOIN orders o ON n.order_id = o.id
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.id = $1 AND s.owner_id = $2
+            ORDER BY n.created_at DESC
+        `,
+                [req.params.id, req.user.id]
+            );
+            res.json(rows);
+        } catch (error) {
+            console.error('Get order notes error:', error);
+            res.status(500).json({ error: 'Failed to fetch notes' });
+        }
+    }
+);
+
+// Add order note
+app.post(
+    '/api/owner/orders/:id/notes',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        const { note } = req.body;
+        if (!note || !note.trim()) {
+            return res.status(400).json({ error: 'Note text required' });
+        }
+
+        try {
+            const { rows: checkRows } = await pool.query(
+                `
+            SELECT o.id FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.id = $1 AND s.owner_id = $2
+        `,
+                [req.params.id, req.user.id]
+            );
+
+            if (checkRows.length === 0) {
+                return res.status(403).json({ error: 'Not your order' });
+            }
+
+            const { rows } = await pool.query(
+                `
+            INSERT INTO order_notes (order_id, note, created_by)
+            VALUES ($1, $2, $3)
+            RETURNING *
+        `,
+                [req.params.id, note.trim(), req.user.email || 'Owner']
+            );
+
+            res.status(201).json(rows[0]);
+        } catch (error) {
+            console.error('Add order note error:', error);
+            res.status(500).json({ error: 'Failed to add note' });
+        }
+    }
+);
+
+// Update partial shipment
+app.put(
+    '/api/owner/orders/:id/shipment',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        const { shipped_items, tracking_number } = req.body;
+
+        try {
+            const { rows: checkRows } = await pool.query(
+                `
+            SELECT o.*, s.owner_id FROM orders o
+            JOIN shops s ON o.shop_id = s.id
+            WHERE o.id = $1 AND s.owner_id = $2
+        `,
+                [req.params.id, req.user.id]
+            );
+
+            if (checkRows.length === 0) {
+                return res.status(404).json({ error: 'Order not found' });
+            }
+
+            const order = checkRows[0];
+
+            // Merge with existing shipped items
+            const existingShipped = order.shipped_items || [];
+            const newShipped = shipped_items || [];
+            const mergedShipped = [...existingShipped, ...newShipped];
+
+            // Check if partial or complete
+            const { rows: itemRows } = await pool.query(
+                'SELECT SUM(quantity) as total FROM order_items WHERE order_id = $1',
+                [req.params.id]
+            );
+            const totalItems = parseInt(itemRows[0].total) || 0;
+            const shippedCount = mergedShipped.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            const isPartial = shippedCount < totalItems;
+
+            const { rows } = await pool.query(
+                `
+            UPDATE orders
+            SET shipped_items = $1,
+                tracking_number = COALESCE($2, tracking_number),
+                is_partial_shipment = $3,
+                status = CASE WHEN $3 THEN 'shipped' ELSE status END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $4
+            RETURNING *
+        `,
+                [JSON.stringify(mergedShipped), tracking_number, isPartial, req.params.id]
+            );
+
+            res.json(rows[0]);
+        } catch (error) {
+            console.error('Update shipment error:', error);
+            res.status(500).json({ error: 'Failed to update shipment' });
+        }
+    }
+);
+
 // ========== CART (Customer) ==========
 
 // Get or create cart
