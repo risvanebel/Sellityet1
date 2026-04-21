@@ -663,6 +663,21 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Bilder Section -->
+                                <div style="margin-top: 30px; border-top: 1px solid #e1dfdd; padding-top: 20px;">
+                                    <h4 style="margin-bottom: 15px;">Produktbilder</h4>
+                                    <div id="product-images-preview" style="margin-bottom: 15px;"></div>
+                                    <div class="form-group">
+                                        <input type="file" id="product-image-upload" accept="image/*" onchange="uploadProductImage(event)" style="display: none;">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('product-image-upload').click()">
+                                            + Bild hochladen
+                                        </button>
+                                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                                            Speichere das Produkt erst, bevor du Bilder hochlädst
+                                        </p>
+                                    </div>
+                                </div>
+                                
                                 <!-- Varianten Section -->
                                 <div style="margin-top: 30px; border-top: 1px solid #e1dfdd; padding-top: 20px;">
                                     <h4 style="margin-bottom: 15px;">Varianten (optional)</h4>
@@ -1185,7 +1200,7 @@
                             <div style="font-weight: 600;">${p.name}</div>
                             <div style="font-size: 13px; color: #605E5C;">${(p.price || 0).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}</div>
                         </div>
-                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Bearbeiten</button>
+                        <button class="btn btn-secondary" onclick="editProduct(${p.id})" style="padding: 6px 12px; font-size: 12px;">Bearbeiten</button>
                     </div>
                 `).join('');
             } catch (e) {
@@ -1603,41 +1618,187 @@
             }
         }
 
+        async function editProduct(productId) {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
+            
+            try {
+                const res = await fetch(`/api/owner/products/${productId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!res.ok) {
+                    alert('Produkt nicht gefunden');
+                    return;
+                }
+                
+                const product = await res.json();
+                
+                // Formular öffnen und befüllen
+                document.getElementById('product-list-view').style.display = 'none';
+                document.getElementById('product-form-view').style.display = 'block';
+                
+                document.getElementById('product-id').value = product.id;
+                document.getElementById('product-name').value = product.name || '';
+                document.getElementById('product-sku').value = product.sku || '';
+                document.getElementById('product-description').value = product.description || '';
+                document.getElementById('product-price').value = product.price || '';
+                document.getElementById('product-cost').value = product.cost_price || '';
+                document.getElementById('product-stock').value = product.quantity || 0;
+                document.getElementById('product-status').value = product.status || 'draft';
+                
+                // Varianten laden
+                await loadVariants(product.id);
+                
+                // Bilder laden
+                loadProductImages(product.id);
+                
+            } catch (e) {
+                console.error('Error loading product:', e);
+                alert('Fehler beim Laden des Produkts');
+            }
+        }
+
+        async function loadProductImages(productId) {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
+            
+            try {
+                const res = await fetch(`/api/owner/products/${productId}/images`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const images = await res.json();
+                    const container = document.getElementById('product-images-preview');
+                    if (container) {
+                        container.innerHTML = images.map(img => `
+                            <div style="position: relative; display: inline-block; margin: 5px;">
+                                <img src="${img.url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                                <button onclick="deleteProductImage(${img.id})" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading images:', e);
+            }
+        }
+
+        async function deleteProductImage(imageId) {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
+            
+            if (!confirm('Bild löschen?')) return;
+            
+            try {
+                const res = await fetch(`/api/owner/product-images/${imageId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const productId = document.getElementById('product-id').value;
+                    if (productId) loadProductImages(productId);
+                }
+            } catch (e) {
+                console.error('Error deleting image:', e);
+            }
+        }
+
+        async function uploadProductImage(event) {
+            const token = localStorage.getItem('owner_token');
+            const productId = document.getElementById('product-id').value;
+            
+            if (!token || !productId) {
+                alert('Bitte speichere das Produkt erst, bevor du Bilder hochlädst');
+                return;
+            }
+            
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const res = await fetch(`/api/owner/products/${productId}/images`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    loadProductImages(productId);
+                    event.target.value = '';
+                } else {
+                    const err = await res.json();
+                    alert('Fehler beim Hochladen: ' + (err.error || 'Unbekannt'));
+                }
+            } catch (e) {
+                console.error('Upload error:', e);
+                alert('Fehler beim Hochladen');
+            }
+        }
+
         async function saveProduct() {
             const token = localStorage.getItem('owner_token');
             if (!token) return;
 
+            const productId = document.getElementById('product-id').value;
+            
             const data = {
-                shop_id: currentShop?.id,
                 name: document.getElementById('product-name').value,
                 description: document.getElementById('product-description').value,
                 price: parseFloat(document.getElementById('product-price').value) || 0,
                 cost_price: parseFloat(document.getElementById('product-cost').value) || 0,
-                initial_quantity: parseInt(document.getElementById('product-stock').value) || 0,
                 sku: document.getElementById('product-sku').value,
                 status: document.getElementById('product-status').value,
                 image_urls: []
             };
 
-            if (!data.shop_id || !data.name || !data.price) {
-                alert('Bitte Shop auswählen, Namen und Preis angeben');
+            if (!data.name || !data.price) {
+                alert('Bitte Namen und Preis angeben');
                 return;
             }
 
             try {
-                const res = await fetch('/api/owner/products', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
+                let res;
+                
+                if (productId) {
+                    // Update existing product
+                    res = await fetch(`/api/owner/products/${productId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    // Create new product
+                    data.shop_id = currentShop?.id;
+                    data.initial_quantity = parseInt(document.getElementById('product-stock').value) || 0;
+                    
+                    if (!data.shop_id) {
+                        alert('Bitte Shop auswählen');
+                        return;
+                    }
+                    
+                    res = await fetch('/api/owner/products', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                }
 
                 if (res.ok) {
                     const product = await res.json();
                     
-                    // Save variants if any
+                    // Save variants if any (nur beim Erstellen oder wenn produkt existiert)
                     const variants = getVariantsFromForm();
                     if (variants.length > 0) {
                         for (const variant of variants) {
@@ -1652,7 +1813,7 @@
                         }
                     }
                     
-                    alert('Produkt erstellt!');
+                    alert(productId ? 'Produkt aktualisiert!' : 'Produkt erstellt!');
                     cancelProduct();
                     loadProducts();
                 } else {
