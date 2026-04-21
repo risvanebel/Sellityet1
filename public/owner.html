@@ -1505,9 +1505,10 @@
                 description: document.getElementById('product-description').value,
                 price: parseFloat(document.getElementById('product-price').value) || 0,
                 cost_price: parseFloat(document.getElementById('product-cost').value) || 0,
-                stock: parseInt(document.getElementById('product-stock').value) || 0,
+                initial_quantity: parseInt(document.getElementById('product-stock').value) || 0,
                 sku: document.getElementById('product-sku').value,
-                status: document.getElementById('product-status').value
+                status: document.getElementById('product-status').value,
+                image_urls: []
             };
 
             if (!data.shop_id || !data.name || !data.price) {

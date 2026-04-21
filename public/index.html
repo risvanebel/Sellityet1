@@ -531,7 +531,6 @@
             </a>
             <nav class="nav-actions">
                 <a href="#features" class="nav-link">Funktionen</a>
-                <a href="#shops" class="nav-link">Shops</a>
                 <a href="/owner.html" class="nav-link">Dashboard</a>
                 <a href="/login.html" class="btn btn-secondary">Anmelden</a>
                 <a href="/register.html" class="btn btn-primary">Shop eröffnen</a>
@@ -553,7 +552,6 @@
             </p>
             <div class="hero-actions">
                 <a href="/register.html" class="btn btn-primary btn-large">Kostenlos starten</a>
-                <a href="#shops" class="btn btn-secondary btn-large">Shops entdecken</a>
             </div>
         </div>
     </section>
@@ -598,19 +596,6 @@
         </div>
     </section>
 
-    <!-- Shops -->
-    <section class="shops-section" id="shops">
-        <div class="shops-container">
-            <div class="section-header">
-                <h2>Entdecke Shops</h2>
-                <p>Finde einzigartige Produkte von unabhängigen Verkäufern</p>
-            </div>
-            <div class="shop-grid" id="shopGrid">
-                <div class="loading">Shops werden geladen...</div>
-            </div>
-        </div>
-    </section>
-
     <!-- CTA -->
     <section class="cta-section">
         <h2>Bereit, zu starten?</h2>
@@ -625,7 +610,6 @@
                 <div class="footer-col">
                     <h4>Plattform</h4>
                     <a href="#features">Funktionen</a>
-                    <a href="#shops">Shops</a>
                     <a href="/register.html">Preise</a>
                 </div>
                 <div class="footer-col">
@@ -654,43 +638,7 @@
     </footer>
 
     <script>
-        // Lade Shops
-        async function loadShops() {
-            try {
-                const response = await fetch('/api/shops');
-                const shops = await response.json();
-                
-                const grid = document.getElementById('shopGrid');
-                
-                if (shops.length === 0) {
-                    grid.innerHTML = '<p style="text-align:center;color:#666;">Noch keine Shops vorhanden. Sei der Erste!</p>';
-                    return;
-                }
-                
-                grid.innerHTML = shops.slice(0, 6).map(shop => `
-                    <a href="/shop.html?shop=${shop.slug || shop.id}" class="shop-card">
-                        <div class="shop-banner"></div>
-                        <div class="shop-logo">${(shop.name || 'S').charAt(0)}</div>
-                        <div class="shop-info">
-                            <div class="shop-name">${shop.name || 'Unnamed Shop'}</div>
-                            <div class="shop-meta">${shop.description || 'Entdecke Produkte'}</div>
-                        </div>
-                        <div class="shop-stats">
-                            <div class="stat">
-                                <div class="stat-value">${shop.product_count || 0}</div>
-                                <div class="stat-label">Produkte</div>
-                            </div>
-                        </div>
-                    </a>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading shops:', error);
-                document.getElementById('shopGrid').innerHTML = 
-                    '<p style="text-align:center;color:#666;">Shops konnten nicht geladen werden</p>';
-            }
-        }
-
-        loadShops();
+        // Empty script - shops section removed
     </script>
 </body>
 </html>
