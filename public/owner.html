@@ -1158,6 +1158,18 @@
             const div = document.getElementById('productsList');
             div.innerHTML = '<div class="loading">Lade Produkte...</div>';
             
+            // Load currentShop if not already loaded
+            if (!currentShop) {
+                try {
+                    const shopRes = await fetch('/api/owner/shop', { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (shopRes.ok) {
+                        currentShop = await shopRes.json();
+                    }
+                } catch (e) {
+                    console.error('Error loading shop:', e);
+                }
+            }
+            
             try {
                 const res = await fetch('/api/owner/products', { headers: { 'Authorization': `Bearer ${token}` } });
                 const products = await res.json();
