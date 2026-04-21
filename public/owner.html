@@ -662,6 +662,19 @@
                                         </select>
                                     </div>
                                 </div>
+                                
+                                <!-- Varianten Section -->
+                                <div style="margin-top: 30px; border-top: 1px solid #e1dfdd; padding-top: 20px;">
+                                    <h4 style="margin-bottom: 15px;">Varianten (optional)</h4>
+                                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                                        Z.B. Grössen, Farben, etc.
+                                    </p>
+                                    <div id="variants-container"></div>
+                                    <button type="button" class="btn btn-secondary" onclick="addVariantField()" style="margin-top: 10px;">
+                                        + Variante hinzufügen
+                                    </button>
+                                </div>
+                                
                                 <div style="margin-top: 20px;">
                                     <button class="btn btn-primary" onclick="saveProduct()">Speichern</button>
                                     <button class="btn btn-secondary" onclick="cancelProduct()">Abbrechen</button>
@@ -1495,6 +1508,89 @@
             document.getElementById('product-list-view').style.display = 'block';
         }
 
+        // Varianten Funktionen
+        function addVariantField(variantData = null) {
+            const container = document.getElementById('variants-container');
+            const variantId = 'variant-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            
+            const div = document.createElement('div');
+            div.className = 'variant-row';
+            div.id = variantId;
+            div.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; align-items: end;';
+            
+            div.innerHTML = `
+                <div class="form-group">
+                    <label>Variantenname *</label>
+                    <input type="text" class="variant-name" placeholder="z.B. Rot, XL" value="${variantData ? variantData.name : ''}" required>
+                </div>
+                <div class="form-group">
+                    <label>SKU</label>
+                    <input type="text" class="variant-sku" placeholder="SKU" value="${variantData ? variantData.sku : ''}">
+                </div>
+                <div class="form-group">
+                    <label>Preis-Aufschlag</label>
+                    <input type="number" class="variant-price" step="0.01" min="0" placeholder="0.00" value="${variantData ? variantData.price_adjustment : ''}">
+                </div>
+                <div class="form-group">
+                    <label>Lagerbestand</label>
+                    <input type="number" class="variant-stock" min="0" placeholder="0" value="${variantData ? variantData.stock : ''}">
+                </div>
+                <button type="button" class="btn btn-danger" onclick="removeVariantField('${variantId}')" style="padding: 8px 12px; height: fit-content;">🗑️</button>
+            `;
+            
+            container.appendChild(div);
+        }
+
+        function removeVariantField(variantId) {
+            const element = document.getElementById(variantId);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        function getVariantsFromForm() {
+            const variants = [];
+            const container = document.getElementById('variants-container');
+            const rows = container.querySelectorAll('.variant-row');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('.variant-name').value.trim();
+                if (name) {
+                    variants.push({
+                        name: name,
+                        sku: row.querySelector('.variant-sku').value.trim(),
+                        price_adjustment: parseFloat(row.querySelector('.variant-price').value) || 0,
+                        stock: parseInt(row.querySelector('.variant-stock').value) || 0
+                    });
+                }
+            });
+            
+            return variants;
+        }
+
+        async function loadVariants(productId) {
+            const token = localStorage.getItem('owner_token');
+            if (!token || !productId) return;
+            
+            try {
+                const res = await fetch(`/api/owner/products/${productId}/variants`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const variants = await res.json();
+                    const container = document.getElementById('variants-container');
+                    container.innerHTML = '';
+                    
+                    variants.forEach(variant => {
+                        addVariantField(variant);
+                    });
+                }
+            } catch (e) {
+                console.error('Error loading variants:', e);
+            }
+        }
+
         async function saveProduct() {
             const token = localStorage.getItem('owner_token');
             if (!token) return;
@@ -1527,6 +1623,23 @@
                 });
 
                 if (res.ok) {
+                    const product = await res.json();
+                    
+                    // Save variants if any
+                    const variants = getVariantsFromForm();
+                    if (variants.length > 0) {
+                        for (const variant of variants) {
+                            await fetch(`/api/owner/products/${product.id}/variants`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(variant)
+                            });
+                        }
+                    }
+                    
                     alert('Produkt erstellt!');
                     cancelProduct();
                     loadProducts();
