@@ -653,6 +653,35 @@ app.put(
     }
 );
 
+// Delete coupon
+app.delete(
+    '/api/owner/coupons/:id',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            const { rows } = await pool.query(
+                `
+            DELETE FROM coupons c
+            USING shops s
+            WHERE c.id = $1 AND c.shop_id = s.id AND s.owner_id = $2
+            RETURNING c.id
+        `,
+                [req.params.id, req.user.id]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json({ error: 'Coupon not found' });
+            }
+
+            res.json({ message: 'Coupon deleted' });
+        } catch (error) {
+            console.error('Delete coupon error:', error);
+            res.status(500).json({ error: 'Failed to delete coupon' });
+        }
+    }
+);
+
 // Get shop analytics
 app.get('/api/owner/analytics', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     const { period = '30' } = req.query; // days

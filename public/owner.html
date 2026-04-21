@@ -521,6 +521,7 @@
                 <a class="nav-item" onclick="showTab('customers')">Kunden</a>
                 <div class="nav-title">Verwaltung</div>
                 <a class="nav-item" onclick="showTab('analytics')">Gewinn-Analyse</a>
+                <a class="nav-item" onclick="showTab('coupons')">Rabattcodes</a>
                 <a class="nav-item" onclick="showTab('settings')">Einstellungen</a>
             </nav>
             <div class="sidebar-footer">
@@ -732,6 +733,71 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+
+                <div id="coupons" class="tab-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="font-size: 24px; font-weight: 600;">Rabattcodes</h2>
+                        <button class="btn btn-primary" onclick="showCreateCoupon()">+ Neuer Code</button>
+                    </div>
+                    <div id="coupon-form-view" style="display: none; margin-bottom: 20px;">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Rabattcode erstellen</h3></div>
+                            <div class="card-body">
+                                <input type="hidden" id="coupon-id">
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Code *</label>
+                                        <input type="text" id="coupon-code" placeholder="z.B. SOMMER2024" style="text-transform: uppercase;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Beschreibung</label>
+                                        <input type="text" id="coupon-desc" placeholder="z.B. 10% Sommerrabatt">
+                                    </div>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Rabatt-Typ *</label>
+                                        <select id="coupon-type">
+                                            <option value="percentage">Prozent (%)</option>
+                                            <option value="fixed_amount">Festbetrag (€)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Wert *</label>
+                                        <input type="number" id="coupon-value" step="0.01" min="0" placeholder="10">
+                                    </div>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Mindestbestellwert (€)</label>
+                                        <input type="number" id="coupon-min" step="0.01" min="0" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Max. Rabatt (€)</label>
+                                        <input type="number" id="coupon-max" step="0.01" min="0" placeholder="optional">
+                                    </div>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Nutzungslimit (gesamt)</label>
+                                        <input type="number" id="coupon-limit" min="1" placeholder="leer = unbegrenzt">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Gültig bis</label>
+                                        <input type="datetime-local" id="coupon-expiry">
+                                    </div>
+                                </div>
+                                <div style="margin-top: 20px;">
+                                    <button class="btn btn-primary" onclick="saveCoupon()">Speichern</button>
+                                    <button class="btn btn-secondary" onclick="cancelCoupon()">Abbrechen</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="coupon-list">
+                        <div class="loading">Lade Rabattcodes...</div>
                     </div>
                 </div>
 
@@ -1047,12 +1113,14 @@
                 tabName === 'products' ? 'Produkte' :
                 tabName === 'orders' ? 'Bestellungen' :
                 tabName === 'customers' ? 'Kunden' :
+                tabName === 'coupons' ? 'Rabattcodes' :
                 tabName === 'analytics' ? 'Gewinn-Analyse' : 'Einstellungen';
             
             if (tabName === 'dashboard') loadDashboard();
             if (tabName === 'products') loadProducts();
             if (tabName === 'orders') loadAllOrders();
             if (tabName === 'customers') loadCustomers();
+            if (tabName === 'coupons') loadCoupons();
             if (tabName === 'analytics') loadProfitAnalytics();
             if (tabName === 'settings') loadSettings();
         }
@@ -1823,6 +1891,128 @@
             } catch (e) {
                 console.error('Save error:', e);
                 alert('Fehler beim Speichern');
+            }
+        }
+
+        // Coupon Functions
+        function showCreateCoupon() {
+            document.getElementById('coupon-form-view').style.display = 'block';
+            document.getElementById('coupon-id').value = '';
+            document.getElementById('coupon-code').value = '';
+            document.getElementById('coupon-desc').value = '';
+            document.getElementById('coupon-type').value = 'percentage';
+            document.getElementById('coupon-value').value = '';
+            document.getElementById('coupon-min').value = '0';
+            document.getElementById('coupon-max').value = '';
+            document.getElementById('coupon-limit').value = '';
+            document.getElementById('coupon-expiry').value = '';
+        }
+
+        function cancelCoupon() {
+            document.getElementById('coupon-form-view').style.display = 'none';
+        }
+
+        async function saveCoupon() {
+            const data = {
+                code: document.getElementById('coupon-code').value.trim().toUpperCase(),
+                description: document.getElementById('coupon-desc').value,
+                discount_type: document.getElementById('coupon-type').value,
+                discount_value: parseFloat(document.getElementById('coupon-value').value) || 0,
+                min_order_amount: parseFloat(document.getElementById('coupon-min').value) || 0,
+                max_discount_amount: document.getElementById('coupon-max').value ? parseFloat(document.getElementById('coupon-max').value) : null,
+                usage_limit: document.getElementById('coupon-limit').value ? parseInt(document.getElementById('coupon-limit').value) : null,
+                valid_until: document.getElementById('coupon-expiry').value || null
+            };
+
+            if (!data.code || !data.discount_value) {
+                alert('Code und Wert sind erforderlich');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/owner/coupons', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('Rabattcode erstellt!');
+                    cancelCoupon();
+                    loadCoupons();
+                } else {
+                    const err = await res.json();
+                    alert('Fehler: ' + (err.error || 'Unbekannt'));
+                }
+            } catch (e) {
+                console.error('Save coupon error:', e);
+                alert('Fehler beim Speichern');
+            }
+        }
+
+        async function loadCoupons() {
+            const div = document.getElementById('coupon-list');
+            div.innerHTML = '<div class="loading">Lade Rabattcodes...</div>';
+
+            try {
+                const res = await fetch('/api/owner/coupons', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const coupons = await res.json();
+
+                if (coupons.length === 0) {
+                    div.innerHTML = '<div class="empty">Noch keine Rabattcodes. Erstelle deinen ersten Code!</div>';
+                    return;
+                }
+
+                div.innerHTML = `
+                    <div class="card">
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr><th>Code</th><th>Typ</th><th>Wert</th><th>Genutzt</th><th>Status</th><th>Aktion</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${coupons.map(c => `
+                                        <tr>
+                                            <td><strong>${c.code}</strong></td>
+                                            <td>${c.discount_type === 'percentage' ? 'Prozent' : 'Festbetrag'}</td>
+                                            <td>${c.discount_type === 'percentage' ? c.discount_value + '%' : '€' + c.discount_value}</td>
+                                            <td>${c.times_used || 0} / ${c.usage_limit || '∞'}</td>
+                                            <td><span class="status ${c.is_active ? 'published' : 'draft'}">${c.is_active ? 'Aktiv' : 'Inaktiv'}</span></td>
+                                            <td><button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="deleteCoupon(${c.id})">Löschen</button></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('Load coupons error:', e);
+                div.innerHTML = '<div class="empty">Fehler beim Laden</div>';
+            }
+        }
+
+        async function deleteCoupon(couponId) {
+            if (!confirm('Rabattcode wirklich löschen?')) return;
+
+            try {
+                const res = await fetch(`/api/owner/coupons/${couponId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    loadCoupons();
+                } else {
+                    alert('Fehler beim Löschen');
+                }
+            } catch (e) {
+                console.error('Delete coupon error:', e);
             }
         }
 
