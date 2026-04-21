@@ -365,7 +365,13 @@
             gap: 8px;
             margin-bottom: 24px;
             border-bottom: 1px solid #E1DFDD;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            flex-wrap: nowrap;
+            white-space: nowrap;
         }
+        .tabs::-webkit-scrollbar { display: none; }
 
         .tab {
             padding: 12px 20px;
