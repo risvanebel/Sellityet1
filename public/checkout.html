@@ -415,6 +415,39 @@
                 return;
             }
 
+            // Check stock before placing order
+            try {
+                const stockRes = await fetch(`/api/shop/products?shop=${shopId}`);
+                if (stockRes.ok) {
+                    const products = await stockRes.json();
+                    for (const item of cart) {
+                        const product = products.find(p => p.id === item.id);
+                        if (product) {
+                            if (item.variant_id) {
+                                // Check variant stock
+                                const variantRes = await fetch(`/api/shops/${shopId}/products/${item.id}/variants`);
+                                if (variantRes.ok) {
+                                    const variants = await variantRes.json();
+                                    const variant = variants.find(v => v.id === item.variant_id);
+                                    if (variant && item.quantity > variant.stock) {
+                                        alert(`Nicht genug Lagerbestand für "${item.name}". Verfügbar: ${variant.stock}`);
+                                        return;
+                                    }
+                                }
+                            } else {
+                                // Check product stock
+                                if (item.quantity > product.quantity) {
+                                    alert(`Nicht genug Lagerbestand für "${item.name}". Verfügbar: ${product.quantity}`);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Stock check error:', e);
+            }
+
             // Calculate total
             let subtotal = 0;
             cart.forEach(item => {

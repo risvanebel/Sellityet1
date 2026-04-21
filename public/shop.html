@@ -1032,9 +1032,17 @@
 
             const qtyInput = document.getElementById(`qty-${product.id}`);
             const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-
+            
+            // Check stock
+            const maxStock = selectedVariant ? selectedVariant.stock : product.quantity;
             const cartItemId = selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id;
             const existingItem = cart.find((item) => item.cartId === cartItemId);
+            const currentQty = existingItem ? existingItem.quantity : 0;
+            
+            if (currentQty + qty > maxStock) {
+                alert(`Nur noch ${maxStock - currentQty} verfügbar!`);
+                return;
+            }
 
             if (existingItem) {
                 existingItem.quantity += qty;
@@ -1071,9 +1079,11 @@
         function updateQuantity(productId, delta) {
             const item = cart.find((item) => item.id === productId);
             if (item) {
-                item.quantity += delta;
-                if (item.quantity <= 0) {
+                const newQty = item.quantity + delta;
+                if (newQty <= 0) {
                     cart = cart.filter((i) => i.id !== productId);
+                } else {
+                    item.quantity = newQty;
                 }
                 localStorage.setItem('cart', JSON.stringify(cart));
                 updateCartUI();
