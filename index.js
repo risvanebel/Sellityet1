@@ -2036,25 +2036,6 @@ async function runMissingMigrations() {
 // Run migrations on startup
 setTimeout(runMissingMigrations, 5000);
 
-// Cleanup test products on startup (after migrations)
-setTimeout(async () => {
-    try {
-        console.log('🧹 Cleaning up test products...');
-        const { rowCount } = await pool.query(`
-            DELETE FROM products
-            WHERE sku LIKE 'TEST%'
-               OR name LIKE '%Test%'
-               OR name LIKE 'Produkt %'
-               OR created_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
-        `);
-        if (rowCount > 0) {
-            console.log(`🗑️ Deleted ${rowCount} test products`);
-        }
-    } catch (error) {
-        console.error('Cleanup error:', error);
-    }
-}, 10000);
-
 // Run missing migrations endpoint
 app.get('/api/run-migrations', async (req, res) => {
     try {
