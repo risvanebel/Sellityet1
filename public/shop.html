@@ -943,6 +943,20 @@
                     return;
                 }
 
+                // Load variants for products that have them
+                for (const product of products) {
+                    if (product.has_variants) {
+                        try {
+                            const variantRes = await fetch(`${API_URL}/shops/${shop ? shop.id : product.shop_id}/products/${product.id}/variants`);
+                            if (variantRes.ok) {
+                                product.variants = await variantRes.json();
+                            }
+                        } catch (e) {
+                            console.error('Error loading variants:', e);
+                        }
+                    }
+                }
+
                 container.innerHTML = products
                     .map((product) => `
                         <div class="product-card">
@@ -957,6 +971,12 @@
                                 <div class="product-name">${product.name}</div>
                                 <div class="product-description">${product.description || ''}</div>
                                 <div class="product-price">€${parseFloat(product.price).toFixed(2)}</div>
+                                ${product.variants && product.variants.length > 0 ? `
+                                    <select id="variant-select-${product.id}" class="variant-select" style="width: 100%; margin: 8px 0; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border);" onchange="selectVariant(${product.id}, this.value)">
+                                        <option value="">Variante wählen</option>
+                                        ${product.variants.map(v => `<option value="${v.id}">${v.name} (+€${parseFloat(v.price_adjustment || 0).toFixed(2)}) - ${v.stock > 0 ? v.stock + ' auf Lager' : 'ausverkauft'}</option>`).join('')}
+                                    </select>
+                                ` : ''}
                                 <button class="btn-add" onclick='addToCart(${JSON.stringify(product).replace(/'/g, '&#39;')})'>
                                     In den Warenkorb
                                 </button>
@@ -979,18 +999,37 @@
         }
 
         function addToCart(product) {
-            const existingItem = cart.find((item) => item.id === product.id);
+            const variantSelect = document.getElementById(`variant-select-${product.id}`);
+            let selectedVariant = null;
+            
+            if (variantSelect && variantSelect.value) {
+                selectedVariant = product.variants.find(v => v.id == variantSelect.value);
+                if (!selectedVariant) {
+                    alert('Bitte wähle eine Variante aus');
+                    return;
+                }
+                if (selectedVariant.stock <= 0) {
+                    alert('Diese Variante ist ausverkauft');
+                    return;
+                }
+            }
+
+            const cartItemId = selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id;
+            const existingItem = cart.find((item) => item.cartId === cartItemId);
 
             if (existingItem) {
                 existingItem.quantity += 1;
             } else {
                 cart.push({
+                    cartId: cartItemId,
                     id: product.id,
-                    name: product.name,
-                    price: product.price,
+                    name: product.name + (selectedVariant ? ` (${selectedVariant.name})` : ''),
+                    price: parseFloat(product.price) + parseFloat(selectedVariant ? selectedVariant.price_adjustment || 0 : 0),
                     image: product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : null,
                     quantity: 1,
-                    shop_id: shop ? shop.id : null
+                    shop_id: shop ? shop.id : null,
+                    variant_id: selectedVariant ? selectedVariant.id : null,
+                    variant_name: selectedVariant ? selectedVariant.name : null
                 });
             }
 
