@@ -1786,7 +1786,7 @@ app.get('/api/shops/:shopId/products', async (req, res) => {
             [req.params.shopId]
         );
 
-        // Calculate total stock from variants for each product
+        // Calculate total stock from variants and load images for each product
         for (let product of rows) {
             if (product.has_variants) {
                 const { rows: variants } = await pool.query(
@@ -1794,6 +1794,17 @@ app.get('/api/shops/:shopId/products', async (req, res) => {
                     [product.id]
                 );
                 product.quantity = parseInt(variants[0].total);
+            }
+
+            // Load product images
+            try {
+                const { rows: images } = await pool.query(
+                    'SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC, sort_order',
+                    [product.id]
+                );
+                product.image_urls = images.map((img) => img.image_url);
+            } catch (imgErr) {
+                product.image_urls = product.image_urls || [];
             }
         }
 
