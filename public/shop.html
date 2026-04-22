@@ -881,6 +881,24 @@
 
                 shop = await res.json();
                 
+                // Check visibility - if customers_only, require login
+                if (shop.visibility_mode === 'customers_only') {
+                    const customerToken = localStorage.getItem('customer_token');
+                    if (!customerToken) {
+                        document.getElementById('products-container').innerHTML = `
+                            <div class="error-state" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+                                <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+                                <h3>Geschützter Shop</h3>
+                                <p style="margin-bottom: 24px;">Dieser Shop ist nur für registrierte Kunden zugänglich.</p>
+                                <a href="customer-login.html?shop=${shop.slug}" class="btn btn-primary" style="display: inline-block; text-decoration: none;">Zum Login</a>
+                            </div>
+                        `;
+                        // Hide filter and cart
+                        document.getElementById('filter-bar').style.display = 'none';
+                        return;
+                    }
+                }
+                
                 // Apply theme
                 const theme = shop.theme || 'aurora';
                 document.body.setAttribute('data-theme', theme);

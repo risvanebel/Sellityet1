@@ -180,11 +180,88 @@
                 <button type="submit" class="btn">Anmelden</button>
             </form>
             <div class="login-footer">
-                <p>Noch kein Konto? <a href="/register.html">Registrieren</a></p>
+                <p>Noch kein Konto? <a href="#" onclick="showRegister()">Registrieren</a></p>
             </div>
+            
+            <!-- Register Form -->
+            <form id="registerForm" style="display: none;">
+                <h2 style="text-align: center; margin-bottom: 24px; font-size: 20px;">Kunden-Registrierung</h2>
+                <div class="form-group">
+                    <label>Vorname</label>
+                    <input type="text" id="regFirstName" placeholder="Vorname">
+                </div>
+                <div class="form-group">
+                    <label>Nachname</label>
+                    <input type="text" id="regLastName" placeholder="Nachname">
+                </div>
+                <div class="form-group">
+                    <label>E-Mail *</label>
+                    <input type="email" id="regEmail" placeholder="name@beispiel.de" required>
+                </div>
+                <div class="form-group">
+                    <label>Passwort *</label>
+                    <input type="password" id="regPassword" placeholder="Passwort" required>
+                </div>
+                <div class="form-group" id="regCodeGroup">
+                    <label>Registrierungscode *</label>
+                    <input type="text" id="regCode" placeholder="Code eingeben">
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Dieser Shop erfordert einen Registrierungscode.</p>
+                </div>
+                <button type="submit" class="btn">Registrieren</button>
+                <div style="text-align: center; margin-top: 16px;">
+                    <a href="#" onclick="showLogin()" style="color: var(--primary); text-decoration: none; font-size: 14px;">Bereits registriert? Anmelden</a>
+                </div>
+            </form>
         </div>
     </main>
     <script>
+        let shopRequiresCode = false;
+        
+        // Check if shop requires registration code
+        async function checkShopSettings() {
+            try {
+                let res = await fetch('/api/shop/current');
+                if (!res.ok) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const shopSlug = urlParams.get('shop');
+                    if (shopSlug) {
+                        res = await fetch(`/api/shops/${shopSlug}`);
+                    }
+                }
+                if (res.ok) {
+                    const shop = await res.json();
+                    if (shop.registration_code && shop.registration_code.length > 0) {
+                        shopRequiresCode = true;
+                        document.getElementById('regCodeGroup').style.display = 'block';
+                        document.getElementById('regCode').required = true;
+                    } else {
+                        shopRequiresCode = false;
+                        document.getElementById('regCodeGroup').style.display = 'none';
+                        document.getElementById('regCode').required = false;
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking shop:', e);
+            }
+        }
+        
+        function showRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.querySelector('.login-footer').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+            document.querySelector('.login-title').textContent = 'Kunden-Registrierung';
+            document.querySelector('.login-subtitle').textContent = 'Erstelle dein Kundenkonto';
+            checkShopSettings();
+        }
+        
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.querySelector('.login-footer').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            document.querySelector('.login-title').textContent = 'Kunden-Login';
+            document.querySelector('.login-subtitle').textContent = 'Melde dich an, um deine Bestellungen zu sehen';
+        }
+        
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -201,6 +278,40 @@
                     window.location.href = '/customer-dashboard.html';
                 } else {
                     document.getElementById('errorMessage').textContent = data.error || 'Login fehlgeschlagen';
+                    document.getElementById('errorMessage').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('errorMessage').textContent = 'Netzwerkfehler';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        });
+        
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const firstName = document.getElementById('regFirstName').value;
+            const lastName = document.getElementById('regLastName').value;
+            const regCode = document.getElementById('regCode').value;
+            
+            try {
+                const res = await fetch('/api/auth/register-customer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        password, 
+                        first_name: firstName, 
+                        last_name: lastName,
+                        registration_code: regCode || undefined
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('customer_token', data.token);
+                    window.location.href = '/customer-dashboard.html';
+                } else {
+                    document.getElementById('errorMessage').textContent = data.error || 'Registrierung fehlgeschlagen';
                     document.getElementById('errorMessage').style.display = 'block';
                 }
             } catch (err) {

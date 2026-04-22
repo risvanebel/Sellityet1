@@ -1125,17 +1125,19 @@ app.get('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async 
 // Update owner shop
 app.put('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     try {
-        const { name, description, primary_color } = req.body;
+        const { name, description, primary_color, visibility_mode, registration_code } = req.body;
 
         const { rows } = await pool.query(
             `UPDATE shops SET
                 name = COALESCE($1, name),
                 description = COALESCE($2, description),
                 primary_color = COALESCE($3, primary_color),
+                visibility_mode = COALESCE($4, visibility_mode),
+                registration_code = COALESCE($5, registration_code),
                 updated_at = CURRENT_TIMESTAMP
-             WHERE owner_id = $4
+             WHERE owner_id = $6
              RETURNING *`,
-            [name, description, primary_color, req.user.id]
+            [name, description, primary_color, visibility_mode, registration_code, req.user.id]
         );
 
         if (rows.length === 0) {
@@ -1479,13 +1481,20 @@ app.post('/api/auth/register-customer', async (req, res) => {
         return res.status(400).json({ error: 'No shop context' });
     }
 
-    const { email, password, first_name, last_name } = req.body;
+    const { email, password, first_name, last_name, registration_code } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password required' });
     }
 
     try {
+        // Check registration code if shop requires one
+        if (req.shop.registration_code && req.shop.registration_code.length > 0) {
+            if (!registration_code || registration_code !== req.shop.registration_code) {
+                return res.status(403).json({ error: 'Invalid or missing registration code' });
+            }
+        }
+
         // Check if customer exists in this shop
         const { rows: existing } = await pool.query(
             'SELECT id FROM customers WHERE email = $1 AND shop_id = $2',
@@ -2102,7 +2111,8 @@ app.get('/api/run-migrations', async (req, res) => {
             '014_customer_phone_fix.sql',
             '015_payment_status_fix.sql',
             '016_order_features.sql',
-            '017_product_visibility.sql'
+            '017_product_visibility.sql',
+            '018_shop_visibility.sql'
         ];
 
         for (const migration of migrations) {
