@@ -1988,7 +1988,7 @@
                     if (container) {
                         container.innerHTML = images.map(img => `
                             <div style="position: relative; display: inline-block; margin: 5px;">
-                                <img src="${img.url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                                <img src="${img.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
                                 <button onclick="deleteProductImage(${img.id})" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
                             </div>
                         `).join('');
