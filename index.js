@@ -2475,20 +2475,46 @@ app.put(
         const productId = req.params.id;
 
         try {
-            // Build update fields dynamically
-            let updateFields = [
-                'name = $1',
-                'description = $2',
-                'price = $3',
-                'cost_price = $4',
-                'category_id = $5',
-                'sku = $6',
-                'status = $7',
-                'updated_at = CURRENT_TIMESTAMP'
-            ];
-            let params = [name, description, price, cost_price || 0, category_id, sku, status];
-            let paramIndex = 8;
+            // Build update fields dynamically - only update provided fields
+            let updateFields = ['updated_at = CURRENT_TIMESTAMP'];
+            let params = [];
+            let paramIndex = 1;
 
+            if (name !== undefined) {
+                updateFields.push(`name = $${paramIndex}`);
+                params.push(name);
+                paramIndex++;
+            }
+            if (description !== undefined) {
+                updateFields.push(`description = $${paramIndex}`);
+                params.push(description);
+                paramIndex++;
+            }
+            if (price !== undefined) {
+                updateFields.push(`price = $${paramIndex}`);
+                params.push(price);
+                paramIndex++;
+            }
+            if (cost_price !== undefined) {
+                updateFields.push(`cost_price = $${paramIndex}`);
+                params.push(cost_price || 0);
+                paramIndex++;
+            }
+            if (category_id !== undefined) {
+                updateFields.push(`category_id = $${paramIndex}`);
+                params.push(category_id);
+                paramIndex++;
+            }
+            if (sku !== undefined) {
+                updateFields.push(`sku = $${paramIndex}`);
+                params.push(sku);
+                paramIndex++;
+            }
+            if (status !== undefined) {
+                updateFields.push(`status = $${paramIndex}`);
+                params.push(status);
+                paramIndex++;
+            }
             if (image_urls !== undefined) {
                 updateFields.push(`image_urls = $${paramIndex}::text[]`);
                 params.push(image_urls || null);
