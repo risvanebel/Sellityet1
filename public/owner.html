@@ -2006,7 +2006,7 @@
             if (!confirm('Bild löschen?')) return;
             
             try {
-                const res = await fetch(`/api/owner/product-images/${imageId}`, {
+                const res = await fetch(`/api/owner/images/${imageId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
