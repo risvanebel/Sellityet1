@@ -1814,22 +1814,6 @@
         }
 
         function showCreateProduct() {
-            // Navigation zur Produkterstellung
-            showTab('products');
-            setTimeout(() => {
-                const form = document.getElementById('product-form');
-                if (form) {
-                    form.classList.remove('hidden');
-                    document.getElementById('product-list').classList.add('hidden');
-                    // Formular zurücksetzen
-                    form.reset();
-                    document.getElementById('product-id').value = '';
-                    document.getElementById('variants-container').innerHTML = '';
-                }
-            }, 100);
-        }
-
-        function showCreateProduct() {
             document.getElementById('product-list-view').style.display = 'none';
             document.getElementById('product-form-view').style.display = 'block';
             document.getElementById('product-id').value = '';
@@ -1841,6 +1825,8 @@
             document.getElementById('product-cost').value = '';
             document.getElementById('product-stock').value = '0';
             document.getElementById('product-status').value = 'draft';
+            document.getElementById('variants-container').innerHTML = '';
+            document.getElementById('product-images-preview').innerHTML = '';
         }
 
         function cancelProduct() {
