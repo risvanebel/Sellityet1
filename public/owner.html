@@ -2186,9 +2186,18 @@
                 if (res.ok) {
                     const product = await res.json();
                     
-                    // Save variants if any (nur beim Erstellen oder wenn produkt existiert)
+                    // Save variants if any
                     const variants = getVariantsFromForm();
                     if (variants.length > 0) {
+                        // If updating existing product, delete old variants first
+                        if (productId) {
+                            await fetch(`/api/owner/products/${product.id}/variants`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                        }
+                        
+                        // Create new variants
                         for (const variant of variants) {
                             await fetch(`/api/owner/products/${product.id}/variants`, {
                                 method: 'POST',

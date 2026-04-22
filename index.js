@@ -2656,6 +2656,49 @@ app.delete(
     }
 );
 
+// Delete all variants for a product
+app.delete(
+    '/api/owner/products/:id/variants',
+    authMiddleware,
+    requireRole('owner', 'admin'),
+    async (req, res) => {
+        try {
+            // Verify ownership
+            const { rows: checkRows } = await pool.query(
+                `
+            SELECT p.id FROM products p
+            JOIN shops s ON p.shop_id = s.id
+            WHERE p.id = $1 AND s.owner_id = $2
+        `,
+                [req.params.id, req.user.id]
+            );
+
+            if (checkRows.length === 0) {
+                return res.status(403).json({ error: 'Not your product' });
+            }
+
+            await pool.query(
+                `
+            UPDATE product_variants SET is_active = false WHERE product_id = $1
+        `,
+                [req.params.id]
+            );
+
+            // Update product to indicate it has no variants
+            await pool.query(
+                `
+            UPDATE products SET has_variants = false WHERE id = $1
+        `,
+                [req.params.id]
+            );
+
+            res.json({ message: 'All variants deleted' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to delete variants' });
+        }
+    }
+);
+
 // ========== PRODUCT IMAGES ==========
 
 // Get product images
