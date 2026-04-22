@@ -895,6 +895,20 @@
                                     <p style="font-size: 12px; color: #666; margin-top: 4px;">Wenn gesetzt, müssen neue Kunden diesen Code bei der Registrierung eingeben. Leer lassen für offene Registrierung.</p>
                                 </div>
                                 
+                                <hr style="margin: 24px 0; border: none; border-top: 1px solid #e1dfdd;">
+                                
+                                <h4 style="margin-bottom: 16px; font-size: 16px;">Mindestbestellwerte</h4>
+                                <div class="form-group">
+                                    <label>Mindestbestellmenge pro Produkt</label>
+                                    <input type="number" id="shopMinOrderQuantity" min="1" value="1" style="width: 100%; padding: 10px; border: 1px solid #e1dfdd; border-radius: 4px; font-size: 14px;">
+                                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Mindestanzahl die Kunden pro Produkt bestellen müssen. Standard: 1</p>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mindestbestellwert (EUR)</label>
+                                    <input type="number" id="shopMinOrderAmount" min="0" step="0.01" value="0" style="width: 100%; padding: 10px; border: 1px solid #e1dfdd; border-radius: 4px; font-size: 14px;">
+                                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Mindestwarenwert pro Bestellung. 0 = kein Minimum</p>
+                                </div>
+                                
                                 <button class="btn btn-primary" onclick="saveShopSettings()">Speichern</button>
                             </div>
                         </div>
@@ -1559,6 +1573,8 @@
                 document.getElementById('shopColorInput').value = shop.primary_color || '#0078D4';
                 document.getElementById('shopVisibilityMode').value = shop.visibility_mode || 'public';
                 document.getElementById('shopRegistrationCode').value = shop.registration_code || '';
+                document.getElementById('shopMinOrderQuantity').value = shop.min_order_quantity || 1;
+                document.getElementById('shopMinOrderAmount').value = shop.min_order_amount || 0;
                 
                 // Load design settings
                 if (shop.theme) {
@@ -1638,7 +1654,9 @@
                     description: document.getElementById('shopDescInput').value,
                     primary_color: document.getElementById('shopColorInput').value,
                     visibility_mode: document.getElementById('shopVisibilityMode').value,
-                    registration_code: document.getElementById('shopRegistrationCode').value || null
+                    registration_code: document.getElementById('shopRegistrationCode').value || null,
+                    min_order_quantity: parseInt(document.getElementById('shopMinOrderQuantity').value) || 1,
+                    min_order_amount: parseFloat(document.getElementById('shopMinOrderAmount').value) || 0
                 };
                 
                 const res = await fetch('/api/owner/shop', {

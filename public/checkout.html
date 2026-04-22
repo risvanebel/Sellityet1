@@ -465,6 +465,22 @@
             cart.forEach(item => {
                 subtotal += (item.price || 0) * item.quantity;
             });
+            
+            // Check minimum order amount
+            try {
+                const shopRes = await fetch(`/api/shops/${shopId}`);
+                if (shopRes.ok) {
+                    const shopData = await shopRes.json();
+                    const minAmount = parseFloat(shopData.min_order_amount) || 0;
+                    if (minAmount > 0 && subtotal < minAmount) {
+                        alert(`Mindestbestellwert: ${minAmount.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}\nAktueller Wert: ${subtotal.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'})}`);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Min order check error:', e);
+            }
+            
             const shipping = subtotal > 50 ? 0 : 5.90;
             const total = subtotal + shipping;
 

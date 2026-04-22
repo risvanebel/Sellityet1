@@ -1117,6 +1117,13 @@
             const qtySpan = document.getElementById(`qty-${product.id}`);
             const qty = qtySpan ? parseInt(qtySpan.textContent) || 1 : 1;
             
+            // Check minimum order quantity
+            const minQty = shop && shop.min_order_quantity ? parseInt(shop.min_order_quantity) : 1;
+            if (qty < minQty) {
+                alert(`Mindestbestellmenge: ${minQty} Stück`);
+                return;
+            }
+            
             // Check stock
             const maxStock = selectedVariant ? selectedVariant.stock : product.quantity;
             const cartItemId = selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id;

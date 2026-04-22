@@ -1125,7 +1125,15 @@ app.get('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async 
 // Update owner shop
 app.put('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
     try {
-        const { name, description, primary_color, visibility_mode, registration_code } = req.body;
+        const {
+            name,
+            description,
+            primary_color,
+            visibility_mode,
+            registration_code,
+            min_order_quantity,
+            min_order_amount
+        } = req.body;
 
         const { rows } = await pool.query(
             `UPDATE shops SET
@@ -1134,10 +1142,21 @@ app.put('/api/owner/shop', authMiddleware, requireRole('owner', 'admin'), async 
                 primary_color = COALESCE($3, primary_color),
                 visibility_mode = COALESCE($4, visibility_mode),
                 registration_code = COALESCE($5, registration_code),
+                min_order_quantity = COALESCE($6, min_order_quantity),
+                min_order_amount = COALESCE($7, min_order_amount),
                 updated_at = CURRENT_TIMESTAMP
-             WHERE owner_id = $6
+             WHERE owner_id = $8
              RETURNING *`,
-            [name, description, primary_color, visibility_mode, registration_code, req.user.id]
+            [
+                name,
+                description,
+                primary_color,
+                visibility_mode,
+                registration_code,
+                min_order_quantity,
+                min_order_amount,
+                req.user.id
+            ]
         );
 
         if (rows.length === 0) {
@@ -2112,7 +2131,8 @@ app.get('/api/run-migrations', async (req, res) => {
             '015_payment_status_fix.sql',
             '016_order_features.sql',
             '017_product_visibility.sql',
-            '018_shop_visibility.sql'
+            '018_shop_visibility.sql',
+            '019_order_minimums.sql'
         ];
 
         for (const migration of migrations) {
