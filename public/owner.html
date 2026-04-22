@@ -1288,6 +1288,9 @@
         }
 
         async function loadProducts() {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
+            
             const div = document.getElementById('productsList');
             div.innerHTML = '<div class="loading">Lade Produkte...</div>';
             
@@ -2332,6 +2335,8 @@
         }
 
         async function toggleProductStatus(productId, newStatus) {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
             try {
                 const res = await fetch(`/api/owner/products/${productId}`, {
                     method: 'PUT',
@@ -2348,6 +2353,8 @@
         }
 
         async function toggleProductFeatured(productId, featured) {
+            const token = localStorage.getItem('owner_token');
+            if (!token) return;
             try {
                 const res = await fetch(`/api/owner/products/${productId}`, {
                     method: 'PUT',
