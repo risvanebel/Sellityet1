@@ -2021,14 +2021,36 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            const formData = new FormData();
-            formData.append('image', file);
+            // Step 1: Upload image to Cloudinary via /api/upload
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', file);
             
             try {
-                const res = await fetch(`/api/owner/products/${productId}/images`, {
+                const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
+                    body: uploadFormData
+                });
+                
+                if (!uploadRes.ok) {
+                    throw new Error('Upload failed');
+                }
+                
+                const uploadData = await uploadRes.json();
+                const imageUrl = uploadData.url;
+                
+                if (!imageUrl) {
+                    throw new Error('No URL returned from upload');
+                }
+                
+                // Step 2: Save image URL to product
+                const res = await fetch(`/api/owner/products/${productId}/images`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image_url: imageUrl })
                 });
                 
                 if (res.ok) {
@@ -2036,11 +2058,11 @@
                     event.target.value = '';
                 } else {
                     const err = await res.json();
-                    alert('Fehler beim Hochladen: ' + (err.error || 'Unbekannt'));
+                    alert('Fehler beim Speichern: ' + (err.error || 'Unbekannt'));
                 }
             } catch (e) {
                 console.error('Upload error:', e);
-                alert('Fehler beim Hochladen');
+                alert('Fehler beim Hochladen. Stelle sicher, dass Cloudinary konfiguriert ist.');
             }
         }
 
